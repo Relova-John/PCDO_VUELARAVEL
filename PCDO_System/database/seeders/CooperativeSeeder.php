@@ -16,7 +16,7 @@ class CooperativeSeeder extends Seeder
     {
         for ($i = 1; $i <= 10; $i++) {
             Cooperative::create([
-                'id' => sprintf('%03d-%03d', rand(100, 999), rand(100, 999)),
+                'id' => sprintf('%04d-%04d', rand(0000, 9999), rand(0000, 9999)),
                 'name' => 'Primary Coop ' . $i,
                 'type' => 'primary',
                 'holder' => null,

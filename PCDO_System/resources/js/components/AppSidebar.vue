@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import cooperatives  from '@/routes/cooperatives';
-import coopPrograms from '@/routes/coopPrograms';
+// import coopPrograms from '@/routes/coopPrograms';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 import { LayoutGrid, Handshake, HandCoins, Bell, FolderKanban } from 'lucide-vue-next';
@@ -30,16 +30,16 @@ const mainNavItems: NavItem[] = [
         href: cooperatives.index(),
         icon: Handshake,
     },
-    {
-        title: 'Payments',
-        href: coopPrograms.index(),
-        icon: HandCoins,
-    },
-    {
-        title: 'Programs',
-        href: coopPrograms.index(),
-        icon: FolderKanban,
-    },
+    // {
+    //     title: 'Payments',
+    //     href: coopPrograms.index(),
+    //     icon: HandCoins,
+    // },
+    // {
+    //     title: 'Programs',
+    //     href: coopPrograms.index(),
+    //     icon: FolderKanban,
+    // },
 ];
 
 </script>

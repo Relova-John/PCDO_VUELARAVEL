@@ -169,4 +169,36 @@
     body {
         @apply bg-background text-foreground;
     }
+    h1 { @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl; }
+    h2 { @apply text-lg sm:text-xl md:text-2xl; }
+    h3 { @apply text-base sm:text-lg md:text-xl; }
+    h4 { @apply text-sm sm:text-base md:text-lg; }
+    p,
+    span,
+    li { @apply text-sm sm:text-base md:text-lg; }
+
+    button {
+        @apply text-sm sm:text-base px-2 sm:px-4 py-1 sm:py-2;
+    }
+
+    input,
+    select,
+    textarea {
+        @apply text-sm sm:text-base px-2 sm:px-3 py-1 sm:py-2;
+    }
+
+    table {
+        @apply text-xs sm:text-sm md:text-base;
+    }
+
+    th,
+    td {
+        @apply px-2 py-1 sm:px-4 sm:py-2;
+    }
+    nav a {
+        @apply text-base sm:text-lg md:text-xl;
+    }
+    header h1 {
+        @apply text-lg sm:text-xl md:text-2xl;
+    }
 }

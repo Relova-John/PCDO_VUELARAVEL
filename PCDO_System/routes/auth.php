@@ -33,6 +33,12 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    Route::get('login/verify', [AuthenticatedSessionController::class, 'verifyCodeForm'])
+        ->name('login.verify');
+        
+    Route::post('login/verify', [AuthenticatedSessionController::class, 'verifyPostCodeForm'])
+        ->name('login.verify.post');
 });
 
 Route::middleware('auth')->group(function () {

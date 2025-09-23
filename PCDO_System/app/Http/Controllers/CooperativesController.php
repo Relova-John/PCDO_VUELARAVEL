@@ -73,38 +73,53 @@ class CooperativesController extends Controller
         $data = $request->validate([
             'id' => 'required|string|max:255|unique:cooperatives,id',
             'name' => 'required|string|max:255|unique:cooperatives,name',
+            'region_id' => 'required|integer',
+            'province_id' => 'required|integer',
+            'municipality_id' => 'required|integer',
+            'barangay_id' => 'required|integer',
+            'asset_size' => 'required|string',
+            'coop_type' => 'required|string',
+            'status_category' => 'required|string',
+            'bond_of_membership' => 'required|string',
+            'area_of_operation' => 'required|string',
+            'citizenship' => 'required|string',
+            'members_count' => 'required|integer',
+            'total_asset' => 'required|numeric',
+            'net_surplus' => 'required|numeric',
         ]);
 
         $cooperative = Cooperative::where('name', $data['name'])->first();
         if ($cooperative) {
             return redirect()
-                ->route('cooperatives.details', $cooperative)
+                ->route('cooperatives.show', $cooperative)
                 ->with('info', 'Cooperative already exists. Redirected to its details page.');
-        } 
-        $cooperative = Cooperative::create($data);
+        }
 
-        $detailsData = $request->validate([
-            'region_id' => 'nullable|integer',
-            'province_id' => 'nullable|integer',
-            'municipality_id' => 'nullable|integer',
-            'barangay_id' => 'nullable|integer',
-            'asset_size' => 'nullable|string',
-            'coop_type' => 'nullable|string',
-            'status_category' => 'nullable|string',
-            'bond_of_membership' => 'nullable|string',
-            'area_of_operation' => 'nullable|string',
-            'citizenship' => 'nullable|string',
-            'members_count' => 'nullable|integer',
-            'total_asset' => 'nullable|numeric',
-            'net_surplus' => 'nullable|numeric',
+        $cooperative = Cooperative::create([
+            'id' => $data['id'], 
+            'name' => $data['name']
         ]);
 
-        $detailsData['coop_id'] = $cooperative->id;
-
+        $detailsData = [
+            'coop_id' => $cooperative->id,
+            'region_id' => $data['region_id'],
+            'province_id' => $data['province_id'],
+            'municipality_id' => $data['municipality_id'],
+            'barangay_id' => $data['barangay_id'],
+            'asset_size' => $data['asset_size'],
+            'coop_type' => $data['coop_type'],
+            'status_category' => $data['status_category'],
+            'bond_of_membership' => $data['bond_of_membership'],
+            'area_of_operation' => $data['area_of_operation'],
+            'citizenship' => $data['citizenship'],
+            'members_count' => $data['members_count'],
+            'total_asset' => $data['total_asset'],
+            'net_surplus' => $data['net_surplus'],
+        ];
         CoopDetail::create($detailsData);
 
         return redirect()
-            ->route('cooperatives.details', $cooperative)
+            ->route('cooperatives.show', $cooperative)
             ->with('success', 'Cooperative created successfully!'); 
     }
 
@@ -192,20 +207,5 @@ class CooperativesController extends Controller
     public function export()
     {
         return inertia('cooperatives.export');
-    }
-
-    public function search(Request $request)
-    {
-        $searchTerm = $request->input('query');
-
-        $cooperatives = Cooperative::where('name', 'LIKE', '%' . $searchTerm . '%')
-            ->orWhere('id', 'LIKE', '%' . $searchTerm . '%')
-            ->orWhere('holder' , 'LIKE', '%' . $searchTerm . '%')
-            ->get();
-
-        return inertia('cooperatives.index', [
-            'cooperatives' => $cooperatives,
-            'searchTerm' => $searchTerm,
-        ]);
     }
 }

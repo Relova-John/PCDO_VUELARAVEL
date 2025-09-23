@@ -76,4 +76,9 @@ class Cooperative extends Model
             }
         });
     }
+
+    public function getRouteKeyName()
+    {
+        return 'id';
+    }
 }
