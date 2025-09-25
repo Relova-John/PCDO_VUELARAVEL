@@ -34,11 +34,80 @@ const totalPages = computed(() => {
     return Math.ceil(filteredCooperatives.value.length / itemsPerPage.value);
 });
 
+const showExportModal = ref(false);
+const showImportModal = ref(false);
+
+const exportType = ref<'csv' | 'xlsx' | null>(null);
+const file = ref<File | null>(null);
+
 const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages.value) {
         currentPage.value = page;
     }
 };
+
+function openExportModal() {
+    showExportModal.value = true;
+}
+
+function closeExportModal() {
+    showExportModal.value = false;
+    exportType.value = null;
+}
+
+function openImportModal() {
+    showImportModal.value = true;
+}
+
+function closeImportModal() {
+    showImportModal.value = false;
+    file.value = null;
+}
+
+function confirmExport() {
+    if (!exportType.value) return
+        window.location.href = `/cooperatives/export/${exportType.value}`
+        showExportModal.value = false
+}
+
+function onDrop(event: DragEvent) {
+    event.preventDefault();
+    const dt = event.dataTransfer;
+    if (dt && dt.files.length > 0) {
+        file.value = dt.files[0];
+    }
+}
+
+function onFileChange(e: Event) {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+        file.value = target.files[0];
+    } else {
+        file.value = null;
+    }
+}
+
+function clearFile() {
+    file.value = null;
+    const input = document.getElementById('fileInput') as HTMLInputElement;
+    if (input) {
+        input.value = '';
+    }
+}
+
+function confirmImport() {
+    if (!file.value) return
+    const form = new FormData();
+    form.append('file', file.value);
+
+    router.post('/cooperatives/import', form, {
+        forceFormData: true,
+        onSuccess: () => {
+            file.value = null;
+            showImportModal.value = false;
+        }
+    })
+}
 
 function goToCreatePage() {
     router.visit('/cooperatives/create');
@@ -54,6 +123,23 @@ function goToEditPage(id: string) {
 
 function goToDeletePage(id: string) {
     router.visit(`/cooperatives/${id}/delete`);
+}
+
+function handleImport() {
+    if (!file.value) return;
+    const form = new FormData();
+    form.append('file', file.value);
+
+    router.post('/cooperatives/import', form, {
+        forceFormData: true,
+        onSuccess: () => {
+            file.value = null;
+        }
+    })
+}
+
+function handleExport($type: string) {
+    window.location.href = `/cooperatives/export/${$type}`
 }
 </script>
 
@@ -81,21 +167,19 @@ function goToDeletePage(id: string) {
                     Create
                 </Button>
 
-                <Link href="/cooperatives/import" class="inline-block">
-                    <Button
+                <Button
+                    @click="openImportModal"
                     class="min-w-[120px] bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2 rounded-lg shadow text-center"
                     >
                     Import Data
-                    </Button>
-                </Link>
+                </Button>
 
-                <Link href="/cooperatives/export" class="inline-block">
-                    <Button
+                <Button
+                    @click="openExportModal"
                     class="min-w-[120px] bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2 rounded-lg shadow text-center"
                     >
                     Export Data
-                    </Button>
-                </Link>
+                </Button>
             </div>
         </div>
 
@@ -226,6 +310,87 @@ function goToDeletePage(id: string) {
                             </Link>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div v-if="showExportModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg max-w-sm w-full">
+                <h2 class="text-lg font-semibold mb-4">Do you want to export the file as?</h2>
+                <div class="flex gap-3">
+                <button
+                    class="flex-1 px-4 py-2 rounded bg-blue-500 text-white"
+                    @click="exportType = 'csv'; confirmExport()"
+                >
+                    CSV
+                </button>
+                <button
+                    class="flex-1 px-4 py-2 rounded bg-green-500 text-white"
+                    @click="exportType = 'xlsx'; confirmExport()"
+                >
+                    Excel
+                </button>
+                </div>
+                <button
+                class="mt-4 w-full px-4 py-2 rounded bg-gray-200 dark:bg-gray-700"
+                @click="closeExportModal()"
+                >
+                Cancel
+                </button>
+            </div>
+        </div>
+
+        <!-- Import Modal -->
+        <div v-if="showImportModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg max-w-md w-full">
+                <h2 class="text-lg font-semibold mb-4">Import from</h2>
+
+                <!-- Goodle Drive & Local Storage-->
+                <div class="flex gap-3 mb-4">
+                <button class="flex-1 px-4 py-2 rounded bg-indigo-500 text-white">Google Drive</button>
+                    <label class="flex-1 cursor-pointer px-4 py-2 rounded bg-gray-100 dark:bg-gray-700 text-center">
+                        Local Storage
+                        <input type="file" class="hidden" @change="onFileChange" />
+                    </label>
+                </div>
+                <p class="text-sm text-gray-500 mt-2">or</p>
+                <!-- Drag & Drop Zone -->
+                <div
+                    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center text-gray-500 dark:text-gray-400 cursor-pointer"
+                    @dragover.prevent
+                    @drop="onDrop"
+                >
+                    Drag & Drop File Here
+                </div>
+                <div class="mt-2">
+                    <input
+                        id="fileInput"
+                        type="file"
+                        @change="onFileChange"
+                        class="w-full"
+                    />
+                </div>
+                <div v-if="file" class="mt-2 flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded">
+                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ file.name }}</span>
+                    <button @click="clearFile" class="text-red-500 hover:text-red-700">&times;</button>
+                </div>
+                <div class="mt-4 flex gap-3">
+                    <p class="text-sm text-gray-500">Supported formats: .csv, .xlsx</p>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button
+                        class="flex-1 px-4 py-2 rounded bg-green-500 text-white"
+                        @click="confirmImport"
+                    >
+                        Import
+                    </button>
+                    <button
+                        class="flex-1 px-4 py-2 rounded bg-gray-200 dark:bg-gray-700"
+                        @click="closeImportModal()"
+                    >
+                        Cancel
+                    </button>
                 </div>
             </div>
         </div>

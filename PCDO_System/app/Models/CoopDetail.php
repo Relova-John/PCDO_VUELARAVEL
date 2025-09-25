@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class CoopDetail extends Model
@@ -24,22 +23,34 @@ class CoopDetail extends Model
         'net_surplus',
     ];
 
+    protected $table = 'coop_details';
+
+    protected $primaryKey = 'coop_id';
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
     public function cooperative()
     {
         return $this->belongsTo(Cooperative::class, 'coop_id');
     }
+
     public function region()
     {
         return $this->belongsTo(Region::class);
     }
+
     public function province()
     {
         return $this->belongsTo(Province::class);
     }
+
     public function municipality()
     {
         return $this->belongsTo(Municipality::class);
     }
+
     public function barangay()
     {
         return $this->belongsTo(Barangay::class);

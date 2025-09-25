@@ -9,6 +9,13 @@ use App\Models\Municipality;
 use App\Models\Province;
 use App\Models\Region;
 use Illuminate\Http\Request;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Reader\CSV\Options as CsvReaderOptions;
+use OpenSpout\Reader\CSV\Reader as CsvReader;
+use OpenSpout\Reader\XLSX\Reader as XlsxReader;
+use OpenSpout\Writer\CSV\Options as CsvWriterOptions;
+use OpenSpout\Writer\CSV\Writer as CsvWriter;
+use OpenSpout\Writer\XLSX\Writer as XlsxWriter;
 
 class CooperativesController extends Controller
 {
@@ -188,28 +195,133 @@ class CooperativesController extends Controller
             ->with('success', 'Cooperative deleted successfully!');
     }
 
-    public function import($cooperatives)
+    public function import(Request $request)
     {
-        $csvData = [];
-        $csvData[] = ['field' => 'Registration Number', 'value' => $coop->id ?? 'Unregistered'];
-        $csvData[] = ['field' => 'Cooperative Name', 'value' => $coop->name ?? 'Unknown Cooperative'];
-        $csvData[] = ['field' => 'Region', 'value' => $coop->region ?? 'Unknown Region'];
-        $csvData[] = ['field' => 'Province', 'value' => $coop->province ?? 'Unknown Province'];
-        $csvData[] = ['field' => 'Municipality', 'value' => $coop->municipality ?? 'Unregistered Municipality'];
-        $csvData[] = ['field' => 'Barangay', 'value' => $coop->barangay ?? 'Unregistered Barangay'];
-        $csvData[] = ['field' => 'Asset Size', 'value' => $coop->asset_size ?? 'Unknown Asset Size'];
-        $csvData[] = ['field' => 'Coop Type', 'value' => $coop->coop_type ?? 'Unknown Cooperative Type'];
-        $csvData[] = ['field' => 'Status Category', 'value' => $coop->status_category ?? 'Unknown Status / Category'];
-        $csvData[] = ['field' => 'Bond of Membership', 'value' => $coop->bond_of_membership ?? 'Unknown Bond of Membership'];
-        $csvData[] = ['field' => 'Area of Operation', 'value' => $coop->area_of_operation ?? 'Unknown Area of Operation'];
-        $csvData[] = ['field' => 'Citizenship', 'value' => $coop->citizenship ?? 'Unregistered Citizenship'];
-        $csvData[] = ['field' => 'Members Count', 'value' => $coop->members_count ?? 'Unregistered Members Count'];
-        $csvData[] = ['field' => 'Total Asset', 'value' => $coop->total_asset ?? 'Unknown Total Asset'];
-        $csvData[] = ['field' => 'Net_Surplus', 'value' => $coop->net_surplus ?? 'Unknown Net Surplus'];
+        $request->validate([
+            'file' => 'required|file',
+        ]);
+
+        $type = strtolower($request->file('file')->getClientOriginalExtension());
+        if (! in_array($type, ['csv', 'xlsx'])) {
+            abort(400, 'Invalid file format');
+        }
+
+        if ($type === 'csv') {
+            $options = new CsvReaderOptions;
+            $options->FIELD_DELIMITER = '|';
+            $reader = new CsvReader($options);
+        } else {
+            $reader = new XlsxReader;
+        }
+        $reader->open($request->file('file')->getPathname());
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            foreach ($sheet->getRowIterator() as $i => $row) {
+                if ($i === 1) {
+                    continue;
+                }
+                $values = $row->toArray();
+                if (count($values) < 2 || empty($values[0]) || empty($values[1])) {
+                    continue;
+                }
+
+                $coop = Cooperative::updateOrCreate(
+                    ['id' => $values[0]],
+                    ['name' => $values[1]]
+                );
+                $regionId = isset($values[2]) ? Region::where('name', $values[2])->value('id') : null;
+                $provinceId = isset($values[3]) ? Province::where('name', $values[3])->value('id') : null;
+                $municipalityId = isset($values[4]) ? Municipality::where('name', $values[4])->value('id') : null;
+                $barangayId = isset($values[5]) ? Barangay::where('name', $values[5])->value('id') : null;
+
+                CoopDetail::updateOrCreate(
+                    ['coop_id' => $coop->id],
+                    [
+                        'region_id' => $regionId ?? null,
+                        'province_id' => $provinceId ?? null,
+                        'municipality_id' => $municipalityId ?? null,
+                        'barangay_id' => $barangayId ?? null,
+                        'asset_size' => $values[6] ?? null,
+                        'coop_type' => $values[7] ?? null,
+                        'status_category' => $values[8] ?? null,
+                        'bond_of_membership' => $values[9] ?? null,
+                        'area_of_operation' => $values[10] ?? null,
+                        'citizenship' => $values[11] ?? null,
+                        'members_count' => $values[12] ?? null,
+                        'total_asset' => $values[13] ?? null,
+                        'net_surplus' => $values[14] ?? null,
+                    ]
+                );
+            }
+        }
+
+        $reader->close();
+
+        return redirect()->route('cooperatives.index')->with('success', 'Import successful');
     }
 
-    public function export()
+    public function export(Request $request, string $type)
     {
-        return inertia('cooperatives/export');
+        $type = strtolower($type);
+        if (! in_array($type, ['csv', 'xlsx'])) {
+            abort(400, 'Invalid file type');
+        }
+
+        $filename = 'cooperatives_'.now()->format('Ymd_His').'.'.$type;
+        $filePath = storage_path("app/$filename");
+
+        if ($type === 'csv') {
+            $options = new CsvWriterOptions;
+            $options->FIELD_DELIMITER = '|';
+            $writer = new CsvWriter($options);
+        } else {
+            $writer = new XlsxWriter;
+        }
+        $writer->openToFile($filePath);
+
+        $writer->addRow(Row::fromValues([
+            'Registration Number',
+            'Cooperative Name',
+            'Region',
+            'Province',
+            'Municipality',
+            'Barangay',
+            'Asset Size',
+            'Coop Type',
+            'Status Category',
+            'Bond of Membership',
+            'Area of Operation',
+            'Citizenship',
+            'Members Count',
+            'Total Asset',
+            'Net Surplus',
+        ]));
+
+        $coops = Cooperative::with('details.region', 'details.province', 'details.municipality', 'details.barangay')->get();
+
+        foreach ($coops as $coop) {
+            $d = $coop->details;
+            $writer->addRow(Row::fromValues([
+                $coop->id,
+                $coop->name,
+                $d->region->name ?? '',
+                $d->province->name ?? '',
+                $d->municipality->name ?? '',
+                $d->barangay->name ?? '',
+                $d->asset_size ?? '',
+                $d->coop_type ?? '',
+                $d->status_category ?? '',
+                $d->bond_of_membership ?? '',
+                $d->area_of_operation ?? '',
+                $d->citizenship ?? '',
+                $d->members_count ?? '',
+                $d->total_asset ?? '',
+                $d->net_surplus ?? '',
+            ]));
+        }
+
+        $writer->close();
+
+        return response()->download($filePath)->deleteFileAfterSend(true);
     }
 }

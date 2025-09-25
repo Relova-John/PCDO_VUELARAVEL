@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CooperativesController;
 use App\Http\Controllers\SyncController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -23,7 +23,7 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
 
     // Cooperatives Routes
     Route::resource('cooperatives', CooperativesController::class);
-    Route::get('cooperatives/export', [CooperativesController::class, 'export'])->name('cooperatives.export');
+    Route::get('cooperatives/export/{type}', [CooperativesController::class, 'export'])->name('cooperatives.export');
     Route::post('cooperatives/import', [CooperativesController::class, 'import'])->name('cooperatives.import');
 
     // Cooperatives Nested Routes
