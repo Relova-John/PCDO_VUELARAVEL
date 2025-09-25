@@ -188,11 +188,18 @@ class CooperativesController extends Controller
      */
     public function destroy(Cooperative $cooperative)
     {
-        $cooperative->delete();
+        try {
+            $cooperative->delete();
 
-        return redirect()
-            ->route('cooperatives.index')
-            ->with('success', 'Cooperative deleted successfully!');
+            return redirect()
+                ->route('cooperatives.index')
+                ->with('success', 'Cooperative deleted successfully!');
+
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('cooperatives.index')
+                ->with('error', "Something went wrong while deleting.\nError: {$e->getMessage()}");
+        }
     }
 
     public function import(Request $request)
@@ -203,7 +210,9 @@ class CooperativesController extends Controller
 
         $type = strtolower($request->file('file')->getClientOriginalExtension());
         if (! in_array($type, ['csv', 'xlsx'])) {
-            abort(400, 'Invalid file format');
+            return redirect()
+                ->route('cooperatives.index')
+                ->with('error', 'The file type is not supported.');
         }
 
         if ($type === 'csv') {
@@ -257,18 +266,20 @@ class CooperativesController extends Controller
 
         $reader->close();
 
-        return redirect()->route('cooperatives.index')->with('success', 'Import successful');
+        return redirect()->route('cooperatives.index')->with('success', 'File has been imported successfully.');
     }
 
     public function export(Request $request, string $type)
     {
         $type = strtolower($type);
         if (! in_array($type, ['csv', 'xlsx'])) {
-            abort(400, 'Invalid file type');
+            return redirect()
+                ->route('cooperatives.index')
+                ->with('error', 'The export file type is not supported.');
         }
 
-        $filename = 'cooperatives_'.now()->format('Ymd_His').'.'.$type;
-        $filePath = storage_path("app/$filename");
+        $fileName = 'cooperatives_'.now()->format('Ymd_His').'.'.$type;
+        $filePath = storage_path("app/$fileName");
 
         if ($type === 'csv') {
             $options = new CsvWriterOptions;

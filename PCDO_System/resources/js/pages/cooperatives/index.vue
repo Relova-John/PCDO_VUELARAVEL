@@ -2,8 +2,9 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { ref, computed } from 'vue';
 import { BreadcrumbItem } from '@/types'
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import type { Cooperative } from '@/types/cooperatives';
+import FlashToast from '@/components/FlashToast.vue';
 
 const props = defineProps<{
     cooperatives: Cooperative[];
@@ -13,6 +14,13 @@ const props = defineProps<{
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
+
+const page = usePage();
+const flash = computed<{
+    success?: string;
+    error?: string;
+    info?: string;
+}>(() => page.props.flash as { success?: string; error?: string; info?: string });
 
 const filteredCooperatives = computed(() => {
     if (!searchQuery.value) {
@@ -117,12 +125,8 @@ function goToViewPage(id: string) {
     router.visit(`/cooperatives/${id}`);
 }
 
-function goToEditPage(id: string) {
-    router.visit(`/cooperatives/${id}/edit`);
-}
-
 function goToDeletePage(id: string) {
-    router.visit(`/cooperatives/${id}/delete`);
+    router.delete(`/cooperatives/${id}`);
 }
 
 function handleImport() {
@@ -229,24 +233,18 @@ function handleExport($type: string) {
                                 </span>
                                 </TableCell>
                                 <TableCell class="text-right space-x-2">
-                                <Link
-                                    :href="`/cooperatives/${coop.id}/show`"
+                                <Button
+                                    @click="goToViewPage(coop.id)"
                                     class="px-3 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-500"
                                 >
                                     View
-                                </Link>
-                                <Link
-                                    :href="`/cooperatives/${coop.id}/edit`"
-                                    class="px-3 py-1 rounded-lg bg-green-500 text-white hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-500"
-                                >
-                                    Edit
-                                </Link>
-                                <Link
-                                    :href="`/cooperatives/${coop.id}/delete`"
+                                </Button>
+                                <Button
+                                    @click="goToDeletePage(coop.id)"
                                     class="px-3 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500"
                                 >
                                     Delete
-                                </Link>
+                                </Button>
                                 </TableCell>
                             </TableRow>
 
@@ -295,19 +293,13 @@ function handleExport($type: string) {
                                 class="flex-1 text-center px-3 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
                             >
                                 View
-                        </Button>
-                            <Link
-                                @click="goToEditPage(coop.id)"
-                                class="flex-1 text-center px-3 py-1 rounded-lg bg-green-500 text-white hover:bg-green-600"
-                            >
-                                Edit
-                            </Link>
-                            <Link
+                            </Button>
+                            <Button
                                 @click="goToDeletePage(coop.id)"
                                 class="flex-1 text-center px-3 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600"
                             >
                                 Delete
-                            </Link>
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -423,5 +415,24 @@ function handleExport($type: string) {
                 </Button>
             </div>
         </div>
+
+        <FlashToast
+            v-if="flash.success"
+            type="success"
+            title="Success"
+            :message="flash.success"
+        />
+        <FlashToast
+            v-if="flash.error"
+            type="error"
+            title="Error"
+            :message="flash.error"
+        />
+        <FlashToast
+            v-if="flash.info"
+            type="info"
+            title="Info"
+            :message="flash.info"
+        />
     </AppLayout>
 </template>
