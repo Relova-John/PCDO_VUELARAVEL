@@ -2,32 +2,36 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem } from '@/types';
 import { useForm } from '@inertiajs/vue3';
-import type { Cooperative, Details } from '@/types/cooperatives';
+import type { Cooperative, Details, Holder } from '@/types/cooperatives';
 import SelectSearch from '@/components/SelectSearch.vue';
 import { ref } from 'vue';
 
 const props = defineProps<{
     breadcrumbs?: BreadcrumbItem[],
-    cooperative: Cooperative[],
-    details: Details[]
+    cooperative: Cooperative,
+    holders: Holder[],
+    details: Details
 }>()
 
+const coop = props.cooperative
+const details = props.details
+
 const form = useForm({
-    id: '',
-    name: '',
-    holder_id: null as number | null,
-    province_id: null as number | null,
-    municipality_id: null as number | null,
-    barangay_id: null as number | null,
-    asset_size: '',
-    coop_type: '',
-    status_category: 'New',
-    bond_of_membership: '',
-    area_of_operation: '',
-    citizenship: 'Filipino',
-    members_count: 0,
-    total_asset: 0,
-    net_surplus: 0,
+    id: coop.id ?? null,
+    name: coop.name ?? null,
+    holder: coop.holder ?? null,
+    province_id: details.province_id ?? null,
+    municipality_id: details.municipality_id ?? null,
+    barangay_id: details.barangay_id ?? null,
+    asset_size: details.asset_size ?? null,
+    coop_type: details.coop_type ?? null,
+    status_category: details.status_category ?? null,
+    bond_of_membership: details.bond_of_membership ?? null,
+    area_of_operation: details.area_of_operation ?? null,
+    citizenship: details.citizenship ?? null,
+    members_count: details.members_count ?? null,
+    total_asset: details.total_asset ?? null,
+    net_surplus: details.net_surplus ?? null,
 })
 
 const showIdDropdown = ref(false);
@@ -42,16 +46,16 @@ function hideNameDropdown() {
 
 const searchHolder = ref('');
 const dropDownHolderOpen = ref(false);
-const selectedHolder = ref<number | ''>('');
+const selectedHolder = ref<string | ''>('');
 
 function isIdFormatValid(query: string) {
     const regex = /^\d{4}-\d{4,}$/ // e.g. 2024-1234
     return regex.test(query)
 }
 
-function onHolderSelect(selected: { name: string; id: number }) {
+function onHolderSelect(selected: { name: string; id: string }) {
     selectedHolder.value = selected.id;
-    form.holder_id = selected.id;
+    form.holder = selected.id;
     searchHolder.value = selected.name;
     dropDownHolderOpen.value = false;
 }
@@ -59,7 +63,7 @@ function onHolderSelect(selected: { name: string; id: number }) {
 
 
 function handleSubmit() {
-    form.put(`/cooperatives/${props.cooperative[0].id}`, {
+    form.put(`/cooperatives/${props.cooperative.id}`, {
         onSuccess: () => {
             alert('Cooperative details updated successfully!');
         },
@@ -77,7 +81,7 @@ function handleSubmit() {
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">
                     Edit Cooperative Details
                 </h1>
-                <form @submit.prevent="handleSubmit" class="space-y-6">
+                <form v-if="coop.id" @submit.prevent="handleSubmit" class="space-y-6">
                     <!-- Coop ID -->
                     <div>
                         <Label for="id">Register Number</Label>
@@ -104,7 +108,7 @@ function handleSubmit() {
                         <Label for="holder" class="mb-2">Cooperative Holder</Label>
                         <SelectSearch 
                             id="holder" 
-                            :items="props.cooperative" 
+                            :items="props.holders"
                             itemLabelKey="name" 
                             itemKeyProp="id"
                             v-model:search="searchHolder" 
@@ -207,6 +211,10 @@ function handleSubmit() {
                         </button>
                     </div>
                 </form>
+                <div v-if ="!coop.id" class="text-center text-gray-500">
+                    <p class="text-lg">No cooperative data available to edit.</p>
+                    <p>Please ensure you have selected a valid cooperative.</p>
+                </div>
             </div>
         </div>
     </AppLayout>

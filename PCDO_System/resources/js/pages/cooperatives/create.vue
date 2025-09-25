@@ -161,22 +161,21 @@ const isDuplicateName = computed(() =>
 // Filtered Locations
 const filteredProvinces = computed(() =>
   selectedRegion.value
-    ? props.provinces.filter(p => p.region_id === selectedRegion.value)
+    ? props.provinces.filter(p => Number(p.region_id) === Number(selectedRegion.value))
     : []
 )
 
 const filteredMunicipalities = computed(() =>
   selectedProvince.value
-    ? props.municipalities.filter(m => m.province_id === selectedProvince.value)
+    ? props.municipalities.filter(m => Number(m.province_id) === Number(selectedProvince.value))
     : []
 )
 
 const filteredBarangays = computed(() =>
   selectedMunicipality.value
-    ? props.barangays.filter(b => b.municipality_id === selectedMunicipality.value)
+    ? props.barangays.filter(b => Number(b.municipality_id) === Number(selectedMunicipality.value))
     : []
 )
-
 
 // helper
 function isIdFormatValid(query: string) {

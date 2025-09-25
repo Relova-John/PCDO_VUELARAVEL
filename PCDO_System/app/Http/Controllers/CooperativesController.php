@@ -1,12 +1,13 @@
 <?php
 
 namespace App\Http\Controllers;
+
+use App\Models\Barangay;
+use App\Models\CoopDetail;
 use App\Models\Cooperative;
 use App\Models\Municipality;
-use App\Models\CoopDetail;
 use App\Models\Province;
 use App\Models\Region;
-use App\Models\Barangay;
 use Illuminate\Http\Request;
 
 class CooperativesController extends Controller
@@ -47,11 +48,12 @@ class CooperativesController extends Controller
      */
     public function create()
     {
-        $cooperatives = Cooperative::orderBy('name')->get(['id', 'name',]);
+        $cooperatives = Cooperative::orderBy('name')->get(['id', 'name']);
         $regions = Region::orderBy('name')->get(['id', 'name']);
-        $provinces = Province::orderBy('name')->get(['id', 'name','region_id']);
+        $provinces = Province::orderBy('name')->get(['id', 'name', 'region_id']);
         $municipalities = Municipality::orderBy('name')->get(['id', 'name', 'province_id']);
         $barangays = Barangay::orderBy('name')->get(['id', 'name', 'municipality_id']);
+
         return inertia('cooperatives/create', [
             'cooperatives' => $cooperatives,
             'regions' => $regions,
@@ -96,8 +98,8 @@ class CooperativesController extends Controller
         }
 
         $cooperative = Cooperative::create([
-            'id' => $data['id'], 
-            'name' => $data['name']
+            'id' => $data['id'],
+            'name' => $data['name'],
         ]);
 
         $detailsData = [
@@ -120,7 +122,7 @@ class CooperativesController extends Controller
 
         return redirect()
             ->route('cooperatives.show', $cooperative)
-            ->with('success', 'Cooperative created successfully!'); 
+            ->with('success', 'Cooperative created successfully!');
     }
 
     /**
@@ -129,7 +131,8 @@ class CooperativesController extends Controller
     public function show(Cooperative $cooperative)
     {
         $cooperative->load('details');
-        return inertia('cooperatives.show', [
+
+        return inertia('cooperatives/show', [
             'cooperative' => $cooperative,
             'details' => $cooperative->details,
             'breadcrumbs' => [
@@ -144,7 +147,7 @@ class CooperativesController extends Controller
      */
     public function edit(Cooperative $cooperative)
     {
-        return inertia('cooperatives.edit', [
+        return inertia('cooperatives/edit', [
             'cooperative' => $cooperative,
             'details' => $cooperative->details,
             'breadcrumbs' => [
@@ -161,7 +164,7 @@ class CooperativesController extends Controller
     public function update(Request $request, Cooperative $cooperative)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:255|unique:cooperatives,name,' . $cooperative->id,
+            'name' => 'required|string|max:255|unique:cooperatives,name,'.$cooperative->id,
             'holder' => 'nullable|string|max:255',
             'type' => 'required|in:primary,secondary,tertiary',
         ]);
@@ -204,8 +207,9 @@ class CooperativesController extends Controller
         $csvData[] = ['field' => 'Total Asset', 'value' => $coop->total_asset ?? 'Unknown Total Asset'];
         $csvData[] = ['field' => 'Net_Surplus', 'value' => $coop->net_surplus ?? 'Unknown Net Surplus'];
     }
+
     public function export()
     {
-        return inertia('cooperatives.export');
+        return inertia('cooperatives/export');
     }
 }

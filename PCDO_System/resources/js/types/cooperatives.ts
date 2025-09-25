@@ -25,6 +25,8 @@ export interface Details {
   net_surplus: number;
 }
 
+export interface Holder { id: number; name: string; }
+
 export interface fullForm extends Details {
   name: string;
 }
