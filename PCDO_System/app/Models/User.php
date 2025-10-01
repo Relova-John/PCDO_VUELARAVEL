@@ -6,18 +6,18 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @method bool hasAnyRole(...$roles)
  * @method bool hasRole(string|array $roles)
  * @method \Spatie\Permission\Models\Role|\Illuminate\Database\Eloquent\Collection getRoleNames()
+ *
  * @use HasFactory<\Database\Factories\UserFactory>
-*/
+ */
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.

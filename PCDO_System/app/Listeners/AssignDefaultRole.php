@@ -3,8 +3,6 @@
 namespace App\Listeners;
 
 use Illuminate\Auth\Events\Registered;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Spatie\Permission\Models\Role;
 
 class AssignDefaultRole
@@ -26,9 +24,9 @@ class AssignDefaultRole
          * @var mixed
          */
         $user = $event->user;
-        Role::firstOrCreate(['name' => 'officer']);
+        Role::firstOrCreate(['name' => 'user']);
 
-        if (!$user->hasAnyRole(['officer','admin','user'])) {
+        if (! $user->hasAnyRole(['officer', 'admin', 'user'])) {
             $user->assignRole('officer');
         }
     }

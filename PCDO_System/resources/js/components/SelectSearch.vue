@@ -41,13 +41,18 @@
 	const open = ref(props.open)
 
 	watch(() => props.open, v => open.value = v)
-	watch(() => props.modelValue, v => searchValue.value = v ?? '')
-	watch(() => props.modelValue, (val) => {
-		searchValue.value = val
-			? props.items.find(i => itemKey(i) === val)?.[props.itemLabelKey] ?? ''
-			: ''
-	})
-	
+	watch(
+		() => props.modelValue,
+		(val) => {
+			if (!val) {
+				searchValue.value = ''
+				return
+			}
+			const match = props.items.find(i => itemKey(i) === val)
+			searchValue.value = match ? itemLabel(match) : ''
+		},
+		{ immediate: true }
+	)
 	const filtered = computed(() => {
 		if (!searchValue.value) return props.items
 			const q = searchValue.value.toString().toLowerCase()
@@ -100,4 +105,3 @@
 		emits('update:open', false)
 	}
 </script>
-

@@ -13,6 +13,15 @@ const show = ref(false);
 const message = ref("");
 const type = ref<"success" | "error" | "info">("success");
 
+function showToast(opts: { message: string; type: "success" | "error" | "info" }) {
+    message.value = opts.message;
+    type.value = opts.type;
+    show.value = true;
+    setTimeout(() => (show.value = false), 4000);
+}
+
+defineExpose({ showToast });
+
 onMounted(() => {
     if (flash.value.success) {
         message.value = flash.value.success;

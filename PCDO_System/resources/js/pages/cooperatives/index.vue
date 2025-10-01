@@ -5,6 +5,7 @@ import { BreadcrumbItem } from '@/types'
 import { router, usePage } from '@inertiajs/vue3';
 import type { Cooperative } from '@/types/cooperatives';
 import FlashToast from '@/components/FlashToast.vue';
+import { usePolling } from '@/composables/usePolling';
 
 const props = defineProps<{
     cooperatives: Cooperative[];
@@ -14,13 +15,10 @@ const props = defineProps<{
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
+const deletingId = ref<string | null>(null)
 
 const page = usePage();
-const flash = computed<{
-    success?: string;
-    error?: string;
-    info?: string;
-}>(() => page.props.flash as { success?: string; error?: string; info?: string });
+const flash = computed(() => page.props.flash as { success?: string; error?: string; info?: string });
 
 const filteredCooperatives = computed(() => {
     if (!searchQuery.value) {
@@ -78,9 +76,9 @@ function confirmExport() {
         showExportModal.value = false
 }
 
-function onDrop(event: DragEvent) {
-    event.preventDefault();
-    const dt = event.dataTransfer;
+function onDrop(e: DragEvent) {
+    e.preventDefault();
+    const dt = e.dataTransfer;
     if (dt && dt.files.length > 0) {
         file.value = dt.files[0];
     }
@@ -126,25 +124,16 @@ function goToViewPage(id: string) {
 }
 
 function goToDeletePage(id: string) {
-    router.delete(`/cooperatives/${id}`);
-}
-
-function handleImport() {
-    if (!file.value) return;
-    const form = new FormData();
-    form.append('file', file.value);
-
-    router.post('/cooperatives/import', form, {
-        forceFormData: true,
-        onSuccess: () => {
-            file.value = null;
+    deletingId.value = id;
+    router.delete(`/cooperatives/${id}`), {
+        onFinish: () => {
+            deletingId.value = null;
         }
-    })
+    };
 }
 
-function handleExport($type: string) {
-    window.location.href = `/cooperatives/export/${$type}`
-}
+usePolling(["cooperatives"], 15000);
+
 </script>
 
 <template>
@@ -241,9 +230,11 @@ function handleExport($type: string) {
                                 </Button>
                                 <Button
                                     @click="goToDeletePage(coop.id)"
+                                    :disabled="deletingId === coop.id"
                                     class="px-3 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500"
                                 >
-                                    Delete
+                                    <span v-if="deletingId === coop.id">Deleting...</span>
+                                    <span v-else>Delete</span>
                                 </Button>
                                 </TableCell>
                             </TableRow>

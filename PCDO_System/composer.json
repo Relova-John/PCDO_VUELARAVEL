@@ -16,6 +16,7 @@
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
         "openspout/openspout": "^4.32",
+        "schoolees/laravel-psgc": "^1.0",
         "spatie/laravel-permission": "^6.21"
     },
     "require-dev": {

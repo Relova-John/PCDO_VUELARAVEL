@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CooperativesController;
+use App\Http\Controllers\CoopMemberController;
 use App\Http\Controllers\SyncController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,7 +29,7 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
 
     // Cooperatives Nested Routes
     // Route::get('cooperatives/{cooperative}/history', [CoopHistoryController::class, 'index'])->name('cooperatives.history');
-    // Route::get('cooperatives/{cooperative}/members', [CoopMemberController::class, 'index'])->name('cooperatives.members');
+    Route::resource('cooperatives.members', CoopMemberController::class);
     // Route::get('cooperatives/{cooperative}/programs', [CoopProgramController::class, 'index'])->name('cooperatives.programs');
 
     // // Cooperatives Programs Routes

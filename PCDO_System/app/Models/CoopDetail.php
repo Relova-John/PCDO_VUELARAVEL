@@ -8,10 +8,10 @@ class CoopDetail extends Model
 {
     protected $fillable = [
         'coop_id',
-        'region_id',
-        'province_id',
-        'municipality_id',
-        'barangay_id',
+        'region_code',
+        'province_code',
+        'city_code',
+        'barangay_code',
         'asset_size',
         'coop_type',
         'status/category',
@@ -46,9 +46,9 @@ class CoopDetail extends Model
         return $this->belongsTo(Province::class);
     }
 
-    public function municipality()
+    public function city()
     {
-        return $this->belongsTo(Municipality::class);
+        return $this->belongsTo(City::class);
     }
 
     public function barangay()

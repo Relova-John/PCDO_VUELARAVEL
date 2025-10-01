@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "59e0acd7afac932acdbe3651042086fd",
+    "content-hash": "2c07a9dca76dc3de46c3776783723598",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1246,7 +1246,6 @@
                 "ext-json": "*",
                 "illuminate/support": "^10.0|^11.0|^12.0",
                 "php": "^8.1",
-                "pragmarx/google2fa": "^8.0",
                 "symfony/console": "^6.0|^7.0"
             },
             "require-dev": {
@@ -3170,58 +3169,6 @@
             "time": "2025-08-30T15:50:23+00:00"
         },
         {
-            "name": "pragmarx/google2fa",
-            "version": "v8.0.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/antonioribeiro/google2fa.git",
-                "reference": "6f8d87ebd5afbf7790bde1ffc7579c7c705e0fad"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/antonioribeiro/google2fa/zipball/6f8d87ebd5afbf7790bde1ffc7579c7c705e0fad",
-                "reference": "6f8d87ebd5afbf7790bde1ffc7579c7c705e0fad",
-                "shasum": ""
-            },
-            "require": {
-                "paragonie/constant_time_encoding": "^1.0|^2.0|^3.0",
-                "php": "^7.1|^8.0"
-            },
-            "require-dev": {
-                "phpstan/phpstan": "^1.9",
-                "phpunit/phpunit": "^7.5.15|^8.5|^9.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "PragmaRX\\Google2FA\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Antonio Carlos Ribeiro",
-                    "email": "acr@antoniocarlosribeiro.com",
-                    "role": "Creator & Designer"
-                }
-            ],
-            "description": "A One Time Password Authentication package, compatible with Google Authenticator.",
-            "keywords": [
-                "2fa",
-                "Authentication",
-                "Two Factor Authentication",
-                "google2fa"
-            ],
-            "support": {
-                "issues": "https://github.com/antonioribeiro/google2fa/issues",
-                "source": "https://github.com/antonioribeiro/google2fa/tree/v8.0.3"
-            },
-            "time": "2024-09-05T11:56:40+00:00"
-        },
-        {
             "name": "psr/clock",
             "version": "1.0.0",
             "source": {
@@ -3908,6 +3855,51 @@
                 "source": "https://github.com/ramsey/uuid/tree/4.9.1"
             },
             "time": "2025-09-04T20:59:21+00:00"
+        },
+        {
+            "name": "schoolees/laravel-psgc",
+            "version": "v1.0.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Schoolees/schoolees-psgc.package.git",
+                "reference": "908abda6684dd50c112170872ed23cbdb8eab537"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Schoolees/schoolees-psgc.package/zipball/908abda6684dd50c112170872ed23cbdb8eab537",
+                "reference": "908abda6684dd50c112170872ed23cbdb8eab537",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/database": "^10.0|^11.0|^12.0",
+                "illuminate/http": "^10.0|^11.0|^12.0",
+                "illuminate/routing": "^10.0|^11.0|^12.0",
+                "illuminate/support": "^10.0|^11.0|^12.0",
+                "php": "^8.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Schoolees\\Psgc\\Providers\\PsgcServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Schoolees\\Psgc\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "PSGC for Laravel: migrations, seeders, JSON data, models, services, resources, controllers, and read-only routes.",
+            "support": {
+                "issues": "https://github.com/Schoolees/schoolees-psgc.package/issues",
+                "source": "https://github.com/Schoolees/schoolees-psgc.package/tree/v1.0.7"
+            },
+            "time": "2025-08-11T19:39:20+00:00"
         },
         {
             "name": "spatie/laravel-permission",

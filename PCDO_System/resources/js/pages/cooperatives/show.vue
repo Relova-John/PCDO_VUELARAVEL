@@ -7,11 +7,7 @@ import FlashToast from '@/components/FlashToast.vue';
 import { computed } from 'vue';
 
 const page = usePage();
-const flash = computed(() => page.props.flash as {
-    success?: string;
-    error?: string;
-    info?: string;
-});
+const flash = computed(() => page.props.flash as { success?: string; error?: string; info?: string });
 
 const props = defineProps<{
     breadcrumbs?: BreadcrumbItem[],
@@ -21,6 +17,10 @@ const props = defineProps<{
 
 function goToEditPage(id: string) {
     router.visit(`/cooperatives/${id}/edit`);
+}
+
+function goToMemberPage(id: string) {
+    router.visit(`/cooperatives/${id}/members`)
 }
 
 </script>
@@ -40,19 +40,27 @@ function goToEditPage(id: string) {
                     <div class="flex items-center gap-3">
                     <!-- ID Badge -->
                         <span class="inline-flex gap-2 px-4 py-2 rounded-full text-sm font-medium
-                    bg-indigo-100 text-indigo-700 dark:bg-indigo-800 dark:text-indigo-200">
+                        bg-indigo-100 text-indigo-700 dark:bg-indigo-800 dark:text-indigo-200">
                             ID: {{ cooperative.id }}
                         </span>
                         <!-- Edit Button -->
                         <Button
                             @click="goToEditPage(cooperative.id)"
-                            class="inline-flex  gap-2 px-4 py-2 rounded-lg 
+                            class="inline-flex gap-2 px-4 py-2 rounded-lg 
                             bg-gray-200 dark:bg-green-700 
                             text-green-700 dark:text-gray-200 
                             hover:bg-gray-300 dark:hover:bg-green-600 
                             text-sm font-medium transition">
-                            <SquarePen class="w-4 h-4" />
                             Edit
+                        </Button>
+                        <Button
+                            @click="goToMemberPage(cooperative.id)"
+                            class="inline-flex gap-2 px-4 py-2 rounded-lg 
+                            bg-gray-200 dark:bg-blue-700 
+                            text-blue-700 dark:text-gray-200 
+                            hover:bg-gray-300 dark:hover:bg-blue-600 
+                            text-sm font-medium transition">
+                            Members
                         </Button>
                     </div>
                 </div>

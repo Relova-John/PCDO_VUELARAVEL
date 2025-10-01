@@ -1,94 +1,105 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import SelectSearch from '@/components/SelectSearch.vue'
-import type { Cooperative, Regions, Provinces, Municipalities, Barangays } from '@/types/cooperatives'
+import type { Cooperative, Regions, Provinces, Cities, Barangays, Details } from '@/types/cooperatives'
 import { BreadcrumbItem } from '@/types'
+import FlashToast from '@/components/FlashToast.vue'
+import { usePolling } from '@/composables/usePolling'
+import { useDrafts } from '@/composables/useDrafts'
 
 const props = defineProps<{
     cooperatives: Cooperative[],
+    cooperative?: Cooperative,
     breadcrumbs?: BreadcrumbItem[],
     regions: Regions[],
     provinces: Provinces[],
-    municipalities: Municipalities[],
+    cities: Cities[],
     barangays: Barangays[],
+    details?: Details,
 }>()
 
+const coop = props.cooperative
+const details = props.details
+const submitting = ref(false);
+
 const form = useForm({
-    id: '',
-    name: '',
-    region_id: null as number | null,
-    province_id: null as number | null,
-    municipality_id: null as number | null,
-    barangay_id: null as number | null,
-    asset_size: '',
-    coop_type: '',
-    status_category: 'New',
-    bond_of_membership: '',
-    area_of_operation: '',
-    citizenship: 'Filipino',
-    members_count: 0,
-    total_asset: 0,
-    net_surplus: 0,
+    id: coop?.id ?? '',
+    name: coop?.name ?? '',
+    region_code: details?.region_code ?? '1700000000',
+    province_code: details?.province_code ?? '1705300000',
+    city_code: details?.city_code ?? '',
+    barangay_code: details?.barangay_code ?? '',
+    asset_size: details?.asset_size ?? '',
+    coop_type: details?.coop_type ?? '',
+    status_category: details?.status_category ?? 'New',
+    bond_of_membership: details?.bond_of_membership ?? '',
+    area_of_operation: details?.area_of_operation ?? 'Municipal',
+    citizenship: details?.citizenship ?? 'Filipino',
+    members_count: details?.members_count ?? '',
+    total_asset: details?.total_asset ?? '',
+    net_surplus: details?.net_surplus ?? '',
 })
 
+const { drafts, useDraft, deleteDraft, clearDrafts } = useDrafts(form, 'cooperatives')
+
 const assetSizes = [
-  { id: 'Micro', name: 'Micro' },
-  { id: 'Small', name: 'Small' },
-  { id: 'Medium', name: 'Medium' },
-  { id: 'Large', name: 'Large' },
+    { id: 'Micro', name: 'Micro' },
+    { id: 'Small', name: 'Small' },
+    { id: 'Medium', name: 'Medium' },
+    { id: 'Large', name: 'Large' },
 ]
 
 const coopTypes = [
-  { id: 'Credit', name: 'Credit' },
-  { id: 'Consumers', name: 'Consumers' },
-  { id: 'Producers', name: 'Producers' },
-  { id: 'Marketing', name: 'Marketing' },
-  { id: 'Service', name: 'Service' },
-  { id: 'Multipurpose', name: 'Multipurpose' },
-  { id: 'Advocacy', name: 'Advocacy' },
-  { id: 'Agrarian Reform', name: 'Agrarian Reform' },
-  { id: 'Bank', name: 'Bank' },
-  { id: 'Diary', name: 'Diary' },
-  { id: 'Education', name: 'Education' },
-  { id: 'Electric', name: 'Electric' },
-  { id: 'Financial', name: 'Financial' },
-  { id: 'Fishermen', name: 'Fishermen' },
-  { id: 'Health Services', name: 'Health Services' },
-  { id: 'Housing', name: 'Housing' },
-  { id: 'Insurance', name: 'Insurance' },
-  { id: 'Water Service', name: 'Water Service' },
-  { id: 'Workers', name: 'Workers' },
-  { id: 'Others', name: 'Others' },
+    { id: 'Credit', name: 'Credit' },
+    { id: 'Consumers', name: 'Consumers' },
+    { id: 'Producers', name: 'Producers' },
+    { id: 'Marketing', name: 'Marketing' },
+    { id: 'Service', name: 'Service' },
+    { id: 'Multipurpose', name: 'Multipurpose' },
+    { id: 'Advocacy', name: 'Advocacy' },
+    { id: 'Agrarian Reform', name: 'Agrarian Reform' },
+    { id: 'Bank', name: 'Bank' },
+    { id: 'Diary', name: 'Diary' },
+    { id: 'Education', name: 'Education' },
+    { id: 'Electric', name: 'Electric' },
+    { id: 'Financial', name: 'Financial' },
+    { id: 'Fishermen', name: 'Fishermen' },
+    { id: 'Health Services', name: 'Health Services' },
+    { id: 'Housing', name: 'Housing' },
+    { id: 'Insurance', name: 'Insurance' },
+    { id: 'Water Service', name: 'Water Service' },
+    { id: 'Workers', name: 'Workers' },
+    { id: 'Others', name: 'Others' },
 ]
 
 const statusCategories = [
-  { id: 'Reporting', name: 'Reporting' },
-  { id: 'Non-Reporting', name: 'Non-Reporting' },
-  { id: 'New', name: 'New' },
+    { id: 'Reporting', name: 'Reporting' },
+    { id: 'Non-Reporting', name: 'Non-Reporting' },
+    { id: 'New', name: 'New' },
 ]
 
 const bonds = [
-  { id: 'Residential', name: 'Residential' },
-  { id: 'Insitutional', name: 'Insitutional' },
-  { id: 'Associational', name: 'Associational' },
-  { id: 'Occupational', name: 'Occupational' },
-  { id: 'Unspecified', name: 'Unspecified' },
+    { id: 'Residential', name: 'Residential' },
+    { id: 'Insitutional', name: 'Insitutional' },
+    { id: 'Associational', name: 'Associational' },
+    { id: 'Occupational', name: 'Occupational' },
+    { id: 'Unspecified', name: 'Unspecified' },
 ]
 
 const areas = [
-  { id: 'Municipal', name: 'Municipal' },
-  { id: 'Provincial', name: 'Provincial' },
+    { id: 'Municipal', name: 'Municipal' },
+    { id: 'Provincial', name: 'Provincial' },
 ]
 
 const citizenships = [
-  { id: 'Filipino', name: 'Filipino' },
-  { id: 'Foreign', name: 'Foreign' },
-  { id: 'Others', name: 'Others' },
+    { id: 'Filipino', name: 'Filipino' },
+    { id: 'Foreign', name: 'Foreign' },
+    { id: 'Others', name: 'Others' },
 ]
 
-// dropdown visibility
+// Dropdown Controls
 const showIdDropdown = ref(false)
 const showNameDropdown = ref(false)
 
@@ -99,48 +110,42 @@ function hideNameDropdown() {
     setTimeout(() => (showNameDropdown.value = false), 200)
 }
 
-// SelectSearch bindings
-const searchRegion = ref('')
-const dropDownRegionOpen = ref(false)
-const selectedRegion = ref<number | ''>('')
+// Reactive State
+const searchState = reactive({
+    region_code: '',
+    province_code: '',
+    city_code: '',
+    barangay_code: ''
+})
 
-const searchProvince = ref('')
-const dropDownProvinceOpen = ref(false)
-const selectedProvince = ref<number | ''>('')
+const selectedState = reactive({
+    region_code: '',
+    province_code: '',
+    city_code: '',
+    barangay_code: ''
+})
 
-const searchMunicipality = ref('')
-const dropDownMunicipalityOpen = ref(false)
-const selectedMunicipality = ref<number | ''>('')
-
-const searchBarangay = ref('')
-const dropDownBarangayOpen = ref(false)
-const selectedBarangay = ref<number | ''>('')
+const openState = reactive({
+    region_code: false,
+    province_code: false,
+    city_code: false,
+    barangay_code: false
+})
 
 const searchAssetSize = ref('')
 const dropDownAssetSizeOpen = ref(false)
-const selectedAssetSize = ref('')
-
 const searchCoopType = ref('')
 const dropDownCoopTypeOpen = ref(false)
-const selectedCoopType = ref('')
-
 const searchStatusCategory = ref('')
 const dropDownStatusCategoryOpen = ref(false)
-const selectedStatusCategory = ref('')
-
 const searchBond = ref('')
 const dropDownBondOpen = ref(false)
-const selectedBond = ref('')
-
 const searchArea = ref('')
 const dropDownAreaOpen = ref(false)
-const selectedArea = ref('')
-
 const searchCitizenship = ref('')
 const dropDownCitizenshipOpen = ref(false)
-const selectedCitizenship = ref('')
 
-// filter for duplicate checking
+// Filter Duplicates
 const filteredCooperativesId = computed(() =>
     !form.id ? props.cooperatives : props.cooperatives.filter(c => c.id.toString().includes(form.id))
 )
@@ -158,98 +163,66 @@ const isDuplicateName = computed(() =>
     props.cooperatives.some(c => c.name.toLowerCase() === form.name.toLowerCase())
 )
 
-// Filtered Locations
-const filteredProvinces = computed(() =>
-  selectedRegion.value
-    ? props.provinces.filter(p => Number(p.region_id) === Number(selectedRegion.value))
-    : []
-)
-
-const filteredMunicipalities = computed(() =>
-  selectedProvince.value
-    ? props.municipalities.filter(m => Number(m.province_id) === Number(selectedProvince.value))
-    : []
-)
-
-const filteredBarangays = computed(() =>
-  selectedMunicipality.value
-    ? props.barangays.filter(b => Number(b.municipality_id) === Number(selectedMunicipality.value))
-    : []
-)
-
-// helper
+// Format Checker ID
 function isIdFormatValid(query: string) {
     const regex = /^\d{4}-\d{4,}$/ // e.g. 2024-1234
     return regex.test(query)
 }
 
+// Filtered Locations
+const filteredProvinces = computed(() => {
+    if (form.region_code === '1300000000') {
+        return []
+    }
+    return props.provinces.filter(p => String(p.region_code) === String(form.region_code))
+})
+const filteredCities = computed(() => {
+    if (form.region_code === '1300000000') {
+        return props.cities.filter(c => String(c.region_code) === '1300000000')
+    }
+    return props.cities.filter(c => String(c.province_code) === String(form.province_code))
+})
 
-// SelectSearch handlers
-function onRegionSelect(payload: { name: string, id: number }) {
-    if (selectedRegion.value === payload.id) return
-    selectedRegion.value = payload.id
-    form.region_id = payload.id
-    searchRegion.value = payload.name
-    dropDownRegionOpen.value = false
+const filteredBarangays = computed(() =>
+    props.barangays.filter(b => String(b.city_code) === String(form.city_code))
+)
 
-    form.province_id = 0
-    form.municipality_id = 0
-    form.barangay_id = 0
+const toastRef = ref<InstanceType<typeof FlashToast>>();
 
-    selectedProvince.value = ''
-    selectedMunicipality.value = ''
-    selectedBarangay.value = ''
+// Location Dependency Map
+const dependencyMap = {
+    region_code: ["province_code", "city_code", "barangay_code"],
+    province_code: ["city_code", "barangay_code"],
+    city_code: ["barangay_code"],
+    barangay_code: []
+} as const
 
-    searchProvince.value = ''
-    searchMunicipality.value = ''
-    searchBarangay.value = ''
-}
+type LocationFields = "region_code" | "province_code" | "city_code" | "barangay_code"
 
-function onProvinceSelect(payload: { name: string, id: number }) {
-    if (selectedProvince.value === payload.id) return
-    selectedProvince.value = payload.id
-    form.province_id = payload.id
-    searchProvince.value = payload.name
-    dropDownProvinceOpen.value = false
+function onSelect(
+    field: LocationFields,
+    payload: { id: string; name: string }
+) {
+    form[field] = String(payload.id)
+    searchState[field] = payload.name
+    selectedState[field] = String(payload.id)
+    openState[field] = false
 
-    form.municipality_id = 0
-    form.barangay_id = 0
-
-    selectedMunicipality.value = ''
-    selectedBarangay.value = ''
-
-    searchMunicipality.value = ''
-    searchBarangay.value = ''
-}
-
-function onMunicipalitySelect(payload: { name: string, id: number }) {
-    if (selectedMunicipality.value === payload.id) return
-    selectedMunicipality.value = payload.id
-    form.municipality_id = payload.id
-    searchMunicipality.value = payload.name
-    dropDownMunicipalityOpen.value = false
-
-    form.barangay_id = 0
-    selectedBarangay.value = ''
-    searchBarangay.value = ''
-}
-
-function onBarangaySelect(payload: { name: string, id: number }) {
-    if (selectedBarangay.value === payload.id) return
-    selectedBarangay.value = payload.id
-    form.barangay_id = payload.id
-    searchBarangay.value = payload.name
-    dropDownBarangayOpen.value = false
+    dependencyMap[field].forEach(dep => {
+        form[dep] = ""
+        searchState[dep] = ""
+        selectedState[dep] = ""
+    })
 }
 
 function handleSubmit() {
+    submitting.value = true;
     const requiredFields = [
         'id',
         'name',
-        'region_id',
-        'province_id',
-        'municipality_id',
-        'barangay_id',
+        'region_code',
+        'city_code',
+        'barangay_code',
         'asset_size',
         'coop_type',
         'status_category',
@@ -262,31 +235,64 @@ function handleSubmit() {
     ];
 
     const emptyFields = requiredFields.filter(field => {
-        return form[field as keyof typeof form] === '' || form[field as keyof typeof form] === 0 || form[field as keyof typeof form] === null;
+        return (
+            form[field as keyof typeof form] === '' ||
+            form[field as keyof typeof form] === 0 ||
+            form[field as keyof typeof form] === null
+        );
     });
 
+    if (form.region_code !== '1300000000' && !form.province_code) {
+        emptyFields.push('province_code');
+    }
+
     if (emptyFields.length) {
-        alert(`Please fill in all required fields before submitting: ${emptyFields.join(', ')}`);
+        submitting.value = false;
+        toastRef.value?.showToast({
+            type: 'error',
+            message: `Please fill in all required fields:\n- ${emptyFields.join('\n- ')}`
+        });
         return;
     }
 
     if (!isIdFormatValid(form.id)) {
-        alert('Invalid ID format. Correct format is YYYY-XXXX (e.g., 2024-1234)');
+        submitting.value = false;
+        toastRef.value?.showToast({
+            type: 'error',
+            message: 'Invalid ID format. Correct format is YYYY-XXXX (e.g., 2024-1234)'
+        });
         return;
     }
 
     if (isDuplicateId.value || isDuplicateName.value) {
-        alert('Duplicate Cooperative ID or Name found.');
+        submitting.value = false;
+        toastRef.value?.showToast({
+            type: 'error',
+            message: 'Duplicate Cooperative ID or Name found.'
+        });
         return;
     }
 
     form.post('/cooperatives', {
         onError: (errors) => {
-            console.log(errors);
-            alert('Validation failed. Check your input.');
-        }
+            submitting.value = false;
+            const messages = Object.values(errors);
+            if (messages.length) {
+                toastRef.value?.showToast({
+                    type: 'error',
+                    message: messages.map(msg => `- ${msg}`).join('\n')
+                });
+            }
+        },
+        onSuccess: () => {
+            submitting.value = false;
+            deleteDraft(form.id);
+            form.reset();
+        },
     });
 }
+
+usePolling(["cooperatives"], 15000, () => submitting.value);
 </script>
 
 <template>
@@ -296,11 +302,43 @@ function handleSubmit() {
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">
                     Create Cooperative
                 </h1>
+                <!-- Drafts List -->
+                <div v-if="drafts.length" class="mt-8 border-t pt-6">
+                    <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">
+                        Saved Drafts
+                    </h2>
+                    <ul class="space-y-2">
+                        <li v-for="draft in drafts" :key="draft.id" 
+                            class="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-3 rounded-lg shadow-sm">
+                            <button 
+                                @click="useDraft(draft)" 
+                                class="text-left flex-1 text-indigo-600 dark:text-indigo-400 hover:underline"
+                            >
+                                {{ draft.name }} 
+                                <span class="text-gray-500 text-sm ml-2">({{ draft.savedAt }})</span>
+                            </button>
+                            <button 
+                                @click="deleteDraft(draft.id)"
+                                class="ml-3 text-red-500 hover:text-red-700 font-bold"
+                            >
+                                ✕
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="mt-4">
+                        <button 
+                            @click="clearDrafts" 
+                            class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg shadow hover:bg-red-700 transition"
+                        >
+                            Clear All Drafts
+                        </button>
+                    </div>
+                </div>
 
-                <form @submit.prevent="handleSubmit" class="space-y-6">
+                <form @submit.prevent="handleSubmit" @keydown.enter.prevent class="space-y-6">
                     <!-- Coop ID -->
                     <div>
-                        <Label for="id">Register Number</Label>
+                        <Label for="coop_id">Register Number</Label>
                         <div v-if="!isIdFormatValid(form.id) && form.id" class="mt-1 text-red-500">
                             Invalid ID Format. Correct format is YYYY-XXXX (e.g., 2024-1234)
                         </div>
@@ -311,7 +349,7 @@ function handleSubmit() {
                             Valid Data Input
                         </div> 
                         <div class="relative mt-1">
-                            <input id="id" v-model="form.id" placeholder="Enter Register Number (e.g., 2024-1234)"
+                            <input id="coop_id" v-model="form.id" placeholder="Enter Register Number (e.g., 2024-1234)"
                                 @focus="showIdDropdown = true" @blur="hideIdDropdown"
                                 class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
                             <ul v-if="showIdDropdown"
@@ -326,7 +364,7 @@ function handleSubmit() {
 
                     <!-- Coop Name -->
                     <div>
-                        <Label for="name">Cooperative Name</Label>
+                        <Label for="coop_name">Cooperative Name</Label>
                         <div v-if="isDuplicateName" class="mt-1 text-red-500">
                             Duplicate Cooperative Name Found
                         </div>
@@ -334,7 +372,7 @@ function handleSubmit() {
                             Valid Data Input
                         </div>
                         <div class="relative mt-1">
-                            <input id="name" v-model="form.name" placeholder="Enter Cooperative Name"
+                            <input id="coop_name" v-model="form.name" placeholder="Enter Cooperative Name"
                                 @focus="showNameDropdown = true" @blur="hideNameDropdown"
                                 class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
                             <ul v-if="showNameDropdown"
@@ -361,47 +399,47 @@ function handleSubmit() {
                                 id="region" 
                                 :items="props.regions" 
                                 itemLabelKey="name" 
-                                itemKeyProp="id"
-                                v-model:search="searchRegion" 
-                                :modelValue="selectedRegion"
-                                :open="dropDownRegionOpen" 
-                                @select="onRegionSelect"
-                                @update:open="val => dropDownRegionOpen = val" 
+                                itemKeyProp="code"
+                                v-model:search="searchState.region_code" 
+                                :modelValue="form.region_code"
+                                :open="openState.region_code" 
+                                @select="val => onSelect('region_code', val)"
+                                @update:open="val => openState.region_code = val" 
                                 placeholder="Search Region"
                             />
                         </div>
 
                         <!-- Province -->
-                        <div>
+                        <div v-if="form.region_code !== '1300000000'">
                             <Label for="province" class="mb-2">Select Province</Label>
                             <SelectSearch
                                 id="province"
                                 :items="filteredProvinces"
                                 itemLabelKey="name"
-                                itemKeyProp="id"
-                                v-model:search="searchProvince"
-                                :modelValue="selectedProvince"
-                                :open="dropDownProvinceOpen"
-                                @select="onProvinceSelect"
-                                @update:open="val => dropDownProvinceOpen = val"
+                                itemKeyProp="code"
+                                v-model:search="searchState.province_code"
+                                :modelValue="form.province_code"
+                                :open="openState.province_code"
+                                @select="val => onSelect('province_code', val)"
+                                @update:open="val => openState.province_code = val"
                                 placeholder="Search Province"
                             />
                         </div>
 
-                        <!-- Municipality -->
+                        <!-- City -->
                         <div>
-                            <Label for="municipality" class="mb-2">Select Municipality</Label>
+                            <Label for="city" class="mb-2">Select City</Label>
                             <SelectSearch
-                                id="municipality"
-                                :items="filteredMunicipalities"
+                                id="city"
+                                :items="filteredCities"
                                 itemLabelKey="name"
-                                itemKeyProp="id"
-                                v-model:search="searchMunicipality"
-                                :modelValue="selectedMunicipality"
-                                :open="dropDownMunicipalityOpen"
-                                @select="onMunicipalitySelect"
-                                @update:open="val => dropDownMunicipalityOpen = val"
-                                placeholder="Search Municipality"
+                                itemKeyProp="code"
+                                v-model:search="searchState.city_code"
+                                :modelValue="form.city_code"
+                                :open="openState.city_code"
+                                @select="val => onSelect('city_code', val)"
+                                @update:open="val => openState.city_code = val"
+                                placeholder="Search City"
                             />
                         </div>
 
@@ -412,15 +450,16 @@ function handleSubmit() {
                                 id="barangay"
                                 :items="filteredBarangays"
                                 itemLabelKey="name"
-                                itemKeyProp="id"
-                                v-model:search="searchBarangay"
-                                :modelValue="selectedBarangay"
-                                :open="dropDownBarangayOpen"
-                                @select="onBarangaySelect"
-                                @update:open="val => dropDownBarangayOpen = val"
+                                itemKeyProp="code"
+                                v-model:search="searchState.barangay_code"
+                                :modelValue="form.barangay_code"
+                                :open="openState.barangay_code"
+                                @select="val => onSelect('barangay_code', val)"
+                                @update:open="val => openState.barangay_code = val"
                                 placeholder="Search Barangay"
                             />
                         </div>
+
                         <!-- Asset Size -->
                         <SelectSearch
                             id="asset_size"
@@ -434,6 +473,7 @@ function handleSubmit() {
                             @update:open="val => dropDownAssetSizeOpen = val"
                             placeholder="Select Asset Size"
                         />
+
                         <!-- Cooperative Type -->
                         <SelectSearch
                             id="coop_type"
@@ -447,6 +487,7 @@ function handleSubmit() {
                             @update:open="val => dropDownCoopTypeOpen = val"
                             placeholder="Select Cooperative Type"
                         />
+
                         <!-- Status Category -->
                         <SelectSearch
                             id="status_category"
@@ -460,6 +501,7 @@ function handleSubmit() {
                             @update:open="val => dropDownStatusCategoryOpen = val"
                             placeholder="Select Status Category"
                         />
+
                         <!-- Bond of Membership -->
                         <SelectSearch
                             id="bond_of_membership"
@@ -473,6 +515,7 @@ function handleSubmit() {
                             @update:open="val => dropDownBondOpen = val"
                             placeholder="Select Bond of Membership"
                         />
+
                         <!-- Area of Operation -->
                         <SelectSearch
                             id="area_of_operation"
@@ -486,6 +529,7 @@ function handleSubmit() {
                             @update:open="val => dropDownAreaOpen = val"
                             placeholder="Select Area of Operation"
                         />
+
                         <!-- Citizenship -->
                         <SelectSearch
                             id="citizenship"
@@ -499,35 +543,46 @@ function handleSubmit() {
                             @update:open="val => dropDownCitizenshipOpen = val"
                             placeholder="Select Citizenship"
                         />
+
                         <!-- Member Count -->
                         <div>
-                            <Label class="mb-2">Member Count</Label>
-                            <input v-model="form.members_count" type="number"
-                                class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                            <Label for="member" class="mb-2">Member Count</Label>
+                            <input id="member" v-model="form.members_count" type="number"
+                                class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                placeholder="Enter Member Count" />
                         </div>
 
                         <!-- Total Asset -->
                         <div>
-                            <Label class="mb-2">Total Asset</Label>
-                            <input v-model="form.total_asset" type="number"
-                                class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                            <Label for="asset" class="mb-2">Total Asset</Label>
+                            <input id="asset" v-model="form.total_asset" type="number"
+                                class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                placeholder="Enter Total Asset" />
                         </div>
+
                         <!-- Net Surplus -->
                         <div>
-                            <Label class="mb-2">Net Surplus</Label>
-                            <input v-model="form.net_surplus" type="number"
-                                class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                            <Label for="surplus" class="mb-2">Net Surplus</Label>
+                            <input id="surplus" v-model="form.net_surplus" type="number"
+                                class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                placeholder="Enter Net Surplus" />
                         </div>
+
                         <!-- Submit -->
                         <div class="pt-6 md:col-span-2">
-                            <button type="submit"
-                                class="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl shadow hover:bg-indigo-700 transition">
-                                Create Cooperative
+                            <button 
+                                type="submit"
+                                :disabled="submitting"
+                                class="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl shadow hover:bg-indigo-700 transition"
+                            >
+                                <span v-if="submitting">Submitting...</span>
+                                <span v-else>Create Cooperative</span>
                             </button>
                         </div>
                     </div>
                 </form>
             </div>
         </div>
+        <FlashToast ref="toastRef" />
     </AppLayout>
 </template>

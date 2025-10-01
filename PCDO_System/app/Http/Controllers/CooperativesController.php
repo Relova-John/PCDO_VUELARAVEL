@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Barangay;
+use App\Models\City;
 use App\Models\CoopDetail;
 use App\Models\Cooperative;
-use App\Models\Municipality;
 use App\Models\Province;
 use App\Models\Region;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Reader\CSV\Options as CsvReaderOptions;
 use OpenSpout\Reader\CSV\Reader as CsvReader;
@@ -56,16 +57,16 @@ class CooperativesController extends Controller
     public function create()
     {
         $cooperatives = Cooperative::orderBy('name')->get(['id', 'name']);
-        $regions = Region::orderBy('name')->get(['id', 'name']);
-        $provinces = Province::orderBy('name')->get(['id', 'name', 'region_id']);
-        $municipalities = Municipality::orderBy('name')->get(['id', 'name', 'province_id']);
-        $barangays = Barangay::orderBy('name')->get(['id', 'name', 'municipality_id']);
+        $regions = Region::orderBy('name')->get(['code', 'name']);
+        $provinces = Province::orderBy('name')->get(['code', 'name', 'region_code']);
+        $cities = City::orderBy('name')->get(['code', 'name', 'province_code', 'region_code']);
+        $barangays = Barangay::orderBy('name')->get(['code', 'name', 'city_code']);
 
         return inertia('cooperatives/create', [
             'cooperatives' => $cooperatives,
             'regions' => $regions,
             'provinces' => $provinces,
-            'municipalities' => $municipalities,
+            'cities' => $cities,
             'barangays' => $barangays,
             'breadcrumbs' => [
                 ['title' => 'Cooperatives', 'href' => route('cooperatives.index')],
@@ -82,18 +83,28 @@ class CooperativesController extends Controller
         $data = $request->validate([
             'id' => 'required|string|max:255|unique:cooperatives,id',
             'name' => 'required|string|max:255|unique:cooperatives,name',
-            'region_id' => 'required|integer',
-            'province_id' => 'required|integer',
-            'municipality_id' => 'required|integer',
-            'barangay_id' => 'required|integer',
-            'asset_size' => 'required|string',
-            'coop_type' => 'required|string',
-            'status_category' => 'required|string',
-            'bond_of_membership' => 'required|string',
-            'area_of_operation' => 'required|string',
-            'citizenship' => 'required|string',
-            'members_count' => 'required|integer',
-            'total_asset' => 'required|numeric',
+
+            'region_code' => 'required|string',
+            'province_code' => 'nullable|string',
+            'city_code' => 'required|string',
+            'barangay_code' => 'required|string',
+
+            'asset_size' => ['required', Rule::in(['Micro', 'Small', 'Medium', 'Large'])],
+            'coop_type' => ['required', Rule::in([
+                'Credit', 'Consumers', 'Producers', 'Marketing', 'Service', 'Multipurpose',
+                'Advocacy', 'Agrarian Reform', 'Bank', 'Diary', 'Education', 'Electric',
+                'Financial', 'Fishermen', 'Health Services', 'Housing', 'Insurance',
+                'Water Service', 'Workers', 'Others',
+            ])],
+            'status_category' => ['required', Rule::in(['Reporting', 'Non-Reporting', 'New'])],
+            'bond_of_membership' => ['required', Rule::in([
+                'Residential', 'Insitutional', 'Associational', 'Occupational', 'Unspecified',
+            ])],
+            'area_of_operation' => ['required', Rule::in(['Municipal', 'Provincial'])],
+            'citizenship' => ['required', Rule::in(['Filipino', 'Foreign', 'Others'])],
+
+            'members_count' => 'required|integer|min:1',
+            'total_asset' => 'required|numeric|min:0',
             'net_surplus' => 'required|numeric',
         ]);
 
@@ -111,10 +122,10 @@ class CooperativesController extends Controller
 
         $detailsData = [
             'coop_id' => $cooperative->id,
-            'region_id' => $data['region_id'],
-            'province_id' => $data['province_id'],
-            'municipality_id' => $data['municipality_id'],
-            'barangay_id' => $data['barangay_id'],
+            'region_code' => $data['region_code'],
+            'province_code' => $data['province_code'],
+            'city_code' => $data['city_code'],
+            'barangay_code' => $data['barangay_code'],
             'asset_size' => $data['asset_size'],
             'coop_type' => $data['coop_type'],
             'status_category' => $data['status_category'],
@@ -155,8 +166,13 @@ class CooperativesController extends Controller
     public function edit(Cooperative $cooperative)
     {
         return inertia('cooperatives/edit', [
+            'cooperatives' => Cooperative::orderBy('name')->get(['id', 'name']),
             'cooperative' => $cooperative,
             'details' => $cooperative->details,
+            'regions' => Region::orderBy('name')->get(['code', 'name']),
+            'provinces' => Province::orderBy('name')->get(['code', 'name', 'region_code']),
+            'cities' => City::orderBy('name')->get(['code', 'name', 'province_code', 'region_code']),
+            'barangays' => Barangay::orderBy('name')->get(['code', 'name', 'city_code']),
             'breadcrumbs' => [
                 ['title' => 'Cooperatives', 'href' => route('cooperatives.index')],
                 ['title' => $cooperative->name, 'href' => route('cooperatives.show', $cooperative)],
@@ -171,15 +187,65 @@ class CooperativesController extends Controller
     public function update(Request $request, Cooperative $cooperative)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:255|unique:cooperatives,name,'.$cooperative->id,
-            'holder' => 'nullable|string|max:255',
-            'type' => 'required|in:primary,secondary,tertiary',
+            'id' => [
+                'required', 'string', 'max:255',
+                Rule::unique('cooperatives', 'id')->ignore($cooperative->id, 'id'),
+            ],
+            'name' => [
+                'required', 'string', 'max:255',
+                Rule::unique('cooperatives', 'name')->ignore($cooperative->id, 'id'),
+            ],
+
+            'region_code' => 'required|string',
+            'province_code' => 'nullable|string',
+            'city_code' => 'required|string',
+            'barangay_code' => 'required|string',
+
+            'asset_size' => ['required', Rule::in(['Micro', 'Small', 'Medium', 'Large'])],
+            'coop_type' => ['required', Rule::in([
+                'Credit', 'Consumers', 'Producers', 'Marketing', 'Service', 'Multipurpose',
+                'Advocacy', 'Agrarian Reform', 'Bank', 'Diary', 'Education', 'Electric',
+                'Financial', 'Fishermen', 'Health Services', 'Housing', 'Insurance',
+                'Water Service', 'Workers', 'Others',
+            ])],
+            'status_category' => ['required', Rule::in(['Reporting', 'Non-Reporting', 'New'])],
+            'bond_of_membership' => ['required', Rule::in([
+                'Residential', 'Insitutional', 'Associational', 'Occupational', 'Unspecified',
+            ])],
+            'area_of_operation' => ['required', Rule::in(['Municipal', 'Provincial'])],
+            'citizenship' => ['required', Rule::in(['Filipino', 'Foreign', 'Others'])],
+
+            'members_count' => 'required|integer|min:1',
+            'total_asset' => 'required|numeric|min:0',
+            'net_surplus' => 'required|numeric',
         ]);
 
-        $cooperative->update($data);
+        $cooperative->update([
+            'id' => $data['id'],
+            'name' => $data['name'],
+        ]);
+
+        $cooperative->details()->updateOrCreate(
+            ['coop_id' => $cooperative->id],
+            [
+                'region_code' => $data['region_code'],
+                'province_code' => $data['province_code'],
+                'city_code' => $data['city_code'],
+                'barangay_code' => $data['barangay_code'],
+                'asset_size' => $data['asset_size'],
+                'coop_type' => $data['coop_type'],
+                'status_category' => $data['status_category'],
+                'bond_of_membership' => $data['bond_of_membership'],
+                'area_of_operation' => $data['area_of_operation'],
+                'citizenship' => $data['citizenship'],
+                'members_count' => $data['members_count'],
+                'total_asset' => $data['total_asset'],
+                'net_surplus' => $data['net_surplus'],
+            ]
+        );
 
         return redirect()
-            ->route('cooperatives.index')
+            ->route('cooperatives.show', $cooperative->id)
             ->with('success', 'Cooperative updated successfully!');
     }
 
@@ -238,18 +304,18 @@ class CooperativesController extends Controller
                     ['id' => $values[0]],
                     ['name' => $values[1]]
                 );
-                $regionId = isset($values[2]) ? Region::where('name', $values[2])->value('id') : null;
-                $provinceId = isset($values[3]) ? Province::where('name', $values[3])->value('id') : null;
-                $municipalityId = isset($values[4]) ? Municipality::where('name', $values[4])->value('id') : null;
-                $barangayId = isset($values[5]) ? Barangay::where('name', $values[5])->value('id') : null;
+                $regionCode = isset($values[2]) ? Region::where(['name' => $values[2]])->value('code') : null;
+                $provinceCode = isset($values[3]) ? Province::where(['name', $values[3]])->value('code') : null;
+                $cityCode = isset($values[4]) ? City::where(['name', $values[4]])->value('code') : null;
+                $barangayCode = isset($values[5]) ? Barangay::where(['name', $values[5]])->value('code') : null;
 
                 CoopDetail::updateOrCreate(
                     ['coop_id' => $coop->id],
                     [
-                        'region_id' => $regionId ?? null,
-                        'province_id' => $provinceId ?? null,
-                        'municipality_id' => $municipalityId ?? null,
-                        'barangay_id' => $barangayId ?? null,
+                        'region_code' => $regionCode ?? null,
+                        'province_code' => $provinceCode ?? null,
+                        'city_code' => $cityCode ?? null,
+                        'barangay_code' => $barangayCode ?? null,
                         'asset_size' => $values[6] ?? null,
                         'coop_type' => $values[7] ?? null,
                         'status_category' => $values[8] ?? null,
@@ -295,7 +361,7 @@ class CooperativesController extends Controller
             'Cooperative Name',
             'Region',
             'Province',
-            'Municipality',
+            'City',
             'Barangay',
             'Asset Size',
             'Coop Type',
@@ -308,7 +374,7 @@ class CooperativesController extends Controller
             'Net Surplus',
         ]));
 
-        $coops = Cooperative::with('details.region', 'details.province', 'details.municipality', 'details.barangay')->get();
+        $coops = Cooperative::with('details.region', 'details.province', 'details.city', 'details.barangay')->get();
 
         foreach ($coops as $coop) {
             $d = $coop->details;
@@ -317,7 +383,7 @@ class CooperativesController extends Controller
                 $coop->name,
                 $d->region->name ?? '',
                 $d->province->name ?? '',
-                $d->municipality->name ?? '',
+                $d->city->name ?? '',
                 $d->barangay->name ?? '',
                 $d->asset_size ?? '',
                 $d->coop_type ?? '',

@@ -10,10 +10,10 @@ export interface Cooperative {
 
 export interface Details {
   id: string;
-  region_id: number;
-  province_id: number;
-  municipality_id: number;
-  barangay_id: number;
+  region_code: string;
+  province_code: string;
+  city_code: string;
+  barangay_code: string;
   asset_size: string;
   coop_type: string;
   status_category: string;
@@ -27,14 +27,33 @@ export interface Details {
 
 export interface Holder { id: number; name: string; }
 
+export type SingleChar = `${string}` & { length: 1 };
+
+export interface FileType {
+  id: number;
+  file_path: string;
+  file_name: string;
+  file_type: string;
+}
+export interface Member {
+  id: number;
+  coop_id: string;
+  position: string;
+  first_name: string;
+  middle_initial: SingleChar;
+  last_name: string;
+  is_representative: boolean;
+  files: FileType[];
+}
+
 export interface fullForm extends Details {
   name: string;
 }
 
-export interface Regions { id: number; name: string }
-export interface Provinces { id: number; name: string; region_id: number }
-export interface Municipalities { id: number; name: string; province_id: number }
-export interface Barangays { id: number; name: string; municipality_id: number }
+export interface Regions { code: string; name: string }
+export interface Provinces { code: string; name: string; region_code: string }
+export interface Cities { code: string; name: string; province_code: string, region_code: string }
+export interface Barangays { code: string; name: string; city_code: string }
 
 export enum CoopType {
   Credit = 'Credit', Consumer = 'Consumers', Producers = 'Producers', Marketing = 'Marketing', Service = 'Service',
