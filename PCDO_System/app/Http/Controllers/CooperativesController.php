@@ -305,9 +305,9 @@ class CooperativesController extends Controller
                     ['name' => $values[1]]
                 );
                 $regionCode = isset($values[2]) ? Region::where(['name' => $values[2]])->value('code') : null;
-                $provinceCode = isset($values[3]) ? Province::where(['name', $values[3]])->value('code') : null;
-                $cityCode = isset($values[4]) ? City::where(['name', $values[4]])->value('code') : null;
-                $barangayCode = isset($values[5]) ? Barangay::where(['name', $values[5]])->value('code') : null;
+                $provinceCode = isset($values[3]) ? Province::where(['name' => $values[3]])->value('code') : null;
+                $cityCode = isset($values[4]) ? City::where(['name' => $values[4]])->value('code') : null;
+                $barangayCode = isset($values[5]) ? Barangay::where(['name' => $values[5]])->value('code') : null;
 
                 CoopDetail::updateOrCreate(
                     ['coop_id' => $coop->id],

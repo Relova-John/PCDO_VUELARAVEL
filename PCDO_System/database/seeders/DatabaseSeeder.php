@@ -14,12 +14,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             PSGCSeeder::class,
-            CooperativeSeeder::class,
             ProgramSeeder::class,
-            CoopDetailSeeder::class,
             ChecklistsSeeder::class,
             ProgramChecklistsSeeder::class,
-            CoopProgramSeeder::class,
             RolesSeeder::class,
             AdminUserSeeder::class,
         ]);

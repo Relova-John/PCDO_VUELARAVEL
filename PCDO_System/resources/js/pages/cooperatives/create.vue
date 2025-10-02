@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { ref, computed, reactive } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, router } from '@inertiajs/vue3'
 import SelectSearch from '@/components/SelectSearch.vue'
 import type { Cooperative, Regions, Provinces, Cities, Barangays, Details } from '@/types/cooperatives'
 import { BreadcrumbItem } from '@/types'
@@ -288,11 +288,16 @@ function handleSubmit() {
             submitting.value = false;
             deleteDraft(form.id);
             form.reset();
+            router.reload({ only: ['cooperatives'] })
         },
     });
 }
 
-usePolling(["cooperatives"], 15000, () => submitting.value);
+usePolling(["cooperatives"], 30000, () => {
+    if (document.hidden) return true
+    if (!navigator.onLine) return true
+    return submitting.value
+});
 </script>
 
 <template>

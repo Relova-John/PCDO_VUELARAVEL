@@ -17,7 +17,9 @@ class CoopMember extends Model
         'last_name',
         'middle_initial',
         'suffix',
+        'is_representative',
         'date_of_birth',
+        'active_year',
     ];
 
     public function cooperatives()
@@ -27,6 +29,6 @@ class CoopMember extends Model
 
     public function files()
     {
-        return $this->hasMany(CoopMemberFile::class, 'member_id');
+        return $this->hasMany(CoopMemberFile::class, 'coop_member_id');
     }
 }

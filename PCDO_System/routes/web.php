@@ -30,6 +30,13 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     // Cooperatives Nested Routes
     // Route::get('cooperatives/{cooperative}/history', [CoopHistoryController::class, 'index'])->name('cooperatives.history');
     Route::resource('cooperatives.members', CoopMemberController::class);
+    Route::get('cooperatives/{cooperative}/members/{member}/files/{fileId}/download',
+        [CoopMemberController::class, 'downloadFile'])
+        ->name('cooperatives.members.files.download');
+
+    Route::delete('cooperatives/{cooperative}/members/{member}/files/{fileId}',
+        [CoopMemberController::class, 'deleteFile'])
+        ->name('cooperatives.members.files.delete');
     // Route::get('cooperatives/{cooperative}/programs', [CoopProgramController::class, 'index'])->name('cooperatives.programs');
 
     // // Cooperatives Programs Routes

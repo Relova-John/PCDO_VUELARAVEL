@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { BreadcrumbItem } from '@/types';
-import { useForm, router } from '@inertiajs/vue3';
-import type { Member } from '@/types/cooperatives';
+import AppLayout from '@/layouts/AppLayout.vue'
+import { ref } from 'vue'
+import { useForm, router } from '@inertiajs/vue3'
+import { BreadcrumbItem } from '@/types'
+import SelectSearch from '@/components/SelectSearch.vue'
+import FlashToast from '@/components/FlashToast.vue'
+import { Member, SingleChar } from '@/types/cooperatives'
 
 const props = defineProps<{
     breadcrumbs?: BreadcrumbItem[]
@@ -10,152 +13,241 @@ const props = defineProps<{
     member: Member
 }>()
 
-// Form state
 const form = useForm({
-    first_name: props.member.first_name || '',
-    middle_initial: props.member.middle_initial || '',
-    last_name: props.member.last_name || '',
-    position: props.member.position || '',
-    is_representative: props.member.is_representative ? true : false,
-    files: [] as File[]
+    coop_id: props.cooperative.id,
+    position: props.member.position ?? '',
+    active_year: props.member.active_year ?? new Date().getFullYear(),
+    first_name: props.member.first_name ?? '',
+    middle_initial: props.member.middle_initial ?? '',
+    last_name: props.member.last_name ?? '',
+    suffix: props.member.suffix ?? '',
+    is_representative: props.member.is_representative ?? false,
+    files: [] as File[],
 })
 
-// Existing files list (from DB)
-const existingFiles = props.member.files || []
+const positions = [
+    { id: 'Treasurer', name: 'Treasurer' },
+    { id: 'Chairman', name: 'Chairman' },
+    { id: 'Manager', name: 'Manager' },
+    { id: 'Member', name: 'Member' },
+]
 
-function handleSubmit() {
-    form.post(`/cooperative/${props.cooperative.id}/members/${props.member.id}`, {
-        onSuccess: () => {
-            alert('Member details updated successfully!');
-        },
-        onError: (errors) => {
-            console.error('Failed to update member details:', errors);
-        }
-    });
+const searchPosition = ref('')
+const dropDownPositionOpen = ref(false)
+const file = ref<File[]>([])
+const toastRef = ref<InstanceType<typeof FlashToast>>()
+
+const allowedFileTypes = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/jpeg',
+    'image/png',
+    'image/jpg',
+]
+
+function setMiddleInitial(initial: string): SingleChar {
+    return (initial.length > 0 ? initial.charAt(0) : ' ') as SingleChar
 }
 
-function removeExistingFile(fileId: number) {
-    if (confirm('Are you sure you want to remove this file?')) {
-        router.delete(`/cooperative/${props.cooperative.id}/members/${props.member.id}/files/${fileId}`, {
-            onSuccess: () => {
-                alert('File removed successfully');
-            },
-            onError: (errors) => {
-                console.error('Failed to remove file:', errors);
-            }
-        })
+function validateFiles(selectedFiles: File[]) {
+    return selectedFiles.filter(f => {
+        if (!allowedFileTypes.includes(f.type)) {
+            toastRef.value?.showToast({
+                type: 'error',
+                message: `File type not allowed: ${f.name}`,
+            })
+            return false
+        }
+        return true
+    })
+}
+
+function onDrop(e: DragEvent) {
+    e.preventDefault()
+    const dt = e.dataTransfer
+    if (dt && dt.files.length > 0) {
+        const validFiles = validateFiles(Array.from(dt.files))
+        file.value = [...file.value, ...validFiles]
+        form.files = file.value
     }
+}
+
+function onFileChange(e: Event) {
+    const target = e.target as HTMLInputElement
+    if (target.files && target.files.length > 0) {
+        const validFiles = validateFiles(Array.from(target.files))
+        file.value = [...file.value, ...validFiles]
+        form.files = file.value
+    }
+}
+
+function clearFile(index: number) {
+    file.value.splice(index, 1)
+    const input = document.getElementById('fileInput') as HTMLInputElement
+    if (input && file.value.length === 0) {
+        input.value = ''
+    }
+}
+
+function openFileModal() {
+    const fileInput = document.getElementById('fileInput')
+    if (fileInput) {
+        fileInput.click()
+    }
+}
+
+function downloadFile(f: any) {
+    window.open(
+        `/cooperatives/${props.cooperative.id}/members/${props.member.id}/files/${f.id}/download`,
+        '_blank'
+    )
+}
+
+function deleteFile(f: any) {
+    if (!confirm(`Delete file "${f.file_name}"?`)) return
+    router.delete(
+        `/cooperatives/${props.cooperative.id}/members/${props.member.id}/files/${f.id}`,
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                toastRef.value?.showToast({
+                    type: 'success',
+                    message: 'File deleted successfully',
+                })
+            },
+        }
+    )
+}
+
+function handleSubmit() {
+    form.active_year = Number(form.active_year)
+    form.is_representative = !!form.is_representative
+    form.files = [...file.value]
+    console.log(form.data())
+    form.post(`/cooperatives/${props.cooperative.id}/members/${props.member.id}?_method=PUT`, {
+        forceFormData: true,
+        onError: errors => {
+            const messages = Object.values(errors)
+            if (messages.length) {
+                toastRef.value?.showToast({
+                    type: 'error',
+                    message: messages.join('\n'),
+                })
+            }
+        },
+    })
 }
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AppLayout :breadcrumbs="breadcrumbs">        
         <div class="max-w-4xl mx-auto p-6">
             <div class="bg-white dark:bg-gray-800 shadow rounded-2xl p-8">
-                <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">
-                    Edit Member Details
-                </h1>
+                <h1 class="text-2xl font-bold mb-6">Edit Cooperative Member</h1>
 
                 <form @submit.prevent="handleSubmit" class="space-y-6">
-                    <!-- First Name -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            First Name
-                        </label>
-                        <input v-model="form.first_name" type="text"
-                               class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3
-                                      focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-                    </div>
-
-                    <!-- Middle Initial -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Middle Initial
-                        </label>
-                        <input v-model="form.middle_initial" type="text" maxlength="1"
-                               class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3
-                                      focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-                    </div>
-
-                    <!-- Last Name -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Last Name
-                        </label>
-                        <input v-model="form.last_name" type="text"
-                               class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3
-                                      focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-                    </div>
-
                     <!-- Position -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Position
-                        </label>
-                        <input v-model="form.position" type="text"
-                               class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3
-                                      focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                        <label for="position" class="block mb-1">Position</label>
+                        <SelectSearch
+                            id="position"
+                            :items="positions"
+                            itemKeyProp="id"
+                            itemLabelKey="name"
+                            v-model="form.position"
+                            v-model:search="searchPosition"
+                            v-model:open="dropDownPositionOpen"
+                            placeholder="Select Position"
+                        />
                     </div>
 
-                    <!-- Representative -->
-                    <div class="flex items-center gap-3">
-                        <input id="is_representative" v-model="form.is_representative" type="checkbox"
-                               class="h-4 w-4 text-indigo-600 border-gray-300 rounded" />
-                        <label for="is_representative" class="text-sm text-gray-700 dark:text-gray-300">
-                            Is Representative?
-                        </label>
+                    <!-- Active Year -->
+                    <div>
+                        <label for="active_year" class="block mb-1">Active Year</label>
+                        <input v-model="form.active_year" id="active_year" type="number" min="2000"
+                            :max="new Date().getFullYear() + 1" class="w-full border rounded p-2" />
+                    </div>
+
+                    <!-- Names (conditional) -->
+                    <div v-if="['Chairman','Treasurer','Manager'].includes(form.position)">
+                        <label for="first_name" class="block mb-1">First Name</label>
+                        <input v-model="form.first_name" id="first_name" type="text"
+                            class="w-full border rounded p-2" />
+                    </div>
+
+                    <div v-if="['Chairman','Treasurer','Manager'].includes(form.position)">
+                        <label for="middle_initial" class="block mb-1">Middle Initial</label>
+                        <input v-model="form.middle_initial" id="middle_initial" type="text" maxlength="1"
+                            @input="form.middle_initial = setMiddleInitial(($event.target as HTMLInputElement).value)"
+                            class="w-full border rounded p-2" />
+                    </div>
+
+                    <div v-if="['Chairman','Treasurer','Manager'].includes(form.position)">
+                        <label for="last_name" class="block mb-1">Last Name</label>
+                        <input v-model="form.last_name" id="last_name" type="text"
+                            class="w-full border rounded p-2" />
+                    </div>
+
+                    <div v-if="['Chairman','Treasurer','Manager'].includes(form.position)">
+                        <label for="suffix" class="block mb-1">Suffix</label>
+                        <input v-model="form.suffix" id="suffix" type="text"
+                            class="w-full border rounded p-2" />
+                    </div>
+
+                    <div v-if="['Chairman','Treasurer','Manager'].includes(form.position)" class="flex items-center gap-2">
+                        <input type="checkbox" id="is_representative" v-model="form.is_representative" />
+                        <label for="is_representative">Is Representative?</label>
                     </div>
 
                     <!-- Existing Files -->
-                    <div v-if="existingFiles.length">
-                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Existing Files</p>
+                    <div v-if="props.member.files.length">
+                        <label class="block mb-2">Existing Files</label>
                         <ul class="space-y-2">
-                            <li v-for="file in existingFiles" :key="file.id" class="flex justify-between items-center bg-gray-50 dark:bg-gray-700 p-2 rounded-lg">
-                                <span>{{ file.file_name }}</span>
-                                <button type="button"
-                                        class="text-red-600 hover:text-red-800 text-sm"
-                                        @click="removeExistingFile(file.id)">
-                                    Remove
-                                </button>
+                            <li v-for="f in props.member.files" :key="f.id"
+                                class="flex justify-between items-center bg-gray-100 p-2 rounded">
+                                <span>{{ f.file_name }}</span>
+                                <div class="flex gap-3">
+                                    <button type="button" class="text-blue-600 underline text-sm"
+                                        @click="downloadFile(f)">Download</button>
+                                    <button type="button" class="text-red-600 underline text-sm"
+                                        @click="deleteFile(f)">Delete</button>
+                                </div>
                             </li>
                         </ul>
                     </div>
 
-                    <!-- Upload New Files -->
+                    <!-- Upload new files -->
                     <div>
-                        <label for="files" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Upload New Files
-                        </label>
-                        <input
-                            id="files"
-                            type="file"
-                            multiple
-                            @change="form.files = Array.from(($event.target as HTMLInputElement).files || [])"
-                            class="w-full text-sm text-gray-500 dark:text-gray-300
-                                   file:mr-4 file:py-2 file:px-4
-                                   file:rounded-full file:border-0
-                                   file:text-sm file:font-semibold
-                                   file:bg-indigo-50 file:text-indigo-700
-                                   hover:file:bg-indigo-100"
-                        />
+                        <label class="block mb-1">Upload New Files</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer"
+                            @dragover.prevent @drop="onDrop" @click="openFileModal">
+                            <input id="fileInput" type="file" multiple @change="onFileChange" class="hidden"
+                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                            <div v-if="file.length" class="mb-2 space-y-2">
+                                <div v-for="(f,index) in file" :key="index"
+                                    class="flex items-center justify-between bg-gray-100 p-2 rounded">
+                                    <p class="text-gray-700 text-sm truncate">{{ f.name }}</p>
+                                    <button type="button" @click.stop="clearFile(index)"
+                                        class="text-red-500 underline text-xs">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                            <div v-else class="mb-2">
+                                <p class="text-gray-500">Drag & drop files here, or click to select</p>
+                            </div>
+                            <div class="text-xs text-gray-400">Accepted formats: PDF, DOC, DOCX, JPG, PNG</div>
+                        </div>
                     </div>
 
                     <!-- Submit -->
-                    <div class="pt-6 flex gap-4">
-                        <button type="submit"
-                                class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl shadow
-                                       hover:bg-indigo-700 transition">
-                            Update Member
-                        </button>
-                        <button type="button"
-                                @click="$inertia.visit(`/cooperative/${props.cooperative.id}/members/${props.member.id}`)"
-                                class="px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl shadow
-                                       hover:bg-gray-300 transition">
-                            Cancel
-                        </button>
+                    <div>
+                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded">Update</button>
                     </div>
                 </form>
             </div>
+            <FlashToast ref="toastRef" />
         </div>
     </AppLayout>
 </template>

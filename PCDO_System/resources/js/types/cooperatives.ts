@@ -27,7 +27,7 @@ export interface Details {
 
 export interface Holder { id: number; name: string; }
 
-export type SingleChar = `${string}` & { length: 1 };
+export type SingleChar = '' | `${string}` & { length: 1 };
 
 export interface FileType {
   id: number;
@@ -39,9 +39,11 @@ export interface Member {
   id: number;
   coop_id: string;
   position: string;
+  active_year: number;
   first_name: string;
   middle_initial: SingleChar;
   last_name: string;
+  suffix?: string;
   is_representative: boolean;
   files: FileType[];
 }

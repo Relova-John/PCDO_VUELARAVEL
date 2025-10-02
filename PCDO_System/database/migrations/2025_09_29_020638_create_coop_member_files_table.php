@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('coop_member_id')->constrained('coop_members')->onDelete('cascade');
             $table->string('file_path');
             $table->string('file_name');
-            $table->string('file_type')->nullable();
+            $table->string('file_type');
 
             $table->timestamps();
         });

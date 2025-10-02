@@ -14,9 +14,11 @@ const props = defineProps<{
 const form = useForm({
     coop_id: props.cooperative.id,
     position: '',
+    active_year: new Date().getFullYear(),
     first_name: '',
     middle_initial: '',
     last_name: '',
+    suffix: '',
     is_representative: false,
     files: [] as File[],
 })
@@ -32,6 +34,16 @@ const searchPosition = ref('')
 const dropDownPositionOpen = ref(false)
 
 const file = ref<File[]>([])
+const toastRef = ref<InstanceType<typeof FlashToast>>();
+
+const allowedFileTypes = [
+    'application/pdf', 
+    'application/msword', 
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+    'image/jpeg', 
+    'image/png',
+    'image/jpg',
+];
 
 function setMiddleInitial(initial: string) {
     if (initial.length > 1) {
@@ -44,14 +56,31 @@ function onDrop(e: DragEvent) {
     e.preventDefault();
     const dt = e.dataTransfer;
     if (dt && dt.files.length > 0) {
-        file.value = [...file.value, ...Array.from(dt.files)]
+        const validFiles = validateFiles(Array.from(dt.files));
+        file.value = [...file.value, ...validFiles];
+        form.files = file.value;
     }
+}
+
+function validateFiles(selectedFiles: File[]) {
+    return selectedFiles.filter(f => {
+        if (!allowedFileTypes.includes(f.type)) {
+            toastRef.value?.showToast({
+                type: 'error',
+                message: `File type not allowed: ${f.name}`,
+            });
+            return false;
+        }
+        return true;
+    });
 }
 
 function onFileChange(e: Event) {
     const target = e.target as HTMLInputElement
     if (target.files && target.files.length > 0) {
-        file.value = [...file.value, ...Array.from(target.files)]
+        const validFiles = validateFiles(Array.from(target.files));
+        file.value = [...file.value, ...validFiles];
+        form.files = file.value;
     }
 }
 
@@ -71,14 +100,15 @@ function openFileModal() {
 }
 
 function handleSubmit() {
+    form.files = file.value.length > 0 ? file.value : [];
     form.post(`/cooperatives/${props.cooperative.id}/members`, {
+        forceFormData: true,
         onError: (errors) => {
             const messages = Object.values(errors);
-
             if (messages.length) {
-                FlashToast.show({
+                toastRef.value?.showToast({
                     type: 'error',
-                    message: messages[0]
+                    message: messages.join(' ' + '\n'),
                 });
             }
         },
@@ -102,18 +132,31 @@ function handleSubmit() {
                             itemLabelKey="name"
                             v-model:search="searchPosition"
                             :modelValue="form.position"
-                            @select="val => form.position = val.id"
+                            @select="(val: { id: string; name: string }) => {
+                                form.position = val.id
+                                if (val.id !== 'Chairman' && val.id !== 'Treasurer' && val.id !== 'Manager') {
+                                    form.first_name = ''
+                                    form.middle_initial = ''
+                                    form.last_name = ''
+                                    form.suffix = ''
+                                }
+                            }"
+
                             :open="dropDownPositionOpen"
                             @update:open="val => dropDownPositionOpen = val"
                             placeholder="Select Position"
                         />
                     </div>
-                    <div v-if="['Chairman', 'Secretary', 'Manager'].includes(form.position)">
+                    <div>
+                        <label for="active_year" class="block mb-1">Active Year</label>
+                        <input v-model="form.active_year" id="active_year" type="number" min="2000" :max="new Date().getFullYear() + 1" class="w-full border rounded p-2" />
+                    </div>
+                    <div v-if="['Chairman', 'Treasurer', 'Manager'].includes(form.position)">
                         <label for="first_name" class="block mb-1">First Name</label>
                         <input v-model="form.first_name" id="first_name" type="text" class="w-full border rounded p-2" />
                     </div>
 
-                    <div v-if="['Chairman', 'Secretary', 'Manager'].includes(form.position)">
+                    <div v-if="['Chairman', 'Treasurer', 'Manager'].includes(form.position)">
                         <label for="middle_initial" class="block mb-1">Middle Initial</label>
                         <input v-model="form.middle_initial" id="middle_initial" type="text" maxlength="1"
                             @input="form.middle_initial = setMiddleInitial(form.middle_initial)"
@@ -123,17 +166,22 @@ function handleSubmit() {
                         </div>
                     </div>
 
-                    <div v-if="['Chairman', 'Secretary', 'Manager'].includes(form.position)">
+                    <div v-if="['Chairman', 'Treasurer', 'Manager'].includes(form.position)">
                         <label for="last_name" class="block mb-1">Last Name</label>
                         <input v-model="form.last_name" id="last_name" type="text" class="w-full border rounded p-2" />
                     </div>
 
-                    <div v-if="['Chairman', 'Secretary', 'Manager', 'Member'].includes(form.position)" class="flex items-center gap-2">
+                    <div v-if="['Chairman', 'Treasurer', 'Manager'].includes(form.position)">
+                        <label for="suffix" class="block mb-1">Suffix</label>
+                        <input v-model="form.suffix" id="suffix" type="text" class="w-full border rounded p-2" />
+                    </div>
+
+                    <div v-if="['Chairman', 'Treasurer', 'Manager'].includes(form.position)" class="flex items-center gap-2">
                         <input type="checkbox" id="is_representative" v-model="form.is_representative" />
                         <label for="is_representative">Is Representative?</label>
                     </div>
 
-                    <div v-if="['Chairman', 'Secretary', 'Manager', 'Member'].includes(form.position)">
+                    <div v-if="['Chairman', 'Treasurer', 'Manager', 'Member'].includes(form.position)">
                         <label class="block mb-1">Upload File</label>
                         <div
                             class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer"
@@ -147,7 +195,7 @@ function handleSubmit() {
                                 multiple
                                 @change="onFileChange"
                                 class="hidden"
-                                accept=".pdf,.doc,.docx,.jpg,.png"
+                                accept=".pdf,.doc,.docx,.jpg, .jpeg,.png"
                             />
                             <div v-if="file.length" class="mb-2 space-y-2">
                             <div v-for="(f, index) in file" :key="index" class="flex items-center justify-between bg-gray-100 p-2 rounded">
@@ -174,6 +222,7 @@ function handleSubmit() {
                     </div>
                 </form>
             </div>
+            <FlashToast ref="toastRef" />
         </div>
     </AppLayout>
 </template>

@@ -4,28 +4,61 @@ import { BreadcrumbItem } from '@/types';
 import type { Member } from '@/types/cooperatives';
 import { router, usePage } from '@inertiajs/vue3';
 import FlashToast from '@/components/FlashToast.vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import Button from '@/components/ui/button/Button.vue';
 
 const page = usePage();
 const flash = computed(() => page.props.flash as { success?: string; error?: string; info?: string });
+const showFileModal = ref(false);
+const selectedFile = ref<any | null>(null);
 
 const props = defineProps<{
     breadcrumbs?: BreadcrumbItem[]
     cooperative: { id: string }
     member: Member,
-    files: File[],
 }>()
 
 const fullName = computed(() =>
-  [props.member.first_name, props.member.middle_initial, props.member.last_name]
+    [props.member.first_name, props.member.middle_initial, props.member.last_name]
     .filter(Boolean)
     .join(' ')
 )
 
 function goToEditPage(id: number) {
-    router.visit(`/cooperative/${props.cooperative.id}/members/${id}/edit`);
+    router.visit(`/cooperatives/${props.cooperative.id}/members/${id}/edit`);
 }
 
+function openFileModal(file: any) {
+    selectedFile.value = file;
+    showFileModal.value = true;
+}
+
+function closeFileModal() {
+    selectedFile.value = null;
+    showFileModal.value = false;
+}
+
+function downloadFile(file: any) {
+    window.open(
+        `/cooperatives/${props.cooperative.id}/members/${props.member.id}/files/${file.id}/download`,
+        '_blank'
+    );
+    closeFileModal();
+}
+
+function deleteFile(file: any) {
+    if (!confirm(`Are you sure you want to delete "${file.file_name}"?`)) return;
+
+    router.delete(
+        `/cooperatives/${props.cooperative.id}/members/${props.member.id}/files/${file.id}`,
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeFileModal();
+            },
+        }
+    );
+}
 </script>
 
 <template>
@@ -97,19 +130,74 @@ function goToEditPage(id: number) {
                                     <p class="font-medium">{{ file.file_name }}</p>
                                     <p class="text-xs text-gray-500">{{ file.file_type }}</p>
                                 </div>
-                                <a
-                                    :href="`/storage/${file.file_path}`"
-                                    target="_blank"
-                                    class="text-indigo-600 hover:underline text-sm"
+                                <Button
+                                    type="button"
+                                    @click="openFileModal(file)"
+                                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg 
+                                    bg-blue-600 text-white 
+                                    hover:bg-blue-700 
+                                    text-sm font-medium transition"
                                 >
-                                    Download
-                                </a>
+                                    View
+                                </Button>
                             </li>
                         </ul>
                         <p v-else class="text-sm text-gray-500 italic">No files uploaded</p>
                     </div>
                 </div>
             </div>
+            <!-- File Preview Modal -->
+            <div
+                v-if="showFileModal && selectedFile"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+            >
+                <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl max-w-3xl w-full p-6 relative">
+                    <!-- Close button -->
+                    <button
+                        @click="closeFileModal"
+                        class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+                    >
+                        ✕
+                    </button>
+
+                    <h2 class="text-xl font-bold mb-4">{{ selectedFile.file_name }}</h2>
+
+                    <!-- Preview -->
+                    <div class="mb-6">
+                        <template v-if="selectedFile.file_type.includes('image')">
+                            <img :src="selectedFile.url" class="max-h-96 mx-auto rounded-lg shadow" />
+                        </template>
+                        <template v-else-if="selectedFile.file_type.includes('pdf')">
+                            <iframe
+                                :src="selectedFile.url"
+                                class="w-full h-96 border rounded-lg"
+                            ></iframe>
+                        </template>
+                        <template v-else>
+                            <p class="text-gray-500">Preview not available. You can download the file.</p>
+                        </template>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-end gap-3">
+                        <Button
+                            type="button"
+                            @click="downloadFile(selectedFile)"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white"
+                        >
+                            Download
+                        </Button>
+                        <Button
+                            type="button"
+                            @click="deleteFile(selectedFile)"
+                            class="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                            Delete
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
         </div>
         <FlashToast
             v-if="flash.success"
