@@ -276,7 +276,6 @@ async function openChangesModal(logId: number) {
 </script>
 
 <template>
-    {{ users }}
     <Head title="Admin Dashboard" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen px-4 py-6">

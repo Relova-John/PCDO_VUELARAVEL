@@ -39,6 +39,11 @@ class AuthenticatedSessionController extends Controller
         }
 
         $user = User::where('email', $request->email)->first();
+        if (! $user->active) {
+            return back()->withErrors([
+                'email' => 'Your account is inactive. Please contact the administrator account at PCDO.palawan@gmail.com to reactivate your account.',
+            ]);
+        }
         $code = rand(100000, 999999);
 
         session([
