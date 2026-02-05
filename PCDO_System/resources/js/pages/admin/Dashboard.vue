@@ -3,6 +3,8 @@ import AppLayout from '@/layouts/AdminLayout.vue'
 import { type BreadcrumbItem } from '@/types'
 import { Head, router, usePage } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
+import Switch from '@/components/ui/switch/Switch.vue'
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Admin', href: '/admin' }]
 
@@ -14,6 +16,7 @@ const props = defineProps<{
             email: string
             roles: { id: number; name: string }[]
             created_at: string
+            active: boolean
         }>
     }
     recentLogs?: {
@@ -107,8 +110,6 @@ function createUser() {
     errors.value = {}
     if (!name.value) errors.value.name = 'Name is required'
     if (!email.value) errors.value.email = 'Email is required'
-    if (!password.value || password.value.length < 6)
-        errors.value.password = 'Password must be at least 6 characters'
     if (!role.value) errors.value.role = 'Role is required'
     if (Object.keys(errors.value).length > 0) {
         creating.value = false
@@ -130,13 +131,72 @@ function createUser() {
     )
 }
 
-function deleteUser(id: number) {
-    if (!confirm('Are you sure you want to delete this user?')) return
-    router.delete(`/admin/users/${id}`, {
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => refreshPage(),
-    })
+const showDialog = ref(false)
+const pendingAction = ref<'activate' | 'deactivate' | null>(null)
+const pendingUserId = ref<number | null>(null)
+const pendingValue = ref<boolean | null>(null)
+const originalValue = ref<boolean | null>(null)
+
+function onToggle(user: { id: number; active: boolean }) {
+  pendingUserId.value = user.id
+  originalValue.value = user.active
+  pendingAction.value = user.active ? 'deactivate' : 'activate'
+  pendingValue.value = !user.active
+  showDialog.value = true
+}
+
+
+function confirmAction() {
+  if (pendingUserId.value === null || pendingValue.value === null) return
+
+  const user = users.value.data.find(u => u.id === pendingUserId.value)
+  if (!user) return
+
+  if (pendingAction.value === 'activate') activateUser(user.id)
+  else deactivateUser(user.id)
+
+  resetPending()
+}
+
+function cancelAction() {
+  const user = users.value.data.find(u => u.id === pendingUserId.value)
+
+  if (user && originalValue.value !== null) {
+    user.active = originalValue.value
+  }
+
+  resetPending()
+}
+
+function resetPending() {
+  showDialog.value = false
+  pendingUserId.value = null
+  pendingValue.value = null
+  pendingAction.value = null
+}
+
+function deactivateUser(id: number) {
+    router.post(
+        `/admin/users/${id}/deactivate`,
+        {},
+        {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: () => refreshPage(),
+        }
+    )
+}
+
+function activateUser(id: number) {
+    router.post(
+        `/admin/users/${id}/activate`,
+        {},
+        {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: () => refreshPage(),
+        }
+    )
 }
 
 function formatDate(dt?: string) {
@@ -216,7 +276,7 @@ async function openChangesModal(logId: number) {
 </script>
 
 <template>
-
+    {{ users }}
     <Head title="Admin Dashboard" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen px-4 py-6">
@@ -237,9 +297,7 @@ async function openChangesModal(logId: number) {
                             <option v-for="r in roles" :key="r.id" :value="r.name">{{ r.name }}</option>
                         </select>
                         <p v-if="errors.role" class="text-xs text-red-500 mt-1">{{ errors.role }}</p>
-                        <input v-model="password" placeholder="Password" type="password"
-                            class="w-full rounded-lg p-2 bg-white dark:bg-gray-700 border" />
-                        <p v-if="errors.password" class="text-xs text-red-500 mt-1">{{ errors.password }}</p>
+                        
                         <button @click="createUser"
                             class="w-full sm:w-auto px-4 py-2 rounded-lg font-medium bg-blue-600 text-white shadow-md hover:opacity-95"
                             :disabled="creating">
@@ -269,7 +327,7 @@ async function openChangesModal(logId: number) {
                                     <th class="py-2 px-2">Email</th>
                                     <th class="py-2 px-2">Roles</th>
                                     <th class="py-2 px-2">Created</th>
-                                    <th class="py-2 px-2 text-right">Action</th>
+                                    <th class="py-2 px-2 text-right">Activated</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -281,8 +339,12 @@ async function openChangesModal(logId: number) {
                                     <td class="py-2 px-2">{{user.roles.map(r => r.name).join(', ')}}</td>
                                     <td class="py-2 px-2">{{ formatDate(user.created_at) }}</td>
                                     <td class="py-2 px-2 text-right">
-                                        <button @click="deleteUser(user.id)"
-                                            class="text-red-500 hover:underline text-sm font-medium">Delete</button>
+                                        <Switch
+                                        :model-value="user.active"
+                                        @update:modelValue="() => onToggle(user)"
+                                        :disabled="currentUser.id === user.id"
+                                        />
+                                        User is {{ user.active ? 'active' : 'inactive' }}
                                     </td>
                                 </tr>
                                 <tr v-if="filteredUsers.length === 0">
@@ -306,8 +368,7 @@ async function openChangesModal(logId: number) {
                                     {{ formatDate(user.created_at) }}
                                 </p>
                             </div>
-                            <button @click="deleteUser(user.id)"
-                                class="text-red-500 text-sm font-medium self-start mt-2">Delete</button>
+                            deactivate
                         </div>
 
                         <div v-if="filteredUsers.length === 0" class="py-4 text-center text-gray-500">
@@ -512,5 +573,32 @@ async function openChangesModal(logId: number) {
                 </div>
             </div>
         </teleport>
+        <AlertDialog v-model:open="showDialog">
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
+                        {{ pendingAction === 'activate'
+                            ? 'Activate User'
+                            : 'Deactivate User' }}
+                    </AlertDialogTitle>
+
+                    <AlertDialogDescription>
+                        Are you sure you want to
+                        {{ pendingAction === 'activate' ? 'activate' : 'deactivate' }}
+                        this user?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                <AlertDialogFooter>
+                    <AlertDialogCancel @click="cancelAction">
+                        Cancel
+                    </AlertDialogCancel>
+
+                    <AlertDialogAction @click="confirmAction">
+                        {{ pendingAction === 'activate' ? 'Activate' : 'Deactivate' }}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </AppLayout>
 </template>

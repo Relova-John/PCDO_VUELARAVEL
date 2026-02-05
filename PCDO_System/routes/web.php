@@ -39,7 +39,8 @@ Route::get('/ping', fn () => response()->json(['pong' => true]));
 Route::middleware(['auth', 'role:admin|superadmin'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
     Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.storeUser');
-    Route::delete('/admin/users/{user}', [AdminController::class, 'destroyUser'])->name('admin.users.destroy');
+    Route::post('/admin/users/{id}/deactivate', [AdminController::class, 'deactivateUser'])->name('admin.users.deactivate');
+    Route::post('/admin/users/{id}/activate', [AdminController::class, 'activateUser'])->name('admin.users.activate');
     Route::get('/admin/logs/{id}/changes', [AdminController::class, 'getLogChanges'])->name('admin.logs.changes');
 });
 

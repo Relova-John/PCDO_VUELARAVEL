@@ -72,7 +72,7 @@ class LoanOverdueNotification extends Notification
             'Total Amount to Paid: ₱'.number_format($totalpaid, 2)."\n".
             'Date of Last Payment: '.$lastPaymentDate."\n".
             'Amount Paid: ₱'.number_format($lastamountPaid, 2)."\n".
-            'Balance as of '.$datetoday.' : ₱'.number_format($lastamountPaid, 2)."\n".
+            'Balance as of '.$datetoday.' : ₱'.number_format($lastamountPaid, 2)."\n";
 
         // Save to DB
         $pending = $schedule->pendingnotifications()

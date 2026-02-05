@@ -34,21 +34,6 @@ class CleanupProcessedNotifications extends Command
             foreach ($processed as $pn) {
                 // Mark as moving to prevent other workers from touching it
                 $pn->update(['processed' => 2]);
-
-                Notifications::updateOrCreate(
-                    [
-                        'schedule_id' => $pn->schedule_id,
-                        'type' => $pn->type,
-                    ],
-                    [
-                        'coop_id' => $pn->coop_id,
-                        'subject' => $pn->subject,
-                        'body' => $pn->body,
-                        'created_at' => $pn->created_at,
-                        'processed' => 1,
-                    ]
-                );
-
                 $pn->delete();
             }
 

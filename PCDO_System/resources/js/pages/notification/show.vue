@@ -133,11 +133,15 @@ const canDownload = computed(() => {
           <div
             class="px-6 sm:px-10 md:px-14 py-4 text-gray-700 dark:text-gray-300 leading-relaxed space-y-6 text-base sm:text-lg">
             <div class="space-y-3 bg-gray-200/50 dark:bg-gray-700/50 rounded-lg p-4 sm:p-5 overflow-x-auto">
-              <p v-for="(line, i) in notification.body.split('\n')" :key="i" class="text-base sm:text-lg break-words"
+              <p
+                v-for="(line, i) in (notification.body || '').split('\n')"
+                :key="i"
+                class="text-base sm:text-lg break-words"
                 :class="{
                   'text-green-600 dark:text-green-400 font-semibold': line.toLowerCase().includes('amount to pay') && !line.toLowerCase().includes('penalty'),
-                  'text-red-600 dark:text-red-400 font-semibold': line.toLowerCase().includes('penalty')
-                }">
+                  'text-red-600 dark:text-red-400 font-semibold': line.toLowerCase().includes('penalty'),
+                }"
+              >
                 {{ line }}
               </p>
             </div>

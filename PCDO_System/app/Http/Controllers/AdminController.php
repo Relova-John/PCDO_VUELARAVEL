@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\UserMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
@@ -19,7 +21,7 @@ class AdminController extends Controller
         $usersPage = $request->query('users_page', 1);
 
         $users = User::with('roles:id,name')
-            ->select('id', 'name', 'email', 'created_at')
+            ->select('id', 'name', 'email', 'created_at', 'active')
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%$search%")
@@ -36,6 +38,7 @@ class AdminController extends Controller
                     'email' => $user->email,
                     'roles' => $user->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name]),
                     'created_at' => $user->created_at,
+                    'active' => $user->active,
                 ];
             });
 
@@ -99,13 +102,21 @@ class AdminController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'role' => ['required', Rule::in($allowedRoles)],
-            'password' => ['required', 'string', 'min:6'],
         ]);
+
+        $data['password'] = bin2hex(random_bytes(8));
+
+        Mail::to($data['email'])->send(new UserMail($data['password']));
+
+        $data['active'] = true;
+
+        
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'active' => $data['active'] ?? true,
         ]);
 
         $user->assignRole($data['role']);
@@ -113,26 +124,21 @@ class AdminController extends Controller
         return back()->with('success', 'User created successfully.');
     }
 
-    public function destroyUser(User $user, Request $request)
+    public function activateUser($id)
     {
-        $authUser = $request->user();
+        $user = User::findOrFail($id);
+        $user->active = true;
+        $user->save();
 
-        $targetRoles = $user->roles->pluck('name')->toArray();
+        return back()->with('success', 'User activated successfully.');
+    }
 
-        if ($authUser->hasRole('superadmin')) {
-            if (! in_array('admin', $targetRoles) && ! in_array('officer', $targetRoles)) {
-                abort(403, 'Superadmin can only delete admins or officers.');
-            }
-        } elseif ($authUser->hasRole('admin')) {
-            if (! in_array('officer', $targetRoles)) {
-                abort(403, 'Admin can only delete officers.');
-            }
-        } else {
-            abort(403, 'Unauthorized to delete users.');
-        }
+    public function deactivateUser($id)
+    {
+        $user = User::findOrFail($id);
+        $user->active = false;
+        $user->save();
 
-        $user->delete();
-
-        return back()->with('success', 'User deleted successfully.');
+        return back()->with('success', 'User deactivated successfully.');
     }
 }

@@ -37,7 +37,7 @@ class AdminProfileController extends Controller
 
         $request->user()->save();
 
-        return to_route('admin.profile.edit');
+        return to_route('admin.settings.profile.edit');
     }
 
     /**
