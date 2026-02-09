@@ -14,6 +14,7 @@ use App\Models\Programs;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Connectors\SyncConnector;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
@@ -80,6 +81,7 @@ class AdminProgramController extends Controller
                 ['title' => 'Programs', 'href' => route('admin.programs.index')],
                 ['title' => 'Create Program'],
             ],
+            'checklist' => Checklists::orderBy('id')->get(['id', 'name']),
         ]);
     }
 
@@ -110,7 +112,8 @@ class AdminProgramController extends Controller
             'penalty' => 'required|integer|min:0',
         ]);
 
-        Programs::create($data);
+        $program = Programs::create($data);
+        $program->checklists()->sync($request->input('selected_checklists', []));
 
         return redirect()->route('admin.programs.index')->with('success', 'Program created successfully!');
     }
@@ -129,6 +132,7 @@ class AdminProgramController extends Controller
         ]);
 
         $program->update($data);
+        $program->checklists()->sync($request->input('selected_checklists', []));
 
         return redirect()->route('admin.programs.index')->with('success', 'Program updated successfully!');
     }
@@ -489,5 +493,36 @@ class AdminProgramController extends Controller
         $program->save();
 
         return back()->with('success', 'Program unarchived successfully!');
+    }
+
+    public function storeChecklist(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $checklist = Checklists::create($data);
+
+        return redirect()->back()->with('success', 'Checklist added');
+    }
+
+    public function updateChecklist(Request $request, $id)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $checklist = Checklists::findOrFail($id);
+        $checklist->update($data);
+
+            return redirect()->back()->with('success', 'Checklist updated');
+    }
+
+    public function destroyChecklist($id)
+    {
+        $checklist = Checklists::findOrFail($id);
+        $checklist->delete();
+
+        return redirect()->back()->with('success', 'Checklist deleted successfully');
     }
 }

@@ -40,15 +40,15 @@ const programGradients: Record<number, string> = {
 }
 
 function goToAddProgram() {
-	router.visit('admin/programs/create')
+	router.visit('programs/create')
 }
 
 function goToEditProgram(programId: number) {
-	router.visit(`admin/programs/${programId}/edit`)
+	router.visit(`programs/${programId}/edit`)
 }
 
 function archiveProgram(programId: number) {
-	router.post(`/admin/programs/${programId}/archive`, {}, {
+	router.post(`programs/${programId}/archive`, {}, {
 		preserveState: true,
 		onSuccess: () => {
 			toast.success(`${props.programs.find(p => p.id === programId)?.name} archived successfully!`)
@@ -57,7 +57,7 @@ function archiveProgram(programId: number) {
 }
 
 function unarchiveProgram(programId: number) {
-	router.post(`/admin/programs/${programId}/unarchive`, {}, {
+	router.post(`programs/${programId}/unarchive`, {}, {
 		preserveState: true,
 		onSuccess: () => {
 			toast.success(`${props.programs.find(p => p.id === programId)?.name} unarchived successfully!`)
@@ -70,7 +70,7 @@ const selectedMonth = ref(new Date().toISOString().slice(0, 7))
 const selectedProgram = ref('all')
 
 const updateMonth = () => {
-	pdfUrl.value = `/admin/programs/reports/monthly?month=${selectedMonth.value}&program_id=${selectedProgram.value}`
+	pdfUrl.value = `programs/reports/monthly?month=${selectedMonth.value}&program_id=${selectedProgram.value}`
 }
 
 const pdfLoading = ref(true)
@@ -127,7 +127,7 @@ onMounted(() => {
 
 							<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
 								<Link v-for="program in activePrograms" :key="program.id"
-									:href="`/programs/${program.id}`" class="rounded-2xl shadow-md border border-gray-300 dark:border-gray-700 
+									:href="`/admin/programs/${program.id}`" class="rounded-2xl shadow-md border border-gray-300 dark:border-gray-700 
 							bg-gray-50 dark:bg-gray-800 
 							hover:shadow-2xl hover:-translate-y-1.5 transform transition-all block relative">
 									<!-- Dynamic Gradient Top Bar -->

@@ -51,9 +51,10 @@ Route::middleware(['auth', 'role:admin|superadmin'])
         // Programs
         Route::resource('programs', AdminProgramController::class);
 
-        // Program Checklists
-        Route::post('checklists', [AdminProgramController::class, 'storeChecklist'])->name('checklists.store');
-        Route::delete('checklists/{id}', [AdminProgramController::class, 'destroyChecklist'])->name('checklists.destroy');
+        // Program Checklist
+        Route::post('programs/checklists', [AdminProgramController::class, 'storeChecklist'])->name('programs.checklists.store');
+        Route::put('programs/checklists/{id}', [AdminProgramController::class, 'updateChecklist'])->name('programs.checklists.update');
+        Route::delete('programs/checklists/{id}', [AdminProgramController::class, 'destroyChecklist'])->name('programs.checklists.destroy');
 
         // Nested routes for adding cooperatives to a program
         Route::get('/programs/{program}/cooperatives/create', [AdminProgramController::class, 'createCooperative'])->name('programs.cooperatives.create');
@@ -90,6 +91,7 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     Route::delete('cooperatives/{cooperative}/members/{member}/files/{fileId}', [CoopMemberController::class, 'deleteFile'])->name('cooperatives.members.files.delete');
     Route::get('cooperatives/{cooperative}', [CooperativesController::class, 'show'])->name('cooperatives.show');
     Route::get('/cooperatives/{cooperative}/members/{member}/biodata/pdf', [CoopMemberController::class, 'downloadBiodataPdf'])->where(['cooperative' => '.*', 'member' => '.*'])->name('cooperatives.members.biodata.pdf');
+
     // Program Routes
     Route::resource('programs', ProgramController::class);
 

@@ -37,10 +37,33 @@ const form = useForm({
 });
 
 function handleSubmit() {
+    if (!userRoles.value.includes('admin') && !userRoles.value.includes('superadmin')) {
+        toast.error('You do not have permission to perform this action.');
+        return;
+    }
+
+    const requiredFields = ['name', 'details', 'term_months', 'grace_period', 'min_amount', 'max_amount', 'penalty'];
+
+    const emptyFields = requiredFields.filter(field => {
+        return (
+            form[field as keyof typeof form] === '' ||
+            form[field as keyof typeof form] === null
+        );
+    });
+
+    if (emptyFields.length) {
+        toast.error(
+            `Please fill in all required fields:\n${emptyFields
+                .map((field, i) => `${i + 1}. ${field}`)
+                .join('\n')}`
+        )
+        return
+    }
+
     submitting.value = true;
     form.selected_checklists = selectedChecklists.value;
 
-    form.put(`/programs/${program.id}`, {
+    form.put(`/admin/programs/${program.id}`, {
         preserveState: true,
         onError: (errors) => {
             submitting.value = false;
@@ -130,23 +153,28 @@ function deleteChecklist(id: number, name: string) {
                             rows="4">
                         </textarea>
 
-                        <label class="block text-gray-700 dark:text-gray-300 font-semibold mt-4 mb-2">Term (Months)</label>
+                        <label class="block text-gray-700 dark:text-gray-300 font-semibold mt-4 mb-2">Term
+                            (Months)</label>
                         <input type="number" v-model="form.term_months"
                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" />
 
-                        <label class="block text-gray-700 dark:text-gray-300 font-semibold mt-4 mb-2">Grace Period (Months)</label>
+                        <label class="block text-gray-700 dark:text-gray-300 font-semibold mt-4 mb-2">Grace Period
+                            (Months)</label>
                         <input type="number" v-model="form.grace_period"
                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" />
 
-                        <label class="block text-gray-700 dark:text-gray-300 font-semibold mt-4 mb-2">Minimum Amount</label>
+                        <label class="block text-gray-700 dark:text-gray-300 font-semibold mt-4 mb-2">Minimum
+                            Amount</label>
                         <input type="number" v-model="form.min_amount"
                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" />
 
-                        <label class="block text-gray-700 dark:text-gray-300 font-semibold mt-4 mb-2">Maximum Amount</label>
+                        <label class="block text-gray-700 dark:text-gray-300 font-semibold mt-4 mb-2">Maximum
+                            Amount</label>
                         <input type="number" v-model="form.max_amount"
                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" />
 
-                        <label class="block text-gray-700 dark:text-gray-300 font-semibold mt-4 mb-2">Penalty (%)</label>
+                        <label class="block text-gray-700 dark:text-gray-300 font-semibold mt-4 mb-2">Penalty
+                            (%)</label>
                         <input type="number" v-model="form.penalty"
                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200" />
 
@@ -180,29 +208,22 @@ function deleteChecklist(id: number, name: string) {
                                     </div>
 
                                     <div class="flex gap-2">
-                                        <button v-if="editingChecklistId !== item.id"
-                                            type="button"
-                                            @click="startEdit(item)"
-                                            class="text-blue-500 text-sm">
+                                        <button v-if="editingChecklistId !== item.id" type="button"
+                                            @click="startEdit(item)" class="text-blue-500 text-sm">
                                             Edit
                                         </button>
 
-                                        <button v-if="editingChecklistId === item.id"
-                                            type="button"
-                                            @click="saveEdit(item.id)"
-                                            class="text-green-500 text-sm">
+                                        <button v-if="editingChecklistId === item.id" type="button"
+                                            @click="saveEdit(item.id)" class="text-green-500 text-sm">
                                             Save
                                         </button>
 
-                                        <button v-if="editingChecklistId === item.id"
-                                            type="button"
-                                            @click="cancelEdit"
+                                        <button v-if="editingChecklistId === item.id" type="button" @click="cancelEdit"
                                             class="text-gray-500 text-sm">
                                             Cancel
                                         </button>
 
-                                        <button type="button"
-                                            @click="deleteChecklist(item.id, item.name)"
+                                        <button type="button" @click="deleteChecklist(item.id, item.name)"
                                             class="text-red-500 text-sm">
                                             Delete
                                         </button>
@@ -211,14 +232,11 @@ function deleteChecklist(id: number, name: string) {
 
                                 <div class="flex items-center justify-between opacity-50">
                                     <div class="flex items-center gap-2">
-                                        <input type="checkbox" disabled
-                                            class="h-4 w-4 border-gray-300 rounded" />
-                                        <input v-model="newChecklistName"
-                                            placeholder="Add new checklist..."
+                                        <input type="checkbox" disabled class="h-4 w-4 border-gray-300 rounded" />
+                                        <input v-model="newChecklistName" placeholder="Add new checklist..."
                                             class="px-2 py-1 border rounded dark:bg-gray-600 w-full" />
                                     </div>
-                                    <button type="button" @click="addChecklist"
-                                        class="text-blue-500 text-sm">
+                                    <button type="button" @click="addChecklist" class="text-blue-500 text-sm">
                                         Add
                                     </button>
                                 </div>

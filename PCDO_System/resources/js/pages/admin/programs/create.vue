@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { BreadcrumbItem } from '@/types'
-import { ref } from 'vue'
-import { useForm, router } from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { usePage, useForm, router } from '@inertiajs/vue3'
 import type { Checklists } from 'cooperatives'
 import { toast } from "vue-sonner"
+
+const page = usePage();
+const authUser = computed(() => (page.props.auth as any)?.user);
+const userRoles = computed(() => authUser.value?.roles?.map((r: any) => r.name) || []);
+
 
 const props = defineProps<{
     checklist: Checklists[],
@@ -20,19 +25,42 @@ const editingChecklistName = ref('');
 const form = useForm({
     name: '',
     details: '',
-    term_months: 0,
-    grace_period: 0,
-    min_amount: 0,
-    max_amount: 0,
-    penalty: 0,
+    term_months: null,
+    grace_period: null,
+    min_amount: null,
+    max_amount: null,
+    penalty: null,
     selected_checklists: selectedChecklists.value,
 });
 
 function handleSubmit() {
+    if (!userRoles.value.includes('admin') && !userRoles.value.includes('superadmin')) {
+        toast.error('You do not have permission to perform this action.');
+        return;
+    }
+
+    const requiredFields = ['name', 'details','term_months', 'grace_period', 'min_amount', 'max_amount', 'penalty'];
+
+    const emptyFields = requiredFields.filter(field => {
+        return (
+            form[field as keyof typeof form] === '' ||
+            form[field as keyof typeof form] === null
+        );
+    });
+
+    if (emptyFields.length) {
+        toast.error(
+            `Please fill in all required fields:\n${emptyFields
+                .map((field, i) => `${i + 1}. ${field}`)
+                .join('\n')}`
+        )
+        return
+    }
+
     submitting.value = true;
     form.selected_checklists = selectedChecklists.value;
 
-    form.post(`/programs`, {
+    form.post(`/admin/programs`, {
         preserveState: true,
         onError: (errors) => {
             submitting.value = false;
@@ -54,7 +82,7 @@ function addChecklist() {
         return;
     }
 
-    router.post('/checklists', { name }, {
+    router.post('checklists', { name }, {
         preserveState: true,
         onSuccess: () => {
             newChecklistName.value = '';
@@ -80,7 +108,7 @@ function saveEdit(id: number) {
         return;
     }
 
-    router.put(`/checklists/${id}`, { name: editingChecklistName.value }, {
+    router.put(`checklists/${id}`, { name: editingChecklistName.value }, {
         preserveState: true,
         onSuccess: () => {
             editingChecklistId.value = null;
@@ -92,7 +120,7 @@ function saveEdit(id: number) {
 
 function deleteChecklist(id: number, name: string) {
     const checklistName = name;
-    router.delete(`/checklists/${id}`, {
+    router.delete(`checklists/${id}`, {
         preserveState: true,
         onSuccess: () => {
             selectedChecklists.value = selectedChecklists.value.filter(c => c !== id);
