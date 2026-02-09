@@ -66,6 +66,11 @@ const mainNavItems: NavItem[] = [
         href: '/admin',
         icon: LayoutGrid,
     },
+    {
+        title: 'Programs',
+        href: '/admin/programs',
+        icon: BookOpen,
+    }
 ];
 
 const { isOnline} = useSyncStatus()

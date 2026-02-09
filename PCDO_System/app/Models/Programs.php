@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Model;
 
 class Programs extends Model
 {
+    use SyncLogger;
     protected $fillable = [
         'name',
         'description',
@@ -14,6 +16,8 @@ class Programs extends Model
         'grace_period',
         'min_amount',
         'max_amount',
+        'penalty',
+        'archive'
     ];
 
     public $timestamps = false;

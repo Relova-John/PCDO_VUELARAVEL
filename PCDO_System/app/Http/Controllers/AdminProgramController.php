@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\CoopProgramEnrolled;
 use App\Models\AmortizationSchedules;
+use App\Models\Checklists;
 use App\Models\Cooperative;
 use App\Models\CoopProgram;
 use App\Models\CoopProgramChecklist;
@@ -18,19 +19,26 @@ use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class ProgramController extends Controller
+class AdminProgramController extends Controller
 {
     // Display a listing of the programs with cooperative count.
 
     public function index()
     {
         $programs = Programs::withCount('coopProgram')->get();
+        $activePrograms = CoopProgram::where('program_status', 'Ongoing')->pluck('program_id')->toArray();
 
-        return inertia('programs/index', [
+        return inertia('admin/programs/index', [
+            'breadcrumbs' => [
+                ['title' => 'Programs'],
+            ],
             'programs' => $programs->map(fn ($program) => [
                 'id' => $program->id,
                 'name' => $program->name,
+                'details' => $program->details,
+                'active_coop_count' => $activePrograms[$program->id] ?? 0,
                 'cooperatives_count' => $program->coop_program_count,
+                'archive'=> $program->archive
             ]),
         ]);
     }
@@ -55,10 +63,74 @@ class ProgramController extends Controller
                 'coopProgramId' => $cp->id,
             ]);
 
-        return inertia('programs/show', [
+        return inertia('admin/programs/show', [
+            'breadcrumbs' => [
+                ['title' => 'Programs', 'href' => route('admin.programs.index')],
+                ['title' => $program->name],
+            ],
             'program' => $program,
             'cooperatives' => $cooperatives,
         ]);
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('admin/programs/create', [
+            'breadcrumbs' => [
+                ['title' => 'Programs', 'href' => route('admin.programs.index')],
+                ['title' => 'Create Program'],
+            ],
+        ]);
+    }
+
+    public function edit(Programs $program): Response
+    {
+        return Inertia::render('admin/programs/edit', [
+            'breadcrumbs' => [
+                ['title' => 'Programs', 'href' => route('admin.programs.index')],
+                ['title' => $program->name, 'href' => route('admin.programs.show', $program)],
+                ['title' => 'Edit'],
+            ],
+            'program' => $program,
+            'checklist' => Checklists::orderBy('id')->get(['id', 'name']),
+            'programChecklists' => $program->checklists()->pluck('checklist_id')->toArray(),
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'details' => 'nullable|string',
+            'term_months' => 'required|integer|min:1',
+            'grace_period' => 'required|integer|min:0',
+            'min_amount' => 'required|numeric|min:0',
+            'max_amount' => 'required|numeric|min:0|gte:min_amount',
+            'penalty' => 'required|integer|min:0',
+        ]);
+
+        Programs::create($data);
+
+        return redirect()->route('admin.programs.index')->with('success', 'Program created successfully!');
+    }
+
+    public function update(Request $request, Programs $program)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'details' => 'nullable|string',
+            'term_months' => 'required|integer|min:1',
+            'grace_period' => 'required|integer|min:0',
+            'min_amount' => 'required|numeric|min:0',
+            'max_amount' => 'required|numeric|min:0|gte:min_amount',
+            'penalty' => 'required|integer|min:0',
+        ]);
+
+        $program->update($data);
+
+        return redirect()->route('admin.programs.index')->with('success', 'Program updated successfully!');
     }
 
     public function createCooperative(Programs $program): Response
@@ -69,7 +141,7 @@ class ProgramController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return Inertia::render('programs/createCoop', [
+        return Inertia::render('admin/programs/createCoop', [
             'program' => $program,
             'cooperatives' => $cooperatives,
         ]);
@@ -131,7 +203,7 @@ class ProgramController extends Controller
 
         //  Redirect to checklist show page
         return redirect()->route(
-            'programs.cooperatives.checklist.show',
+            'admin.programs.cooperatives.checklist.show',
             [
                 'program' => $program->id,
                 'cooperative' => $cooperative->id,
@@ -262,7 +334,7 @@ class ProgramController extends Controller
             $coopProgram->delete();
         });
 
-        return redirect()->route('programs.index')->with('success', 'Program archived successfully!');
+        return redirect()->route('admin.programs.index')->with('success', 'Program archived successfully!');
     }
 
     public function monthlyReport(Request $request)
@@ -401,5 +473,21 @@ class ProgramController extends Controller
         }
 
         return $pdf->stream($selectedProgramFileName.'_Monthly_Report_'.$selectedMonth->format('F_Y').'.pdf');
+    }
+
+    public function archive($id)
+    {
+        $program = Programs::findOrFail($id);
+        $program->archive = true;
+        $program->save();
+        return back()->with('success', 'Program archived successfully!');
+    }
+    public function unarchive($id)
+    {
+        $program = Programs::findOrFail($id);
+        $program->archive = false;
+        $program->save();
+
+        return back()->with('success', 'Program unarchived successfully!');
     }
 }

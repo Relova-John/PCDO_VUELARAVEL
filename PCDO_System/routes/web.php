@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminProgramController;
 use App\Http\Controllers\AmortizationScheduleController;
 use App\Http\Controllers\CooperativesController;
 use App\Http\Controllers\CoopMemberController;
 use App\Http\Controllers\CoopProgramChecklistController;
 use App\Http\Controllers\CoopProgramProgressController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProgramController;
@@ -19,7 +21,7 @@ app('router')->aliasMiddleware('role', RoleMiddleware::class);
 Route::get('/', function () {
     $user = Auth::user();
 
-    if (! $user) {
+    if (!$user) {
         return redirect()->route('login');
     }
 
@@ -34,15 +36,33 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
-Route::get('/ping', fn () => response()->json(['pong' => true]));
+Route::get('/ping', fn() => response()->json(['pong' => true]));
 
-Route::middleware(['auth', 'role:admin|superadmin'])->group(function () {
-    Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
-    Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.storeUser');
-    Route::post('/admin/users/{id}/deactivate', [AdminController::class, 'deactivateUser'])->name('admin.users.deactivate');
-    Route::post('/admin/users/{id}/activate', [AdminController::class, 'activateUser'])->name('admin.users.activate');
-    Route::get('/admin/logs/{id}/changes', [AdminController::class, 'getLogChanges'])->name('admin.logs.changes');
-});
+Route::middleware(['auth', 'role:admin|superadmin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/', [AdminController::class, 'index'])->name('dashboard');
+        Route::post('/users', [AdminController::class, 'storeUser'])->name('storeUser');
+        Route::post('/users/{id}/deactivate', [AdminController::class, 'deactivateUser'])->name('users.deactivate');
+        Route::post('/users/{id}/activate', [AdminController::class, 'activateUser'])->name('users.activate');
+        Route::get('/logs/{id}/changes', [AdminController::class, 'logs.changes'])->name('logs.changes');
+
+        // Programs
+        Route::resource('programs', AdminProgramController::class);
+
+        // Program Checklists
+        Route::post('checklists', [AdminProgramController::class, 'storeChecklist'])->name('checklists.store');
+        Route::delete('checklists/{id}', [AdminProgramController::class, 'destroyChecklist'])->name('checklists.destroy');
+
+        // Nested routes for adding cooperatives to a program
+        Route::get('/programs/{program}/cooperatives/create', [AdminProgramController::class, 'createCooperative'])->name('programs.cooperatives.create');
+        Route::post('/programs/{program}/cooperatives', [AdminProgramController::class, 'storeCooperative'])->name('programs.cooperatives.store');
+        Route::get('/programs/reports/monthly', [AdminProgramController::class, 'monthlyReport'])->name('programs.reports.monthly');
+        Route::post('/programs/{program}/archive', [AdminProgramController::class, 'archive'])->name('programs.archive');
+        Route::post('/programs/{program}/unarchive', [AdminProgramController::class, 'unarchive'])->name('programs.unarchive');
+    });
+
 
 Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     Route::get('/dashboard', function () {
@@ -51,7 +71,7 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
             return redirect()->route('admin.dashboard');
         }
 
-        return app(App\Http\Controllers\DashboardController::class)->index();
+        return app(DashboardController::class)->index();
     })->name('dashboard');
 
     // Cooperatives Routes
@@ -151,5 +171,5 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     });
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

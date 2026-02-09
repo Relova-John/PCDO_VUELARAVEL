@@ -161,6 +161,30 @@ export interface Provinces { code: string; name: string; region_code: string }
 export interface Cities { code: string; name: string; province_code: string, region_code: string }
 export interface Barangays { code: string; name: string; city_code: string }
 
+export interface Programs {
+  id: number;
+  name: string;
+  details: string;
+  archive: boolean;
+  cooperatives_count: number;
+}
+
+export interface Program {
+  id: number;
+  name: string;
+  details: string;
+  term_months: number;
+  grace_period: number;
+  min_amount: number;
+  max_amount: number;
+  penalty: number;
+}
+
+export interface Checklists {
+  id: number;
+  name: string;
+}
+
 export enum CoopType {
   Credit = 'Credit', Consumer = 'Consumers', Producers = 'Producers', Marketing = 'Marketing', Service = 'Service',
   Multipurpose = 'Multipurpose', Advocacy = 'Advocacy', Agrarian_Reform = 'Agrarian Reform', Bank = 'Bank', Diary = 'Diary',
