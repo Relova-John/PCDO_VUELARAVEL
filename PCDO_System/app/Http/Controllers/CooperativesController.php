@@ -9,8 +9,12 @@ use App\Models\Cooperative;
 use App\Models\Programs;
 use App\Models\Province;
 use App\Models\Region;
+use App\Models\User;
+use App\Mail\UserMail;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Hash;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Reader\CSV\Options as CsvReaderOptions;
 use OpenSpout\Reader\CSV\Reader as CsvReader;
@@ -110,14 +114,34 @@ class CooperativesController extends Controller
 
             'asset_size' => ['required', Rule::in(['Micro', 'Small', 'Medium', 'Large'])],
             'coop_type' => ['required', Rule::in([
-                'Credit', 'Consumers', 'Producers', 'Marketing', 'Service', 'Multipurpose',
-                'Advocacy', 'Agrarian Reform', 'Bank', 'Diary', 'Education', 'Electric',
-                'Financial', 'Fishermen', 'Health Services', 'Housing', 'Insurance',
-                'Water Service', 'Workers', 'Others',
+                'Credit',
+                'Consumers',
+                'Producers',
+                'Marketing',
+                'Service',
+                'Multipurpose',
+                'Advocacy',
+                'Agrarian Reform',
+                'Bank',
+                'Diary',
+                'Education',
+                'Electric',
+                'Financial',
+                'Fishermen',
+                'Health Services',
+                'Housing',
+                'Insurance',
+                'Water Service',
+                'Workers',
+                'Others',
             ])],
             'status_category' => ['required', Rule::in(['Reporting', 'Non-Reporting', 'New'])],
             'bond_of_membership' => ['required', Rule::in([
-                'Residential', 'Insitutional', 'Associational', 'Occupational', 'Unspecified',
+                'Residential',
+                'Insitutional',
+                'Associational',
+                'Occupational',
+                'Unspecified',
             ])],
             'area_of_operation' => ['required', Rule::in(['Municipal', 'Provincial'])],
             'citizenship' => ['required', Rule::in(['Filipino', 'Foreign', 'Others'])],
@@ -141,8 +165,25 @@ class CooperativesController extends Controller
             'name' => $data['name'],
         ]);
 
+        if ($data['email']) {
+            $data['password'] = bin2hex(random_bytes(8));
+            Mail::to($data['email'])->send(new UserMail($data['password']));
+            $data['active'] = true;
+
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'active' => $data['active'] ?? true,
+            ]);
+            $user->assignRole('cooperative');
+            $cooperative->user_id = $user->id;
+            $cooperative->save();
+        }
+
         $detailsData = [
             'coop_id' => $cooperative->id,
+            'user_id' => $user->id ?? null,
             'region_code' => $data['region_code'],
             'province_code' => $data['province_code'],
             'city_code' => $data['city_code'],
@@ -159,6 +200,7 @@ class CooperativesController extends Controller
             'email' => $data['email'],
             'number' => $data['number'],
         ];
+
         CoopDetail::create($detailsData);
 
         return redirect()
@@ -219,7 +261,7 @@ class CooperativesController extends Controller
             return $program->updated_at->format('Y');
         });
 
-        $minYear = $coopPrograms->min(fn ($p) => $p->updated_at->year) ?? date('Y');
+        $minYear = $coopPrograms->min(fn($p) => $p->updated_at->year) ?? date('Y');
         $maxYear = date('Y');
 
         $history = collect(range($minYear, $maxYear))->map(function ($year) use ($groupedByYear) {
@@ -280,11 +322,15 @@ class CooperativesController extends Controller
     {
         $data = $request->validate([
             'id' => [
-                'required', 'string', 'max:255',
+                'required',
+                'string',
+                'max:255',
                 Rule::unique('cooperatives', 'id')->ignore($cooperative->id, 'id'),
             ],
             'name' => [
-                'required', 'string', 'max:255',
+                'required',
+                'string',
+                'max:255',
                 Rule::unique('cooperatives', 'name')->ignore($cooperative->id, 'id'),
             ],
 
@@ -295,14 +341,34 @@ class CooperativesController extends Controller
 
             'asset_size' => ['required', Rule::in(['Micro', 'Small', 'Medium', 'Large'])],
             'coop_type' => ['required', Rule::in([
-                'Credit', 'Consumers', 'Producers', 'Marketing', 'Service', 'Multipurpose',
-                'Advocacy', 'Agrarian Reform', 'Bank', 'Diary', 'Education', 'Electric',
-                'Financial', 'Fishermen', 'Health Services', 'Housing', 'Insurance',
-                'Water Service', 'Workers', 'Others',
+                'Credit',
+                'Consumers',
+                'Producers',
+                'Marketing',
+                'Service',
+                'Multipurpose',
+                'Advocacy',
+                'Agrarian Reform',
+                'Bank',
+                'Diary',
+                'Education',
+                'Electric',
+                'Financial',
+                'Fishermen',
+                'Health Services',
+                'Housing',
+                'Insurance',
+                'Water Service',
+                'Workers',
+                'Others',
             ])],
             'status_category' => ['required', Rule::in(['Reporting', 'Non-Reporting', 'New'])],
             'bond_of_membership' => ['required', Rule::in([
-                'Residential', 'Insitutional', 'Associational', 'Occupational', 'Unspecified',
+                'Residential',
+                'Insitutional',
+                'Associational',
+                'Occupational',
+                'Unspecified',
             ])],
             'area_of_operation' => ['required', Rule::in(['Municipal', 'Provincial'])],
             'citizenship' => ['required', Rule::in(['Filipino', 'Foreign', 'Others'])],
@@ -340,6 +406,37 @@ class CooperativesController extends Controller
             ]
         );
 
+        if ($data['email'] && $cooperative->user_id) {
+            $user = User::find($cooperative->user_id);
+            if ($user) {
+                $user->update([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                ]);
+            }
+        } elseif ($data['email'] && ! $cooperative->user_id) {
+            $data['password'] = bin2hex(random_bytes(8));
+            Mail::to($data['email'])->send(new UserMail($data['password']));
+            $data['active'] = true;
+
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'active' => $data['active'] ?? true,
+            ]);
+            $user->assignRole('cooperative');
+            $cooperative->user_id = $user->id;
+            $cooperative->save();
+        } elseif (! $data['email'] && $cooperative->user_id) {
+            $user = User::find($cooperative->user_id);
+            if ($user) {
+                $user->delete();
+            }
+            $cooperative->user_id = null;
+            $cooperative->save();
+        }
+
         return redirect()
             ->route('cooperatives.show', $cooperative->id)
             ->with('success', 'Cooperative updated successfully!');
@@ -356,7 +453,6 @@ class CooperativesController extends Controller
             return redirect()
                 ->route('cooperatives.index')
                 ->with('success', 'Cooperative deleted successfully!');
-
         } catch (\Exception $e) {
             return redirect()
                 ->route('cooperatives.index');
@@ -437,7 +533,7 @@ class CooperativesController extends Controller
                 ->route('cooperatives.index');
         }
 
-        $fileName = 'cooperatives_'.now()->format('Ymd_His').'.'.$type;
+        $fileName = 'cooperatives_' . now()->format('Ymd_His') . '.' . $type;
         $filePath = storage_path("app/$fileName");
 
         if ($type === 'csv') {

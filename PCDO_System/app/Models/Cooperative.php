@@ -13,6 +13,7 @@ class Cooperative extends Model
 
     protected $fillable = [
         'id',
+        'user_id',
         'name',
         'holder',
         'type', // 'primary', 'secondary', 'tertiary'

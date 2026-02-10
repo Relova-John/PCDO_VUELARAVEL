@@ -47,4 +47,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function cooperatives()
+    {
+        return $this->hasMany(Cooperative::class, 'user_id');
+    }
 }

@@ -131,6 +131,24 @@ function createUser() {
     )
 }
 
+function changeRole(user: any, newRole: string) {
+  const oldRoles = [...user.roles]
+
+  user.roles = [{ id: 0, name: newRole }]
+
+  router.post(
+    `/admin/users/${user.id}/change-role`,
+    { role: newRole },
+    {
+      preserveScroll: true,
+      preserveState: true,
+      onError: () => {
+        user.roles = oldRoles
+      }
+    }
+  )
+}
+
 const showDialog = ref(false)
 const pendingAction = ref<'activate' | 'deactivate' | null>(null)
 const pendingUserId = ref<number | null>(null)
@@ -335,7 +353,22 @@ async function openChangesModal(logId: number) {
                                     <td class="py-2 px-2 font-medium text-gray-900 dark:text-gray-100">{{ user.name }}
                                     </td>
                                     <td class="py-2 px-2">{{ user.email }}</td>
-                                    <td class="py-2 px-2">{{user.roles.map(r => r.name).join(', ')}}</td>
+                                    <td class="py-2 px-2">
+                                        <template v-if="currentRole === 'superadmin' && currentUser.id !== user.id">
+                                            <select
+                                                class="rounded-md border px-2 py-1 text-sm bg-white dark:bg-gray-700"
+                                                :value="user.roles[0]?.name"
+                                                @change="e => changeRole(user, (e.target as HTMLSelectElement).value)"
+                                            >
+                                                <option value="admin">admin</option>
+                                                <option value="officer">officer</option>
+                                            </select>
+                                        </template>
+
+                                        <template v-else>
+                                            {{ user.roles.map(r => r.name).join(', ') || '-' }}
+                                        </template>
+                                    </td>
                                     <td class="py-2 px-2">{{ formatDate(user.created_at) }}</td>
                                     <td class="py-2 px-2 text-right">
                                         <Switch

@@ -141,4 +141,26 @@ class AdminController extends Controller
 
         return back()->with('success', 'User deactivated successfully.');
     }
+
+    public function changeRole(Request $request, User $user)
+    {
+        $authUser = $request->user();
+
+        if (! $authUser->hasRole('superadmin')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'role' => ['required', 'in:admin,officer'],
+        ]);
+
+        if ($authUser->id === $user->id) {
+            abort(403);
+        }
+
+        $user->syncRoles([$validated['role']]);
+
+        return back();
+    }
+
 }

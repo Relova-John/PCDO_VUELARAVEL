@@ -90,9 +90,11 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->route('admin.dashboard');
             } elseif ($user->hasRole('officer')) {
                 return redirect()->route('dashboard');
+            } elseif ($user->hasRole('coop')) {
+                return redirect()->route('coop.dashboard', $user->cooperative?->id);
             } else {
-                // fallback for users with no role or other roles
-                return redirect()->route('home');
+                Auth::logout();
+                return back()->withErrors(['code' => 'Unauthorized role.']);
             }
         }
 
