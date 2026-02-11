@@ -1,12 +1,14 @@
 <?php
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class PaymentSchedule extends Model
 {
-    use HasFactory;
+    use HasFactory, SyncLogger;
 
     protected $fillable = [
         'loan_id',
@@ -30,13 +32,9 @@ class PaymentSchedule extends Model
     {
         $this->update([
             'is_paid' => true,
-            'paid_at' => now()
+            'paid_at' => now(),
         ]);
     }
-    protected $dates = ['due_date']; 
 
-    
-
+    protected $dates = ['due_date'];
 }
-
-?>

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AmortizationOld;
 use App\Models\AmortizationSchedules;
 use App\Models\CoopProgram;
 use App\Models\Resolved;
 use App\Notifications\LoanOverdueNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 
@@ -35,6 +37,53 @@ class AmortizationScheduleController extends Controller
         return Inertia::render('payments/index', [
             'coopPrograms' => $loans,
         ]);
+    }
+
+    public function amortizationFile($id)
+    {
+        $coopProgram = CoopProgram::find($id);
+        if (! $coopProgram) {
+            abort(404, 'Cooperative program not found.');
+        }
+
+        $amortization = AmortizationOld::where('coop_program_id', $id)->first();
+
+        if (! $amortization || ! $amortization->file_content) {
+            abort(404, 'Amortization schedule not found.');
+        }
+
+        $content = $amortization->file_content;
+
+        return $this->pdfResponse($content, $coopProgram, 'Amortization_Schedule');
+    }
+
+    private function pdfResponse(string $pdfContent, CoopProgram $coopProgram, string $suffix): Response
+    {
+        $disposition = request()->boolean('download')
+            ? 'attachment'
+            : 'inline';
+
+        return response($pdfContent, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', $disposition.'; filename="'.$this->generateFileName($coopProgram, $suffix).'"')
+            ->header('Content-Length', strlen($pdfContent))
+            ->header('Cache-Control', 'public, max-age=0, must-revalidate')
+            ->header('Accept-Ranges', 'bytes')
+            ->header('X-Content-Type-Options', 'nosniff');
+    }
+
+    private function generateFileName(CoopProgram $coopProgram, string $suffix)
+    {
+        $coopName = $coopProgram->cooperative?->name ?? 'Cooperative';
+        $programName = $coopProgram->program?->name ?? 'Program';
+        $createdDate = optional($coopProgram->created_at)->format('Y-m-d') ?? date('Y-m-d');
+
+        // Clean and safe filename
+        $safeCoop = preg_replace('/[^A-Za-z0-9_\-]/', '_', $coopName);
+        $safeProgram = preg_replace('/[^A-Za-z0-9_\-]/', '_', $programName);
+        $safeSuffix = preg_replace('/[^A-Za-z0-9_\-]/', '_', $suffix);
+
+        return "{$safeCoop}_{$safeProgram}_{$createdDate}_{$safeSuffix}.pdf";
     }
 
     // Show the Amortization Schedule
@@ -81,9 +130,9 @@ class AmortizationScheduleController extends Controller
     }
 
     // Marks Paid
-    public function markPaid(Request $request, AmortizationSchedules $schedule )
+    public function markPaid(Request $request, AmortizationSchedules $schedule)
     {
-        
+
         $request->validate([
             'receipt_image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
         ]);
@@ -98,7 +147,6 @@ class AmortizationScheduleController extends Controller
             'receipt_image' => $binaryImage,
         ]);
 
-        
         return back()->with('success', 'Payment marked as paid.');
     }
 

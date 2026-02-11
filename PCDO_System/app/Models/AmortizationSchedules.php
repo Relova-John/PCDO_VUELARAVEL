@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Model;
 
 class AmortizationSchedules extends Model
 {
-   protected $fillable = [
+    use SyncLogger;
+
+    protected $fillable = [
         'coop_program_id',
         'due_date',
         'installment',
@@ -67,7 +70,9 @@ class AmortizationSchedules extends Model
     public function checkIfLastSchedulePaid()
     {
         $coopProgram = $this->coopProgram;
-        if (!$coopProgram) return;
+        if (! $coopProgram) {
+            return;
+        }
 
         $lastSchedule = $coopProgram->amortizationSchedules()
             ->orderByDesc('due_date')

@@ -39,6 +39,9 @@ Route::middleware('guest')->group(function () {
         
     Route::post('login/verify', [AuthenticatedSessionController::class, 'verifyPostCodeForm'])
         ->name('login.verify.post');
+        
+    Route::post('/login/resend', [AuthenticatedSessionController::class, 'resendCode'])
+        ->name('login.resend');
 });
 
 Route::middleware('auth')->group(function () {

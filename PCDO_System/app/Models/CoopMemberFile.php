@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Model;
 
 class CoopMemberFile extends Model
 {
+    use SyncLogger;
+
     protected $fillable = [
         'coop_member_id',
         'file_path',

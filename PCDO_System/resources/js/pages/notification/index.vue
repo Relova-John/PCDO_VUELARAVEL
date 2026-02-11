@@ -11,13 +11,6 @@ const props = defineProps<{
     body: string;
     type: string;
     created_at: string;
-    schedule?: {
-      coop_program?: {
-        cooperative?: {
-          name: string;
-        };
-      };
-    };
   }>
 }>()
 

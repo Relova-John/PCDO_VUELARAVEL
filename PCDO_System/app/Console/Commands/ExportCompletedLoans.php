@@ -85,7 +85,7 @@ class ExportCompletedLoans extends Command
 
                 $contact = $coopProgram->number ?? 'N/A';
 
-                $project =$coopProgram->project ?? 'N/A';
+                $project = $coopProgram->project ?? 'N/A';
 
                 // Generate PDF directly from Blade view
                 $pdf = Pdf::loadView('amortization_schedule', [

@@ -24,7 +24,7 @@ return new class extends Migration
                 ->on('cooperatives')
                 ->onDelete('cascade');
 
-            $table->enum('type', ['due_today', 'due_soon', 'overdue', 'due_in', 'enrolled','Has_Schedule']);
+            $table->enum('type', ['due_today', 'due_soon', 'overdue', 'due_in', 'enrolled', 'Has_Schedule', 'before_due']);
 
             // email fields
             $table->string('subject')->nullable();

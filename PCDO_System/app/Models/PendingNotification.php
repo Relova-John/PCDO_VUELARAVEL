@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Model;
 
 class PendingNotification extends Model
 {
-    protected $fillable = [
-        'schedule_id', 'coop_id', 'type', 'subject', 'body', 'processed'
-    ];
-    public $timestamps = false;
+    use SyncLogger;
 
+    protected $fillable = [
+        'schedule_id', 'coop_id', 'type', 'subject', 'body', 'processed',
+    ];
+
+    public $timestamps = false;
 
     public function pendingnotifications()
     {
@@ -21,6 +24,4 @@ class PendingNotification extends Model
     {
         return $this->belongsTo(AmortizationSchedules::class, 'schedule_id');
     }
-
-    
 }

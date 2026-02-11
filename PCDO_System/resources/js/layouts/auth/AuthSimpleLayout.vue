@@ -18,7 +18,7 @@ defineProps<{
                         <div class="flex aspect-square size-40 items-center justify-center text-sidebar-primary-foreground">
                             <AppLogoIcon class="size-24 fill-current" />
                         </div>
-                        <h2><strong>Palawan Cooperative Development Office</strong></h2>
+                        <h2><strong>Provincial Cooperative Development Office</strong></h2>
                         <span class="sr-only">{{ title }}</span>
                     </Link>
                     <div class="space-y-3 text-center">

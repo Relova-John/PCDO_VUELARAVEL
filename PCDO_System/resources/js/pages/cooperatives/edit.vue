@@ -7,6 +7,7 @@ import type { Cooperative, Regions, Provinces, Cities, Barangays, Details } from
 import { BreadcrumbItem } from '@/types'
 import { usePolling } from '@/composables/usePolling'
 import { toast } from "vue-sonner"
+import { email } from '@/routes/password'
 
 const props = defineProps<{
     cooperatives: Cooperative[],
@@ -39,6 +40,8 @@ const form = useForm({
     members_count: details.members_count ?? null,
     total_asset: details.total_asset ?? null,
     net_surplus: details.net_surplus ?? null,
+    email: details.email ?? null,
+    number: details.number ?? null,
 })
 
 const assetSizes = [
@@ -195,6 +198,32 @@ const dependencyMap = {
 
 type LocationFields = "region_code" | "province_code" | "city_code" | "barangay_code"
 
+// Email field validation
+const validateEmail = () => {
+    form.clearErrors('email')
+    if (form.email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(form.email)) {
+            form.setError('email', 'Enter a valid email address.')
+        }
+    }
+}
+
+// Phone field validation
+const validatePhone = () => {
+    form.clearErrors('number')
+    if (form.number) {
+        const phoneRegex = /^09\d{9}$/
+        if (!phoneRegex.test(form.number)) {
+            form.setError('number', 'Enter a valid mobile number (e.g., 09123456789).')
+        }
+    }
+}
+
+validateEmail()
+validatePhone()
+
+
 function onSelect(
     field: LocationFields,
     payload: { id: string; name: string }
@@ -228,6 +257,8 @@ function handleSubmit() {
         'members_count',
         'total_asset',
         'net_surplus',
+        'email',
+        'number',
     ];
 
     const emptyFields = requiredFields.filter(field => {
@@ -465,6 +496,22 @@ usePolling(["cooperatives"], 30000, () => submitting.value);
                                 <input id="surplus" v-model="form.net_surplus" type="number"
                                     class="w-full pl-9 rounded-xl border bg-white dark:bg-gray-700 border-gray-500 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                     placeholder="Enter Net Surplus" />
+                            </div>
+
+                            <!-- Email -->
+                            <div>
+                                <Label for="email" class="mb-2">Email</Label>
+                                <input id="email" v-model="form.email" type="email"
+                                    class="w-full pl-9 rounded-xl border bg-white dark:bg-gray-700 border-gray-500 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    @blur="validateEmail" placeholder="Enter Email" />
+                            </div>
+
+                            <!-- Mobile Number -->
+                            <div>
+                                <Label for="number" class="mb-2">Contact Number</Label>
+                                <input id="number" v-model="form.number" type="text" maxlength="11"
+                                    class="w-full pl-9 rounded-xl border bg-white dark:bg-gray-700 border-gray-500 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    @blur="validatePhone" placeholder="e.g. 09123456789" />
                             </div>
 
                             <!-- Submit -->

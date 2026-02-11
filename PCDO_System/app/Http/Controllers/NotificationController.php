@@ -66,7 +66,7 @@ class NotificationController extends Controller
             'isPdf' => true,
         ]);
 
-        $fileName = 'Notice_of_Payment_'.$coopProgram->cooperative->name.'.pdf';
+        $fileName = 'Notice_of_Payment_'.$coopProgram->cooperative->name.'_'.$notification->created_at->format('Y-m-d').'.pdf';
 
         return $pdf->download($fileName);
     }

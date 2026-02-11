@@ -24,11 +24,9 @@ return new class extends Migration
             $table->decimal('penalty_amount', 15, 2)->nullable();
             $table->decimal('balance', 15, 2)->nullable();
             $table->string('notes')->nullable();
-            $table->binary('receipt_image')->nullable();
 
             $table->timestamps();
         });
-        DB::statement('ALTER TABLE amortization_schedules MODIFY receipt_image LONGBLOB NULL;');
     }
 
     /**

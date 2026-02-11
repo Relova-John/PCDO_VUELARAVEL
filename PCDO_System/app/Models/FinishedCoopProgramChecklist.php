@@ -2,21 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class FinishedCoopProgramChecklist extends Model
 {
-    use HasFactory;
+    use HasFactory, SyncLogger;
 
-    // Set the exact table name
     protected $table = 'finished_coop_program_checklist';
 
     protected $fillable = [
         'coop_program_id',
         'task_name',
         'status',
-        // add other columns
     ];
 
     public function coopProgram()

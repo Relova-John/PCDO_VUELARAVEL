@@ -12,7 +12,6 @@ use Intervention\Image\ImageManager;
 
 class CoopProgramProgressController extends Controller
 {
-
     // Show the progress upload page (Inertia + Vue)
 
     public function create(Programs $program)
@@ -112,7 +111,7 @@ class CoopProgramProgressController extends Controller
         return response($imageData)
             ->header('Content-Type', $report->mime_type);
     }
-    
+
     // Download the progress report
     public function download(CoopProgramProgress $report)
     {

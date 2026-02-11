@@ -20,8 +20,12 @@ defineProps<{
 </script>
 
 <template>
-    <Breadcrumb>
-        <BreadcrumbList>
+    <Breadcrumb
+        class="w-full overflow-x-auto sm:overflow-visible scrollbar-hide"
+    >
+        <BreadcrumbList
+            class="flex flex-nowrap sm:flex-wrap items-center text-sm text-muted-foreground min-w-max pr-4"
+        >
             <template v-for="(item, index) in breadcrumbs" :key="index">
                 <BreadcrumbItem>
                     <template v-if="index === breadcrumbs.length - 1">
@@ -29,9 +33,7 @@ defineProps<{
                     </template>
                     <template v-else>
                         <BreadcrumbLink as-child>
-                            <Link :href="item.href ?? '#'">{{
-                                item.title
-                            }}</Link>
+                            <Link :href="item.href ?? '#'">{{ item.title }}</Link>
                         </BreadcrumbLink>
                     </template>
                 </BreadcrumbItem>

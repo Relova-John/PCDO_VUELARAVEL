@@ -38,13 +38,12 @@ class LoanOverdueNotification extends Notification
             ->orderByDesc('date_paid')
             ->first();
         $lastPaymentDate = $lastPayment?->date_paid?->format('F d, Y') ?? 'N/A';
-        $lastamountPaid = $lastPayment?->date_paid? $schedule->coopProgram?->amortizationSchedules()
+        $lastamountPaid = $lastPayment?->date_paid ? $schedule->coopProgram?->amortizationSchedules()
             ->whereDate('date_paid', $lastPayment->date_paid)
             ->sum('amount_paid')
         : 0;
         $balanceofToday = $schedule->coopProgram->loan_amount - $totalpaid;
         $datetoday = now()->format('F d, Y');
-
 
         $type = null;
         // Status text
@@ -66,14 +65,14 @@ class LoanOverdueNotification extends Notification
 
         // Store some of the details to the database
         $subject = 'Notice of Payment';
-        $body = $coopProgram->program->name . " LOAN: ₱" . number_format($coopProgram->loan_amount ?? 0, 2) . "\n" .
+        $body = $coopProgram->program->name.' LOAN: ₱'.number_format($coopProgram->loan_amount ?? 0, 2)."\n".
             'Date Released: '.$datereleased."\n".
             'Maturity date: '.$maturitydate."\n".
             'Monthly Amortization: ₱'.number_format($monthlyDue, 2)."\n".
             'Total Amount to Paid: ₱'.number_format($totalpaid, 2)."\n".
             'Date of Last Payment: '.$lastPaymentDate."\n".
             'Amount Paid: ₱'.number_format($lastamountPaid, 2)."\n".
-            'Balance as of '.$datetoday.' : ₱'.number_format($lastamountPaid, 2)."\n".
+            'Balance as of '.$datetoday.' : ₱'.number_format($lastamountPaid, 2)."\n";
 
         // Save to DB
         $pending = $schedule->pendingnotifications()

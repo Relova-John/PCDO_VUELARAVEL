@@ -1,26 +1,86 @@
 <?php
 
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminProgramController;
+use App\Http\Controllers\AdminCoopController;
+
 use App\Http\Controllers\AmortizationScheduleController;
 use App\Http\Controllers\CooperativesController;
 use App\Http\Controllers\CoopMemberController;
-// use App\Http\Controllers\CoopHistoryController;
 use App\Http\Controllers\CoopProgramChecklistController;
-use App\Http\Controllers\CoopProgramController;
 use App\Http\Controllers\CoopProgramProgressController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProgramController;
-use App\Http\Controllers\ResolvedController;
-use App\Http\Controllers\SyncController;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Spatie\Permission\Middleware\RoleMiddleware;
+
+app('router')->aliasMiddleware('role', RoleMiddleware::class);
 
 Route::get('/', function () {
-    return redirect()->route('dashboard');
+    $user = Auth::user();
+
+    if (!$user) {
+        return redirect()->route('login');
+    }
+
+    if (in_array($user->role, ['superadmin', 'admin'])) {
+        return redirect()->route('admin.dashboard');
+    }
+
+    if ($user->role === 'officer') {
+        return redirect()->route('dashboard');
+    }
+
+    if ($user->role === 'cooperative') {
+        return redirect()->route('coop.dashboard', $user->cooperative?->id);
+    }
+
+    return redirect()->route('login');
 })->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/ping', fn() => response()->json(['pong' => true]));
+
+Route::middleware(['auth', 'role:admin|superadmin'])->prefix('admin')->name('admin.') ->group(function () {
+    Route::get('/', [AdminController::class, 'index'])->name('dashboard');
+    Route::post('/users', [AdminController::class, 'storeUser'])->name('storeUser');
+    Route::post('/users/{id}/deactivate', [AdminController::class, 'deactivateUser'])->name('users.deactivate');
+    Route::post('/users/{id}/activate', [AdminController::class, 'activateUser'])->name('users.activate');
+    Route::get('/logs/{id}/changes', [AdminController::class, 'getLogChanges'])->name('logs.changes');
+    Route::post('users/{user}/change-role', [AdminController::class, 'changeRole'])->name('users.changeRole');
+
+    //Cooperatives
+    Route::resource('cooperatives', AdminCoopController::class);
+
+    // Programs
+    Route::resource('programs', AdminProgramController::class);
+
+    // Program Checklist
+    Route::post('programs/checklists', [AdminProgramController::class, 'storeChecklist'])->name('programs.checklists.store');
+    Route::put('programs/checklists/{id}', [AdminProgramController::class, 'updateChecklist'])->name('programs.checklists.update');
+    Route::delete('programs/checklists/{id}', [AdminProgramController::class, 'destroyChecklist'])->name('programs.checklists.destroy');
+
+    // Nested routes for adding cooperatives to a program
+    Route::get('/programs/{program}/cooperatives/create', [AdminProgramController::class, 'createCooperative'])->name('programs.cooperatives.create');
+    Route::post('/programs/{program}/cooperatives', [AdminProgramController::class, 'storeCooperative'])->name('programs.cooperatives.store');
+    Route::get('/programs/reports/monthly', [AdminProgramController::class, 'monthlyReport'])->name('programs.reports.monthly');
+    Route::post('/programs/{program}/archive', [AdminProgramController::class, 'archive'])->name('programs.archive');
+    Route::post('/programs/{program}/unarchive', [AdminProgramController::class, 'unarchive'])->name('programs.unarchive');
+});
+
+
+Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
+    Route::get('/dashboard', function () {
+        $user = Auth::user();
+        if (in_array($user->role, ['superadmin', 'admin'])) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return app(DashboardController::class)->index();
+    })->name('dashboard');
 
     // Cooperatives Routes
     Route::resource('cooperatives', CooperativesController::class);
@@ -29,23 +89,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Cooperatives Nested Routes
     Route::resource('cooperatives.members', CoopMemberController::class);
-    Route::get('cooperatives/{cooperative}/members/{member}/files/{fileId}/download', [CoopMemberController::class, 'downloadFile'])->name('cooperatives.members.files.download');
+    Route::get('/cooperatives/{cooperative}/members/{member}/files/{fileId}/view', [CoopMemberController::class, 'viewFile'])
+        ->name('cooperatives.members.files.view');
+
+    Route::get('/cooperatives/{cooperative}/members/{member}/files/{fileId}/download', [CoopMemberController::class, 'downloadFile'])
+        ->name('cooperatives.members.files.download');
+
     Route::delete('cooperatives/{cooperative}/members/{member}/files/{fileId}', [CoopMemberController::class, 'deleteFile'])->name('cooperatives.members.files.delete');
     Route::get('cooperatives/{cooperative}', [CooperativesController::class, 'show'])->name('cooperatives.show');
-    Route::get('/cooperatives/{cooperative}/members/{member}/biodata/pdf',[CoopMemberController::class, 'downloadBiodataPdf'])->where(['cooperative' => '.*', 'member' => '.*'])->name('cooperatives.members.biodata.pdf');
+    Route::get('/cooperatives/{cooperative}/members/{member}/biodata/pdf', [CoopMemberController::class, 'downloadBiodataPdf'])->where(['cooperative' => '.*', 'member' => '.*'])->name('cooperatives.members.biodata.pdf');
+
     // Program Routes
     Route::resource('programs', ProgramController::class);
 
     // Nested routes for adding cooperatives to a program
     Route::get('/programs/{program}/cooperatives/create', [ProgramController::class, 'createCooperative'])->name('programs.cooperatives.create');
     Route::post('/programs/{program}/cooperatives', [ProgramController::class, 'storeCooperative'])->name('programs.cooperatives.store');
+    Route::get('/programs/reports/monthly', [ProgramController::class, 'monthlyReport'])->name('programs.reports.monthly');
 
     // Progress Report
     Route::get('/programs/{program}/progress/create', [CoopProgramProgressController::class, 'create'])->name('programs.progress.create');
     Route::post('/programs/{program}/progress', [CoopProgramProgressController::class, 'store'])->name('programs.progress.store');
     Route::get('/progress/{report}', [CoopProgramProgressController::class, 'show'])->name('programs.progress.show');
     Route::get('/progress/{report}/download', [CoopProgramProgressController::class, 'download'])->name('programs.progress.download');
-    
+
     // Nested routes for checklists under a specific program and cooperative
     Route::prefix('programs/{program}/cooperatives/{cooperative}')->group(function () {
         Route::get('checklist', [CoopProgramChecklistController::class, 'show'])->name('programs.cooperatives.checklist.show');
@@ -75,6 +142,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/amortization/{loan}/incomplete', [AmortizationScheduleController::class, 'markIncomplete'])->name('loan.incomplete');
     Route::post('/amortization/{loan}/resolve', [AmortizationScheduleController::class, 'markResolved'])->name('loan.resolve');
     Route::get('/amortization/{id}/download', [AmortizationScheduleController::class, 'downloadAmortizationPdf'])->name('amortization.download');
+    Route::get('/amortization/{id}/view', [AmortizationScheduleController::class, 'amortizationFile'])->name('amortization.view');
     Route::post('/schedules/{schedule}/upload-receipt', [AmortizationScheduleController::class, 'markPaid'])->name('schedules.upload-receipt');
     Route::post('/schedules/{schedule}/upload-note-receipt', [AmortizationScheduleController::class, 'notePayment'])->name('schedules.upload-note-receipt');
 
@@ -105,8 +173,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Route::resource('coopPrograms/{cooperative}/checklists', CoopProgramChecklistController::class);
 
     // Custom Command Routes
-    Route::get('/sync', [SyncController::class, 'sync'])->name('sync');
+    Route::get('/sync', function () {
+        Artisan::call('sync:database');
+
+        return response()->json(['status' => 'synced']);
+    });
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+Route::middleware(['auth', 'role:cooperative'])->prefix('coop')->name('coop.')->group(function () {
+    Route::get('/dashboard', [CoopController::class, 'index'])->name('dashboard');
+});
+    
+
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

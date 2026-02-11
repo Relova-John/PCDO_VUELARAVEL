@@ -5,27 +5,52 @@ import debounce from 'lodash/debounce'
 export function useDrafts(form: any, type: string) {
     const drafts = ref<any[]>([])
     const STORAGE_KEY = `drafts_${type}`
+    const sessionDraftId = ref<string>('')
+
+    const ensureSessionDraftId = () => {
+        if (!sessionDraftId.value) {
+            sessionDraftId.value = `unsaved_${type}_${Date.now()}_${Math.random().toString(36).slice(2)}`
+        }
+        return sessionDraftId.value
+    }
 
     const saveDraftNow = () => {
         const data = form.data()
-        if ((!(data.id + '').trim()) && (!(data.name + '').trim())) return
+        let draftName = ''
+        if (type === 'members') {
+            draftName = [data.first_name, data.middle_name, data.last_name].filter(Boolean).join(' ').trim()
+        } else if (type === 'cooperatives') {
+            draftName = (data.name || '').trim()
+        }
+        if (!data.id && !draftName) return
 
         const allDrafts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-        const draftId = data.id || form.id || form.tempId || Date.now().toString()
+        const currentDraftId = data.id || sessionDraftId.value || ensureSessionDraftId()
 
-        let draft = allDrafts.find((d: any) => d.id === draftId && d.type === type)
+        let draft = allDrafts.find((d: any) => d.id === currentDraftId)
+
+        if (!draft && data.id) {
+            const unsavedDraftIndex = allDrafts.findIndex((d: any) => d.id === sessionDraftId.value)
+            if (unsavedDraftIndex !== -1) {
+                draft = allDrafts[unsavedDraftIndex]
+                draft.id = data.id
+            }
+        }
+
         if (!draft) {
-            draft = { id: draftId, type, data: {}, name: '', savedAt: '' }
+            draft = { id: currentDraftId, type, data: {}, name: '', savedAt: '' }
             allDrafts.push(draft)
         }
 
         if (JSON.stringify(draft.data) === JSON.stringify(data)) return
+
         draft.data = { ...data }
-        draft.name = data.name || 'Untitled'
+        draft.name = draftName || 'Untitled'
         draft.savedAt = new Date().toLocaleString()
 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(allDrafts))
-        drafts.value = allDrafts
+        const updated = allDrafts.map((d: any) => (d.id === draft.id ? draft : d))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+        drafts.value = updated
     }
 
     const saveDraft = debounce(saveDraftNow, 5000)
@@ -35,7 +60,7 @@ export function useDrafts(form: any, type: string) {
     onMounted(() => {
         drafts.value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
         window.addEventListener('beforeunload', saveDraftNow)
-        router.on('before', () => saveDraftNow())
+        router.on('start', () => saveDraftNow())
     })
 
     onBeforeUnmount(() => {
@@ -43,20 +68,15 @@ export function useDrafts(form: any, type: string) {
     })
 
     const useDraft = (draft: any) => {
-        if (typeof form.reset === 'function') {
-            form.reset()
-        }
-
-        if (typeof form.setData === 'function') {
-            form.setData({ ...draft.data })
-        } else {
-            Object.assign(form, draft.data)
-        }
+        sessionDraftId.value = draft.id
+        if (typeof form.reset === 'function') form.reset()
+        if (typeof form.setData === 'function') form.setData({ ...draft.data })
+        else Object.assign(form, draft.data)
     }
 
-    const deleteDraft = (draftId: string) => {
+    const deleteDraft = (draftId: string | number) => {
         const allDrafts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-        const updated = allDrafts.filter((d: any) => !(d.id === draftId && d.type === type))
+        const updated = allDrafts.filter((d: any) => String(d.id) !== String(draftId))
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
         drafts.value = updated
     }
@@ -69,12 +89,18 @@ export function useDrafts(form: any, type: string) {
 
     const wrapSubmit = (method: 'post' | 'put' | 'patch' | 'delete') => {
         return (url: string, options: any = {}) => {
-            const draftId = form.data().id || form.id || form.tempId
+            (saveDraft as any).cancel?.()
+            const draftId = form.data().id || sessionDraftId.value
             const originalOnSuccess = options.onSuccess
+
             options.onSuccess = (...args: any[]) => {
-                if (draftId) deleteDraft(draftId)
+                setTimeout(() => {
+                    if (draftId) deleteDraft(draftId)
+                    sessionDraftId.value = ''
+                }, 300)
                 if (originalOnSuccess) originalOnSuccess(...args)
             }
+
             return form[method](url, options)
         }
     }

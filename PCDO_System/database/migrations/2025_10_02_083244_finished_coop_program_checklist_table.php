@@ -2,9 +2,11 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -23,7 +25,6 @@ return new class extends Migration {
                 ->constrained('checklists')
                 ->cascadeOnDelete();
 
-
             // Uploaded file details
             $table->string('file_name')->nullable();
             $table->string('mime_type')->nullable();
@@ -32,8 +33,10 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        // Convert to LONGBLOB
-        DB::statement('ALTER TABLE coop_program_checklists MODIFY file_content LONGBLOB NULL');
+        // Convert to LONGBLOB in mysql
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE finished_coop_program_checklist MODIFY file_content LONGBLOB NULL');
+        }
     }
 
     /**

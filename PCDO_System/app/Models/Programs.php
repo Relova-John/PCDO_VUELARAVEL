@@ -2,19 +2,24 @@
 
 namespace App\Models;
 
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Model;
 
 class Programs extends Model
 {
+    use SyncLogger;
     protected $fillable = [
-        'name', 
+        'name',
         'description',
         'details',
         'term_months',
         'grace_period',
         'min_amount',
-        'max_amount'
+        'max_amount',
+        'penalty',
+        'archive'
     ];
+
     public $timestamps = false;
 
     public function checklists()
@@ -26,5 +31,4 @@ class Programs extends Model
     {
         return $this->hasMany(CoopProgram::class, 'program_id');
     }
-
 }

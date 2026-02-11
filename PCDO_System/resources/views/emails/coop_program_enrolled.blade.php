@@ -10,7 +10,7 @@
 
     <ul>
         <li><strong>Program:</strong> {{ $program->name }}</li>
-        <li><strong>Start Date:</strong> {{ now()->format('F d, Y') }}</li>
+        <li><strong>Enrolled Date:</strong> {{ now()->setTimezone('Asia/Manila')->format('F d, Y') }}</li>
         <li><strong>Status:</strong> Ongoing</li>
     </ul>
 

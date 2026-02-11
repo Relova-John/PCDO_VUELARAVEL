@@ -14,11 +14,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             PSGCSeeder::class,
-            CooperativeSeeder::class,
             ProgramSeeder::class,
             ChecklistsSeeder::class,
             ProgramChecklistsSeeder::class,
-            CoopProgramSeeder::class,
             RolesSeeder::class,
         ]);
     }

@@ -202,13 +202,13 @@ const validateEmail = () => {
 
 // Phone field validation
 const validatePhone = () => {
-  form.clearErrors('number')
-  if (form.number) {
-    const phoneRegex = /^09\d{9}$/
-    if (!phoneRegex.test(form.number)) {
-      form.setError('number', 'Enter a valid mobile number (e.g., 09123456789).')
+    form.clearErrors('number')
+    if (form.number) {
+        const phoneRegex = /^09\d{9}$/
+        if (!phoneRegex.test(form.number)) {
+            form.setError('number', 'Enter a valid mobile number (e.g., 09123456789).')
+        }
     }
-  }
 }
 
 validateEmail()
@@ -544,7 +544,7 @@ usePolling(["cooperatives"], 30000, () => {
                                 <Label for="email" class="mb-2">Email</Label>
                                 <input id="email" v-model="form.email" type="email"
                                     class="w-full pl-9 rounded-xl border bg-white dark:bg-gray-700 border-gray-500 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                    @blur="validateEmail"  placeholder="Enter Email" />
+                                    @blur="validateEmail" placeholder="Enter Email" />
                             </div>
 
                             <!-- Mobile Number -->
@@ -552,7 +552,7 @@ usePolling(["cooperatives"], 30000, () => {
                                 <Label for="number" class="mb-2">Contact Number</Label>
                                 <input id="number" v-model="form.number" type="text" maxlength="11"
                                     class="w-full pl-9 rounded-xl border bg-white dark:bg-gray-700 border-gray-500 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                    @blur="validatePhone"  placeholder="e.g. 09123456789" />
+                                    @blur="validatePhone" placeholder="e.g. 09123456789" />
                             </div>
 
                             <!-- Submit -->

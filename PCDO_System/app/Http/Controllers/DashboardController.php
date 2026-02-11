@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\AmortizationSchedules;
 use App\Models\Cooperative;
 use App\Models\Notifications;
-use App\Models\PendingNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -30,22 +29,60 @@ class DashboardController extends Controller
         $totalReleases = AmortizationSchedules::sum('installment');
         $totalReceived = AmortizationSchedules::sum('amount_paid');
 
-        // Monthly program stats
-        $monthlyProgramStats = DB::table('coop_programs')
-            ->join('programs', 'programs.id', '=', 'coop_programs.program_id')
-            ->selectRaw('programs.id as program_id, programs.name as program_name, MONTH(start_date) as month, COUNT(DISTINCT coop_id) as coop_count')
-            ->whereYear('start_date', now()->year)
-            ->groupBy('programs.id', 'programs.name', 'month')
-            ->get();
+        $driver = DB::connection()->getDriverName();
 
-        // Yearly program stats (last 5 years)
-        $yearlyProgramStats = DB::table('coop_programs')
-            ->join('programs', 'programs.id', '=', 'coop_programs.program_id')
-            ->selectRaw('programs.id as program_id, programs.name as program_name, YEAR(start_date) as year, COUNT(DISTINCT coop_id) as coop_count')
-            ->whereYear('start_date', '>=', now()->subYears(5)->year)
-            ->groupBy('programs.id', 'programs.name', 'year')
-            ->orderBy('year')
-            ->get();
+        // Monthly and 5 Year program stats
+        if ($driver === 'sqlite') {
+            $monthlyProgramStats = DB::table('coop_programs')
+                ->join('programs', 'programs.id', '=', 'coop_programs.program_id')
+                ->select(
+                    'programs.id as program_id',
+                    'programs.name as program_name',
+                    DB::raw("CAST(strftime('%m', start_date) AS INTEGER) as month"),
+                    DB::raw('COUNT(DISTINCT coop_id) as coop_count')
+                )
+                ->whereBetween('start_date', [now()->startOfYear(), now()->endOfYear()])
+                ->groupBy('programs.id', 'programs.name', 'month')
+                ->get();
+
+            $yearlyProgramStats = DB::table('coop_programs')
+                ->join('programs', 'programs.id', '=', 'coop_programs.program_id')
+                ->select(
+                    'programs.id as program_id',
+                    'programs.name as program_name',
+                    DB::raw("CAST(strftime('%Y', start_date) AS INTEGER) as year"),
+                    DB::raw('COUNT(DISTINCT coop_id) as coop_count')
+                )
+                ->whereBetween('start_date', [now()->subYears(5)->startOfYear(), now()->endOfYear()])
+                ->groupBy('programs.id', 'programs.name', 'year')
+                ->orderBy('year')
+                ->get();
+        } else {
+            $monthlyProgramStats = DB::table('coop_programs')
+                ->join('programs', 'programs.id', '=', 'coop_programs.program_id')
+                ->select(
+                    'programs.id as program_id',
+                    'programs.name as program_name',
+                    DB::raw('MONTH(start_date) as month'),
+                    DB::raw('COUNT(DISTINCT coop_id) as coop_count')
+                )
+                ->whereYear('start_date', now()->year)
+                ->groupBy('programs.id', 'programs.name', 'month')
+                ->get();
+
+            $yearlyProgramStats = DB::table('coop_programs')
+                ->join('programs', 'programs.id', '=', 'coop_programs.program_id')
+                ->select(
+                    'programs.id as program_id',
+                    'programs.name as program_name',
+                    DB::raw('YEAR(start_date) as year'),
+                    DB::raw('COUNT(DISTINCT coop_id) as coop_count')
+                )
+                ->whereYear('start_date', '>=', now()->subYears(5)->year)
+                ->groupBy('programs.id', 'programs.name', 'year')
+                ->orderBy('year')
+                ->get();
+        }
 
         // Unique program IDs
         $programIds = $monthlyProgramStats->pluck('program_id')
@@ -99,7 +136,9 @@ class DashboardController extends Controller
 
                 return [
                     'id' => $n->id,
-                    'subject' => "Payment Reminder for {$coopName}",
+                    'subject' => ! empty($n->subject)
+                        ? "{$coopName} - {$n->subject}"
+                        : "Reminder for {$coopName}",
                     'body' => 'This is a pending payment notification for your cooperative.',
                     'type' => $n->type ?? 'info',
                     'created_at' => $n->created_at ?? now(),

@@ -2,14 +2,15 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\AmortizationSchedules;
 use App\Models\Delinquent;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class CheckDelinquentAccounts extends Command
 {
     protected $signature = 'check:delinquents';
+
     protected $description = 'Check for delinquent cooperative loan schedules';
 
     public function handle()
@@ -17,7 +18,7 @@ class CheckDelinquentAccounts extends Command
         $this->info('Checking for delinquent amortization schedules...');
 
         $now = Carbon::now();
-        $schedules = AmortizationSchedules::with('coopProgram')->get();
+        $schedules = AmortizationSchedules::with('coopProgram')->orderBy('due_date', 'desc')->get();
 
         $count = 0;
 
@@ -25,8 +26,9 @@ class CheckDelinquentAccounts extends Command
             $dueDate = $schedule->due_date ? Carbon::parse($schedule->due_date) : null;
             $datePaid = $schedule->date_paid ? Carbon::parse($schedule->date_paid) : null;
 
-            if (!$dueDate || !$schedule->coop_program_id)
+            if (! $dueDate || ! $schedule->coop_program_id) {
                 continue;
+            }
 
             // Case 1: Has date paid
             if ($datePaid) {
@@ -52,6 +54,7 @@ class CheckDelinquentAccounts extends Command
         }
 
         $this->info(" $count delinquent records identified.");
+
         return Command::SUCCESS;
     }
 

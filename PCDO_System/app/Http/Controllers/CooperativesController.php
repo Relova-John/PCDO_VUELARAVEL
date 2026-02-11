@@ -9,8 +9,12 @@ use App\Models\Cooperative;
 use App\Models\Programs;
 use App\Models\Province;
 use App\Models\Region;
+use App\Models\User;
+use App\Mail\UserMail;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Hash;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Reader\CSV\Options as CsvReaderOptions;
 use OpenSpout\Reader\CSV\Reader as CsvReader;
@@ -27,9 +31,15 @@ class CooperativesController extends Controller
     public function index()
     {
         $cooperatives = Cooperative::with('details')
-            ->withCount(['programs as ongoing_program_count' => function ($q) {
-                $q->where('program_status', 'ongoing');
-            }])
+            ->withCount([
+                'programs as ongoing_program_count' => function ($q) {
+                    $q->where('program_status', 'ongoing');
+                },
+                'programs as delinquent_history_count' => function ($q) {
+                    $q->whereHas('delinquents');
+                },
+                'programs as total_program_count',
+            ])
             ->orderByDesc('ongoing_program_count')
             ->orderBy('id')
             ->get()
@@ -41,6 +51,8 @@ class CooperativesController extends Controller
                     'holder' => $coop->holder,
                     'member_count' => $coop->details->members_count ?? 0,
                     'has_ongoing_program' => $coop->ongoing_program_count > 0,
+                    'delinquent_history_count' => $coop->delinquent_history_count,
+                    'total_program_count' => $coop->total_program_count,
                 ];
             });
 
@@ -55,6 +67,7 @@ class CooperativesController extends Controller
     public function getDetails($id)
     {
         $coop = Cooperative::with('coopDetail')->findOrFail($id);
+
         return response()->json([
             'number' => optional($coop->coopDetail)->number,
             'email' => optional($coop->coopDetail)->email,
@@ -101,14 +114,34 @@ class CooperativesController extends Controller
 
             'asset_size' => ['required', Rule::in(['Micro', 'Small', 'Medium', 'Large'])],
             'coop_type' => ['required', Rule::in([
-                'Credit', 'Consumers', 'Producers', 'Marketing', 'Service', 'Multipurpose',
-                'Advocacy', 'Agrarian Reform', 'Bank', 'Diary', 'Education', 'Electric',
-                'Financial', 'Fishermen', 'Health Services', 'Housing', 'Insurance',
-                'Water Service', 'Workers', 'Others',
+                'Credit',
+                'Consumers',
+                'Producers',
+                'Marketing',
+                'Service',
+                'Multipurpose',
+                'Advocacy',
+                'Agrarian Reform',
+                'Bank',
+                'Diary',
+                'Education',
+                'Electric',
+                'Financial',
+                'Fishermen',
+                'Health Services',
+                'Housing',
+                'Insurance',
+                'Water Service',
+                'Workers',
+                'Others',
             ])],
             'status_category' => ['required', Rule::in(['Reporting', 'Non-Reporting', 'New'])],
             'bond_of_membership' => ['required', Rule::in([
-                'Residential', 'Insitutional', 'Associational', 'Occupational', 'Unspecified',
+                'Residential',
+                'Insitutional',
+                'Associational',
+                'Occupational',
+                'Unspecified',
             ])],
             'area_of_operation' => ['required', Rule::in(['Municipal', 'Provincial'])],
             'citizenship' => ['required', Rule::in(['Filipino', 'Foreign', 'Others'])],
@@ -132,8 +165,25 @@ class CooperativesController extends Controller
             'name' => $data['name'],
         ]);
 
+        if ($data['email']) {
+            $data['password'] = bin2hex(random_bytes(8));
+            Mail::to($data['email'])->send(new UserMail($data['password']));
+            $data['active'] = true;
+
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'active' => $data['active'] ?? true,
+            ]);
+            $user->assignRole('cooperative');
+            $cooperative->user_id = $user->id;
+            $cooperative->save();
+        }
+
         $detailsData = [
             'coop_id' => $cooperative->id,
+            'user_id' => $user->id ?? null,
             'region_code' => $data['region_code'],
             'province_code' => $data['province_code'],
             'city_code' => $data['city_code'],
@@ -150,6 +200,7 @@ class CooperativesController extends Controller
             'email' => $data['email'],
             'number' => $data['number'],
         ];
+
         CoopDetail::create($detailsData);
 
         return redirect()
@@ -167,7 +218,22 @@ class CooperativesController extends Controller
         $programs = Programs::select('id', 'name')->get();
 
         // Provide default empty details if none exist
-        $details = $cooperative->details ?? (object) [
+        $details = $cooperative->details ? [
+            'coop_type' => $cooperative->details->coop_type,
+            'status_category' => $cooperative->details->status_category,
+            'bond_of_membership' => $cooperative->details->bond_of_membership,
+            'area_of_operation' => $cooperative->details->area_of_operation,
+            'citizenship' => $cooperative->details->citizenship,
+            'members_count' => $cooperative->details->members_count,
+            'total_asset' => $cooperative->details->total_asset,
+            'net_surplus' => $cooperative->details->net_surplus,
+            'region' => $cooperative->details->region->name ?? '',
+            'province' => $cooperative->details->province->name ?? '',
+            'city' => $cooperative->details->city->name ?? '',
+            'barangay' => $cooperative->details->barangay->name ?? '',
+            'email' => $cooperative->details->email ?? '',
+            'number' => $cooperative->details->number ?? '',
+        ] : (object) [
             'coop_type' => '',
             'status_category' => '',
             'bond_of_membership' => '',
@@ -176,12 +242,51 @@ class CooperativesController extends Controller
             'members_count' => 0,
             'total_asset' => 0,
             'net_surplus' => 0,
+            'region' => '',
+            'province' => '',
+            'city' => '',
+            'barangay' => '',
+            'email' => '',
+            'number' => '',
         ];
+
+        $coopPrograms = $cooperative->programs()
+            ->whereIn('program_status', ['Finished', 'Resolved'])
+            ->where('exported', 1)
+            ->where('archived', 1)
+            ->with('program', 'delinquents')
+            ->get();
+
+        $groupedByYear = $coopPrograms->groupBy(function ($program) {
+            return $program->updated_at->format('Y');
+        });
+
+        $minYear = $coopPrograms->min(fn($p) => $p->updated_at->year) ?? date('Y');
+        $maxYear = date('Y');
+
+        $history = collect(range($minYear, $maxYear))->map(function ($year) use ($groupedByYear) {
+            $items = $groupedByYear->get($year, collect());
+
+            return [
+                'year' => $year,
+                'programs' => $items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'program_name' => $item->program->name ?? 'N/A',
+                        'completed_at' => $item->updated_at->format('Y-m-d'),
+                        'status' => $item->program_status,
+                        'has_delinquent' => $item->delinquents->isNotEmpty(),
+                    ];
+                })->values(),
+            ];
+        })->sortDesc()->values();
 
         return inertia('cooperatives/show', [
             'cooperative' => $cooperative,
             'details' => $details,
             'programs' => $programs,
+            'hasOngoingProgram' => $cooperative->programs()->where('program_status', 'ongoing')->exists(),
+            'history' => $history,
             'breadcrumbs' => [
                 ['title' => 'Cooperatives', 'href' => route('cooperatives.index')],
                 ['title' => $cooperative->name, 'href' => route('cooperatives.show', $cooperative)],
@@ -217,11 +322,15 @@ class CooperativesController extends Controller
     {
         $data = $request->validate([
             'id' => [
-                'required', 'string', 'max:255',
+                'required',
+                'string',
+                'max:255',
                 Rule::unique('cooperatives', 'id')->ignore($cooperative->id, 'id'),
             ],
             'name' => [
-                'required', 'string', 'max:255',
+                'required',
+                'string',
+                'max:255',
                 Rule::unique('cooperatives', 'name')->ignore($cooperative->id, 'id'),
             ],
 
@@ -232,14 +341,34 @@ class CooperativesController extends Controller
 
             'asset_size' => ['required', Rule::in(['Micro', 'Small', 'Medium', 'Large'])],
             'coop_type' => ['required', Rule::in([
-                'Credit', 'Consumers', 'Producers', 'Marketing', 'Service', 'Multipurpose',
-                'Advocacy', 'Agrarian Reform', 'Bank', 'Diary', 'Education', 'Electric',
-                'Financial', 'Fishermen', 'Health Services', 'Housing', 'Insurance',
-                'Water Service', 'Workers', 'Others',
+                'Credit',
+                'Consumers',
+                'Producers',
+                'Marketing',
+                'Service',
+                'Multipurpose',
+                'Advocacy',
+                'Agrarian Reform',
+                'Bank',
+                'Diary',
+                'Education',
+                'Electric',
+                'Financial',
+                'Fishermen',
+                'Health Services',
+                'Housing',
+                'Insurance',
+                'Water Service',
+                'Workers',
+                'Others',
             ])],
             'status_category' => ['required', Rule::in(['Reporting', 'Non-Reporting', 'New'])],
             'bond_of_membership' => ['required', Rule::in([
-                'Residential', 'Insitutional', 'Associational', 'Occupational', 'Unspecified',
+                'Residential',
+                'Insitutional',
+                'Associational',
+                'Occupational',
+                'Unspecified',
             ])],
             'area_of_operation' => ['required', Rule::in(['Municipal', 'Provincial'])],
             'citizenship' => ['required', Rule::in(['Filipino', 'Foreign', 'Others'])],
@@ -277,6 +406,37 @@ class CooperativesController extends Controller
             ]
         );
 
+        if ($data['email'] && $cooperative->user_id) {
+            $user = User::find($cooperative->user_id);
+            if ($user) {
+                $user->update([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                ]);
+            }
+        } elseif ($data['email'] && ! $cooperative->user_id) {
+            $data['password'] = bin2hex(random_bytes(8));
+            Mail::to($data['email'])->send(new UserMail($data['password']));
+            $data['active'] = true;
+
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'active' => $data['active'] ?? true,
+            ]);
+            $user->assignRole('cooperative');
+            $cooperative->user_id = $user->id;
+            $cooperative->save();
+        } elseif (! $data['email'] && $cooperative->user_id) {
+            $user = User::find($cooperative->user_id);
+            if ($user) {
+                $user->delete();
+            }
+            $cooperative->user_id = null;
+            $cooperative->save();
+        }
+
         return redirect()
             ->route('cooperatives.show', $cooperative->id)
             ->with('success', 'Cooperative updated successfully!');
@@ -293,7 +453,6 @@ class CooperativesController extends Controller
             return redirect()
                 ->route('cooperatives.index')
                 ->with('success', 'Cooperative deleted successfully!');
-
         } catch (\Exception $e) {
             return redirect()
                 ->route('cooperatives.index');
@@ -374,7 +533,7 @@ class CooperativesController extends Controller
                 ->route('cooperatives.index');
         }
 
-        $fileName = 'cooperatives_'.now()->format('Ymd_His').'.'.$type;
+        $fileName = 'cooperatives_' . now()->format('Ymd_His') . '.' . $type;
         $filePath = storage_path("app/$fileName");
 
         if ($type === 'csv') {

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class CoopProgram extends Model
 {
     /** @use HasFactory<\Database\Factories\CoopProgramFactory> */
-    use HasFactory;
+    use HasFactory, SyncLogger;
 
     protected $fillable = [
         'coop_id',
@@ -24,7 +25,7 @@ class CoopProgram extends Model
         'loan_amount',
         'with_grace',
         'exported',
-        'consenter'
+        'consenter',
     ];
 
     protected $casts = [
@@ -58,9 +59,19 @@ class CoopProgram extends Model
         return $this->hasMany(AmortizationOld::class, 'coop_program_id');
     }
 
+    public function old()
+    {
+        return $this->hasOne(AmortizationOld::class, 'coop_program_id');
+    }
+
     public function programProgress()
     {
         return $this->hasMany(CoopProgramProgress::class, 'coop_program_id');
+    }
+
+    public function coopDetail()
+    {
+        return $this->hasOne(CoopDetail::class, 'coop_id', 'coop_id');
     }
 
     public function coopDetails()

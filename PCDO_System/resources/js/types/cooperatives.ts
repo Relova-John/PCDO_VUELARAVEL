@@ -6,6 +6,22 @@ export interface Cooperative {
   type: string;
   member_count: number;
   has_ongoing_program: boolean;
+  delinquent_history_count?: number;
+  total_program_count?: number;
+}
+
+export interface Coop {
+  id: string;
+  name: string;
+  holder: Holder;
+  type: CoopType;
+  member_count: number;
+  has_ongoing_program: boolean;
+  delinquent_history_count?: number;
+  total_program_count?: number;
+  details: Details;
+  programs: Program[];
+  checklists: Checklists[];
 }
 
 export interface Details {
@@ -49,7 +65,7 @@ export interface Member {
   street?: string | null;
   city?: string | null;
   telephone?: string | null;
-  birth_date: string;
+  birthdate: string;
   age: number;
   sex: 'Male' | 'Female';
   citizenship: 'Filipino' | 'Others';
@@ -158,6 +174,31 @@ export interface Regions { code: string; name: string }
 export interface Provinces { code: string; name: string; region_code: string }
 export interface Cities { code: string; name: string; province_code: string, region_code: string }
 export interface Barangays { code: string; name: string; city_code: string }
+
+export interface Programs {
+  id: number;
+  name: string;
+  details: string;
+  archive: boolean;
+  cooperatives_count: number;
+  active_coop_count: number;
+}
+
+export interface Program {
+  id: number;
+  name: string;
+  details: string;
+  term_months: number;
+  grace_period: number;
+  min_amount: number;
+  max_amount: number;
+  penalty: number;
+}
+
+export interface Checklists {
+  id: number;
+  name: string;
+}
 
 export enum CoopType {
   Credit = 'Credit', Consumer = 'Consumers', Producers = 'Producers', Marketing = 'Marketing', Service = 'Service',

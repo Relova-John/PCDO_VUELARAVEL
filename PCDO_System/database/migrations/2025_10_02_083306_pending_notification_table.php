@@ -5,7 +5,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -26,7 +27,7 @@ return new class extends Migration {
                 ->on('cooperatives')
                 ->onDelete('cascade');
 
-            $table->enum('type', ['due_today', 'due_soon', 'overdue','due_in']);
+            $table->enum('type', ['due_today', 'before_due', 'due_soon', 'overdue', 'due_in']);
             $table->string('subject')->nullable();
             $table->longText('body')->nullable();
             $table->boolean('processed')->default(0);

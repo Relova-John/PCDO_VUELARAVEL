@@ -2,18 +2,22 @@
 
 namespace App\Models;
 
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Model;
 
 class Resolved extends Model
 {
+    use SyncLogger;
+
     protected $fillable = [
         'coop_program_id',
         'file_content',
 
     ];
-    protected $table = 'resolved';
-    protected $hidden = ['file_content'];
 
+    protected $table = 'resolved';
+
+    protected $hidden = ['file_content'];
 
     public function coopProgram()
     {

@@ -149,7 +149,7 @@ class CoopMemberController extends Controller
             'ref2_position' => 'nullable|string',
             'ref2_contact' => 'nullable|string',
             'is_representative' => 'boolean',
-            'files.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx',
+            'files.*' => 'nullable|file|mimes:jpg,jpeg,pdf,doc,docx',
         ];
 
         $validated = $request->validate($rules);
@@ -244,6 +244,8 @@ class CoopMemberController extends Controller
 
     public function update(Request $request, Cooperative $cooperative, CoopMember $member)
     {
+        ini_set('max_execution_time', 120);
+
         $validated = $request->validate([
             'position' => 'required|in:Chairman,Manager,Treasurer,Member',
             'active_year' => 'required|digits:4|integer|min:1900|max:'.(date('Y') + 1), // Example: 1900 to next year
@@ -338,7 +340,7 @@ class CoopMemberController extends Controller
             'ref2_position' => 'nullable|string',
             'ref2_contact' => 'nullable|string',
             'is_representative' => 'boolean',
-            'files.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png',
+            'files.*' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx',
         ]);
 
         $memberData = collect($validated)->except('files')->toArray();
@@ -406,6 +408,26 @@ class CoopMemberController extends Controller
         return redirect()
             ->route('cooperatives.members.index', $cooperative->id)
             ->with('success', 'Member deleted successfully.');
+    }
+
+    public function viewFile(Cooperative $cooperative, CoopMember $member, $fileId)
+    {
+        $file = $member->files()->where('id', $fileId)->first();
+
+        if (! $file) {
+            abort(404, 'File not found');
+        }
+
+        $path = $file->file_path;
+        $mime = Storage::mimeType($path) ?? 'application/octet-stream';
+
+        // Return as inline for PDF/image
+        $fullPath = Storage::path($path);
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="'.$file->file_name.'"',
+        ]);
     }
 
     public function downloadFile(Cooperative $cooperative, CoopMember $member, $fileId)
