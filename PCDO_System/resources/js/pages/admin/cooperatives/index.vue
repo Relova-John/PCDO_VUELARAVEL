@@ -90,7 +90,7 @@ function closeImportModal() {
 
 function confirmExport() {
     if (!exportType.value) return
-    window.location.href = `/cooperatives/export/${exportType.value}`
+    window.location.href = `/admin/cooperatives/export/${exportType.value}`
     showExportModal.value = false
 }
 
@@ -124,7 +124,7 @@ function confirmImport() {
     const form = new FormData();
     form.append('file', file.value);
 
-    router.post('/cooperatives/import', form, {
+    router.post('/admin/cooperatives/import', form, {
         forceFormData: true,
         onSuccess: () => {
             file.value = null;
@@ -367,7 +367,7 @@ usePolling(["cooperatives"], 15000);
                                         {{ coop.delinquent_history_count ?? 0 }} / {{ coop.total_program_count ?? 0 }}
 
                                         <span v-if="(coop.delinquent_history_count ?? 0) > 0" class="inline-flex items-center gap-1 ml-2 px-3 py-1 text-m font-semibold rounded-xl
-               bg-red-100 text-red-700 dark:bg-red-700/40 dark:text-red-300">
+                                        bg-red-100 text-red-700 dark:bg-red-700/40 dark:text-red-300">
                                             <XCircle class="w-3 h-3 text-red-600 dark:text-red-300 inline-block mr-1" />
                                             Delinquent
                                         </span>
@@ -415,7 +415,7 @@ usePolling(["cooperatives"], 15000);
 
                                 <!-- Empty State -->
                                 <TableRow v-if="paginatedCooperatives.length === 0">
-                                    <TableCell colspan="7" class="text-center text-gray-500 dark:text-gray-400 py-6">
+                                    <TableCell colspan="8" class="text-center text-gray-500 dark:text-gray-400 py-6">
                                         No Cooperatives found.
                                     </TableCell>
                                 </TableRow>

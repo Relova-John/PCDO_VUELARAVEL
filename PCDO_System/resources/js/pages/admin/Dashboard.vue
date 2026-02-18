@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AdminLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { type BreadcrumbItem } from '@/types'
 import { Head, router, usePage } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
@@ -338,9 +338,9 @@ async function openChangesModal(logId: number) {
 <template>
 
     <Head title="Admin Dashboard" />
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen px-4 py-6">
-            <div class="grid gap-4 md:grid-cols-3">
+    <AdminLayout :breadcrumbs="breadcrumbs">
+        <div class="bg-gray-100/90 dark:bg-gray-900 rounded-3xl min-h-screen">
+			<div class="px-5 md:px-8 pt-5 grid gap-6 md:grid-rows-[auto_1fr]">
                 <div class="col-span-3 md:col-span-1 bg-gray-50 dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                     <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">Create User</h3>
                     <div v-if="roles.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
@@ -348,7 +348,7 @@ async function openChangesModal(logId: number) {
                     </div>
                     <div v-else class="space-y-3">
                         <input v-model="name" placeholder="Name" type="text"
-                            class="w-full rounded-lg p-2 bg-white dark:bg-gray-700 border" />
+                                class="w-full rounded-lg p-2 bg-white dark:bg-gray-700 border" />
                         <p v-if="errors.name" class="text-xs text-red-500 mt-1">{{ errors.name }}</p>
                         <input v-model="email" placeholder="Email" type="email"
                             class="w-full rounded-lg p-2 bg-white dark:bg-gray-700 border" />
@@ -673,5 +673,5 @@ async function openChangesModal(logId: number) {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-    </AppLayout>
+    </AdminLayout>
 </template>

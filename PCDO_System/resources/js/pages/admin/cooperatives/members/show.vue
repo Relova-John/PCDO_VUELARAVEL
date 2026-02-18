@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { BreadcrumbItem } from '@/types'
 import type { Member } from '@/types/cooperatives'
 import { router, usePage } from '@inertiajs/vue3'
@@ -28,7 +28,7 @@ function display(value: any) {
 }
 
 function goToEditPage(id: number) {
-  router.visit(`/cooperatives/${props.cooperative.id}/members/${id}/edit`)
+  router.visit(`/admin/cooperatives/${props.cooperative.id}/members/${id}/edit`)
 }
 
 function openFileModal(file: any) {
@@ -42,14 +42,14 @@ function closeFileModal() {
 }
 
 function deleteFile(file: any) {
-  router.delete(`/cooperatives/${props.cooperative.id}/members/${props.member.id}/files/${file.id}`, {
+  router.delete(`/admin/cooperatives/${props.cooperative.id}/members/${props.member.id}/files/${file.id}`, {
     preserveScroll: true,
     onSuccess: closeFileModal,
   })
 }
 
 function downloadPdf() {
-  window.location.href = `/cooperatives/${props.cooperative.id}/members/${props.member.id}/biodata/pdf`
+  window.location.href = `/admin/cooperatives/${props.cooperative.id}/members/${props.member.id}/biodata/pdf`
 }
 
 const isMobile = ref(false)
@@ -62,7 +62,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppLayout :breadcrumbs="breadcrumbs">
+  <AdminLayout :breadcrumbs="breadcrumbs">
     <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
       <div class="max-w-7x7 p-6">
         <div
@@ -438,5 +438,5 @@ onMounted(() => {
         </div>
       </div>
     </Transition>
-  </AppLayout>
+  </AdminLayout>
 </template>

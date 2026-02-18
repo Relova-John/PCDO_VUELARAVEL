@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { Head } from '@inertiajs/vue3'
 import { BreadcrumbItem } from '@/types'
 import { ref, onMounted } from 'vue'
@@ -19,7 +19,7 @@ const props = defineProps<{
 
 // Breadcrumbs for navigation
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Documentation', href: '/documentation' },
+    { title: 'Documentation', href: '/admin/documentation' },
     { title: props.cooperative.name, href: '#' },
 ]
 
@@ -38,7 +38,7 @@ onMounted(() => {
 
     <Head :title="cooperative.name" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AdminLayout :breadcrumbs="breadcrumbs">
         <div class="bg-gray-50 dark:bg-gray-900 min-h-screen px-4 py-6">
             <div class="max-w-7xl mx-auto space-y-6">
 
@@ -161,5 +161,5 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

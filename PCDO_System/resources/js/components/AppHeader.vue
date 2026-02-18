@@ -22,12 +22,6 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import UserMenuContent from '@/components/AdminMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl, urlIsActive } from '@/lib/utils';
@@ -79,7 +73,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Payments',
-        href: '/admin/payments',
+        href: '/admin/amortizations',
         icon: HandCoins,
     },
     {

@@ -125,14 +125,14 @@ onMounted(() => {
 								</button>
 							</div>
 
-							<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+							<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
 								<Link v-for="program in activePrograms" :key="program.id"
 									:href="`/admin/programs/${program.id}`" class="rounded-2xl shadow-md border border-gray-300 dark:border-gray-700 
 							bg-gray-50 dark:bg-gray-800 
 							hover:shadow-2xl hover:-translate-y-1.5 transform transition-all block relative">
 									<!-- Dynamic Gradient Top Bar -->
 									<div
-										:class="`h-2 rounded-t-2xl bg-gradient-to-r ${programGradients[program.id] || 'from-blue-500 to-indigo-500'}`">
+										:class="`h-3 rounded-t-2xl bg-gradient-to-r ${programGradients[program.id] || 'from-blue-500 to-indigo-500'}`">
 									</div>
 
 									<!-- Edit Menu Button -->

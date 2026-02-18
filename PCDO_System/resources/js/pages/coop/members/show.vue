@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import CoopLayout from '@/layouts/CoopLayout.vue'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { BreadcrumbItem } from '@/types'
 import type { Member } from '@/types/cooperatives'
-import { router, usePage } from '@inertiajs/vue3'
+import { router } from '@inertiajs/vue3'
 import { computed, ref, onMounted } from 'vue'
 import PdfViewer from '@/components/PdfViewer.vue'
 
-const page = usePage()
 const showFileModal = ref(false)
 const selectedFile = ref<any | null>(null)
 const pdfFailed = ref(false)
@@ -26,10 +26,6 @@ function display(value: any) {
   return value
 }
 
-function goToEditPage(id: number) {
-  router.visit(`/cooperatives/${props.cooperative.id}/members/${id}/edit`)
-}
-
 function openFileModal(file: any) {
   selectedFile.value = file
   showFileModal.value = true
@@ -47,10 +43,6 @@ function deleteFile(file: any) {
   })
 }
 
-function downloadPdf() {
-  window.location.href = `/cooperatives/${props.cooperative.id}/members/${props.member.id}/biodata/pdf`
-}
-
 const isMobile = ref(false)
 
 onMounted(() => {
@@ -58,10 +50,15 @@ onMounted(() => {
   const sizeCheck = window.matchMedia('(max-width: 768px)').matches
   isMobile.value = uaCheck || sizeCheck
 })
+
+const breadcrumbs: BreadcrumbItem[] = [
+  { title: 'Members', href: '/coop/members' },
+  { title: `${props.member.id} - ${fullName.value}`, href: '#' }
+]
 </script>
 
 <template>
-  <AppLayout :breadcrumbs="breadcrumbs">
+  <CoopLayout :breadcrumbs="breadcrumbs">
     <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
       <div class="max-w-7x7 p-6">
         <div
@@ -76,15 +73,6 @@ onMounted(() => {
                 class="inline-flex gap-2 px-4 py-2 rounded-full text-sm font-medium bg-indigo-200/40 text-lime-700 dark:bg-lime-800 dark:text-fuchsia-200">
                 ID: <span class="font-semibold">{{ member.id }}</span>
               </span>
-              <button @click="goToEditPage(member.id)"
-                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600">
-                <SquarePen class="w-4 h-4" /> Edit
-              </button>
-              <a href="#" @click.prevent="downloadPdf" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg
-         bg-rose-600 text-white hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600 whitespace-nowrap">
-                <FileDown class="w-4 h-4" />
-                Download
-              </a>
             </div>
           </div>
 
@@ -437,5 +425,5 @@ onMounted(() => {
         </div>
       </div>
     </Transition>
-  </AppLayout>
+  </CoopLayout>
 </template>

@@ -60,7 +60,7 @@ function removeFile(index: number) {
 }
 
 function submitForm() {
-    form.post(`/programs/${props.program.id}/progress`, {
+    form.post(`/admin/programs/${props.program.id}/progress`, {
         preserveScroll: true,
         onSuccess: () => {
             toast.success('Progress report uploaded successfully!')

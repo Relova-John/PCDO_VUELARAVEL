@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { update } from '@/routes/admin/settings/password';
+import { update } from '@/routes/coop/settings/password';
 import InputError from '@/components/InputError.vue';
-import AppLayout from '@/layouts/app/AppHeaderLayout.vue';
-import SettingsLayout from '@/layouts/settings/AdminLayout.vue';
+import AppLayout from '@/layouts/app/AppCoopLayout.vue';
+import SettingsLayout from '@/layouts/settings/CoopLayout.vue';
 import { edit } from '@/routes/password';
 import { Form, Head } from '@inertiajs/vue3';
 import { ref } from 'vue';

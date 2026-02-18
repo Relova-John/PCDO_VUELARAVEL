@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { ref, onMounted } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 import { BreadcrumbItem } from '@/types'
@@ -189,7 +189,7 @@ function handleSubmit() {
     form.active_year = Number(form.active_year)
     form.is_representative = !!form.is_representative
     form.files = [...file.value]
-    form.post(`/cooperatives/${props.cooperative.id}/members/${props.member.id}?_method=PUT`, {
+    form.post(`/admin/cooperatives/${props.cooperative.id}/members/${props.member.id}?_method=PUT`, {
         forceFormData: true,
         onError: errors => {
             const messages = Object.values(errors)
@@ -209,7 +209,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AdminLayout :breadcrumbs="breadcrumbs">
         <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
             <div class="max-w-7x7 p-6">
                 <div
@@ -782,5 +782,5 @@ onMounted(() => {
                 </div>
             </div>
         </Transition>
-    </AppLayout>
+    </AdminLayout>
 </template>

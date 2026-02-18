@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { BreadcrumbItem } from '@/types'
@@ -178,7 +178,7 @@ function openFileModal() {
 
 function handleSubmit() {
     form.files = file.value.length > 0 ? file.value : [];
-    post(`/cooperatives/${props.cooperative.id}/members`, {
+    post(`/admin/cooperatives/${props.cooperative.id}/members`, {
         forceFormData: true,
         onError: (errors: Record<string, string | string[]>) => {
             const values = Object.values(errors);
@@ -198,7 +198,7 @@ const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AdminLayout :breadcrumbs="breadcrumbs">
         <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
             <div class="max-w-7x7 p-6">
                 <div
@@ -696,5 +696,5 @@ const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>
