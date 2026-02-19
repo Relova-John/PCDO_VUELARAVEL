@@ -4,6 +4,8 @@ use App\Http\Controllers\Settings\AdminPasswordController;
 use App\Http\Controllers\Settings\AdminProfileController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\CoopPasswordController;
+use App\Http\Controllers\Settings\CoopProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -43,3 +45,23 @@ Route::middleware(['auth', 'role:admin|superadmin'])
             return Inertia::render('admin/settings/Appearance');
         })->name('appearance.edit');
     });
+
+Route::middleware(['auth', 'role:cooperative'])
+->prefix('coop/settings')
+->as('coop.settings.')
+->group(function () {
+    Route::redirect('/', '/coop/settings/profile');
+
+    Route::get('/profile', [CoopProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [CoopProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [CoopProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/password', [CoopPasswordController::class, 'edit'])->name('password.edit');
+    Route::put('/password', [CoopPasswordController::class, 'update'])
+        ->middleware('throttle:6,1')
+        ->name('password.update');
+
+    Route::get('/appearance', function () {
+        return Inertia::render('coop/settings/Appearance');
+    })->name('appearance.edit');
+});

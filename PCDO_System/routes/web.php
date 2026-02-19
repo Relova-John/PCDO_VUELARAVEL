@@ -1,11 +1,15 @@
 <?php
 
+use App\Http\Controllers\AdminAmortizationScheduleController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminCoopController;
+use App\Http\Controllers\AdminCoopMemberController;
+use App\Http\Controllers\AdminCoopProgramProgressController;
+use App\Http\Controllers\AdminDocumentationController;
+use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\AdminProgramController;
-    
-use App\Http\Controllers\CoopController;
-
 use App\Http\Controllers\AmortizationScheduleController;
+use App\Http\Controllers\CoopController;
 use App\Http\Controllers\CooperativesController;
 use App\Http\Controllers\CoopMemberController;
 use App\Http\Controllers\CoopProgramChecklistController;
@@ -14,6 +18,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\CoopMemController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -24,7 +29,7 @@ app('router')->aliasMiddleware('role', RoleMiddleware::class);
 Route::get('/', function () {
     $user = Auth::user();
 
-    if (!$user) {
+    if (! $user) {
         return redirect()->route('login');
     }
 
@@ -43,15 +48,29 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
-Route::get('/ping', fn() => response()->json(['pong' => true]));
+Route::get('/ping', fn () => response()->json(['pong' => true]));
 
-Route::middleware(['auth', 'role:admin|superadmin'])->prefix('admin')->name('admin.') ->group(function () {
+Route::middleware(['auth', 'role:admin|superadmin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('dashboard');
     Route::post('/users', [AdminController::class, 'storeUser'])->name('storeUser');
     Route::post('/users/{id}/deactivate', [AdminController::class, 'deactivateUser'])->name('users.deactivate');
     Route::post('/users/{id}/activate', [AdminController::class, 'activateUser'])->name('users.activate');
-    Route::get('/logs/{id}/changes', [AdminController::class, 'logs.changes'])->name('logs.changes');
+    Route::get('/logs/{id}/changes', [AdminController::class, 'getLogChanges'])->name('logs.changes');
     Route::post('users/{user}/change-role', [AdminController::class, 'changeRole'])->name('users.changeRole');
+
+    // Cooperatives
+    Route::resource('cooperatives', AdminCoopController::class);
+
+    // Cooperatives Nested Routes
+    Route::resource('cooperatives.members', AdminCoopMemberController::class);
+    Route::get('/cooperatives/{cooperative}/members/{member}/files/{fileId}/view', [AdminCoopMemberController::class, 'viewFile'])
+        ->name('cooperatives.members.files.view');
+
+    Route::get('/cooperatives/{cooperative}/members/{member}/files/{fileId}/download', [AdminCoopMemberController::class, 'downloadFile'])
+        ->name('cooperatives.members.files.download');
+
+    Route::delete('cooperatives/{cooperative}/members/{member}/files/{fileId}', [AdminCoopMemberController::class, 'deleteFile'])->name('cooperatives.members.files.delete');
+    Route::get('/cooperatives/{cooperative}/members/{member}/biodata/pdf', [AdminCoopMemberController::class, 'downloadBiodataPdf'])->where(['cooperative' => '.*', 'member' => '.*'])->name('cooperatives.members.biodata.pdf');
 
     // Programs
     Route::resource('programs', AdminProgramController::class);
@@ -67,8 +86,33 @@ Route::middleware(['auth', 'role:admin|superadmin'])->prefix('admin')->name('adm
     Route::get('/programs/reports/monthly', [AdminProgramController::class, 'monthlyReport'])->name('programs.reports.monthly');
     Route::post('/programs/{program}/archive', [AdminProgramController::class, 'archive'])->name('programs.archive');
     Route::post('/programs/{program}/unarchive', [AdminProgramController::class, 'unarchive'])->name('programs.unarchive');
-});
 
+    // Progress Report
+    Route::get('/programs/{program}/progress/create', [AdminCoopProgramProgressController::class, 'create'])->name('programs.progress.create');
+    Route::post('/programs/{program}/progress', [AdminCoopProgramProgressController::class, 'store'])->name('programs.progress.store');
+    Route::get('/progress/{report}', [AdminCoopProgramProgressController::class, 'show'])->name('programs.progress.show');
+    Route::get('/progress/{report}/download', [AdminCoopProgramProgressController::class, 'download'])->name('programs.progress.download');
+
+    // Payments
+    Route::get('amortizations', [AdminAmortizationScheduleController::class, 'index'])->name('amortizations.index');
+    Route::get('/amortizations/{coopProgram}', [AdminAmortizationScheduleController::class, 'show'])->name('amortizations.show');
+
+    // Notification
+    Route::get('notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/{id}', [AdminNotificationController::class, 'show'])->name('notifications.show');
+
+    // Documentation
+    Route::get('/documentation', [AdminDocumentationController::class, 'index'])->name('documentation.index');
+    Route::get('/documentation/cooperative/{id}', [AdminDocumentationController::class, 'show'])->name('documentation.show');
+    Route::get('/documentation/{id}/amortization', [AdminDocumentationController::class, 'amortizationFile'])->name('documentation.amortization');
+    Route::get('/documentation/{id}/details', [AdminDocumentationController::class, 'cooperativeDetailsFile'])->name('documentation.details');
+    Route::get('/documentation/{id}/resolved', [AdminDocumentationController::class, 'resolvedFile'])->name('documentation.resolved.file');
+    Route::get('/documentation/{id}/checklist', [AdminDocumentationController::class, 'checklistFile'])->name('documentation.checklist.file');
+    Route::get('/documentation/{id}/member-files/', [AdminDocumentationController::class, 'memberFile'])->name('documentation.member-files');
+    Route::get('/documentation/{id}/delinquent', [AdminDocumentationController::class, 'delinquentReport'])->name('documentation.delinquent');
+    Route::get('/documentation/{id}/progress', [AdminDocumentationController::class, 'progressReportFile'])->name('documentation.progress.file');
+    Route::get('/documentation/{id}/allfiles', [AdminDocumentationController::class, 'allFile'])->name('documentation.allfiles.file');
+});
 
 Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     Route::get('/dashboard', function () {
@@ -112,7 +156,7 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     Route::get('/progress/{report}/download', [CoopProgramProgressController::class, 'download'])->name('programs.progress.download');
 
     // Nested routes for checklists under a specific program and cooperative
-    Route::prefix('programs/{program}/cooperatives/{cooperative}')->group(function () {
+    Route::prefix('coopProgram/{coopProgramId}')->group(function () {
         Route::get('checklist', [CoopProgramChecklistController::class, 'show'])->name('programs.cooperatives.checklist.show');
         Route::post('checklist/upload', [CoopProgramChecklistController::class, 'upload'])->name('programs.cooperatives.checklist.upload');
         Route::get('checklist/{file}/preview', [CoopProgramChecklistController::class, 'preview'])->name('programs.cooperatives.checklist.preview');
@@ -134,7 +178,6 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     Route::post('/schedules/{schedule}/mark-paid', [AmortizationScheduleController::class, 'markPaid'])->name('schedules.markPaid');
     Route::post('/schedules/{schedule}/note-payment', [AmortizationScheduleController::class, 'notePayment'])->name('schedules.notePayment');
     Route::post('/schedules/{schedule}/penalty', [AmortizationScheduleController::class, 'penalty'])->name('schedules.penalty');
-    Route::post('/schedules/{schedule}/send-overdue-email', [AmortizationScheduleController::class, 'sendOverdueEmail'])->name('schedules.sendOverdueEmail');
 
     // Amortization Incomplete
     Route::post('/amortization/{loan}/incomplete', [AmortizationScheduleController::class, 'markIncomplete'])->name('loan.incomplete');
@@ -180,8 +223,14 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
 
 Route::middleware(['auth', 'role:cooperative'])->prefix('coop')->name('coop.')->group(function () {
     Route::get('/dashboard', [CoopController::class, 'index'])->name('dashboard');
-});
-    
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+    // Members
+    Route::get('/members', [CoopMemController::class, 'index'])->name('members.index');
+    Route::get('/members/{member}', [CoopMemController::class, 'show'])->name('members.show');
+
+    // Details
+    Route::get('/details', [CoopController::class, 'details'])->name('details.index');
+});
+
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

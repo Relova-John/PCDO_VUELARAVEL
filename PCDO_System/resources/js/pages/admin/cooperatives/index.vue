@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
+import AdminLayout from '@/layouts/AdminLayout.vue';
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { BreadcrumbItem } from '@/types'
 import { router, usePage } from '@inertiajs/vue3';
@@ -90,7 +90,7 @@ function closeImportModal() {
 
 function confirmExport() {
     if (!exportType.value) return
-    window.location.href = `/cooperatives/export/${exportType.value}`
+    window.location.href = `/admin/cooperatives/export/${exportType.value}`
     showExportModal.value = false
 }
 
@@ -124,7 +124,7 @@ function confirmImport() {
     const form = new FormData();
     form.append('file', file.value);
 
-    router.post('/cooperatives/import', form, {
+    router.post('/admin/cooperatives/import', form, {
         forceFormData: true,
         onSuccess: () => {
             file.value = null;
@@ -138,25 +138,25 @@ function confirmImport() {
 }
 
 function goToCreatePage() {
-    router.visit('/cooperatives/create');
+    router.visit('/admin/cooperatives/create');
 }
 
 function goToViewPage(id: string) {
-    router.visit(`/cooperatives/${id}`);
+    router.visit(`/admin/cooperatives/${id}`);
 }
 
 function goToDeletePage(id: string) {
     deletingId.value = id;
-    router.delete(`/cooperatives/${id}`), {
+    router.delete(`/admin/cooperatives/${id}`, {
         onFinish: () => {
             deletingId.value = null;
         }
-    };
+    });
 }
 
 function confirmDelete(id: string, name: string) {
     deletingId.value = id
-    router.delete(`/cooperatives/${id}`, {
+    router.delete(`/admin/cooperatives/${id}`, {
         onFinish: () => {
             deletingId.value = null
         },
@@ -200,9 +200,9 @@ usePolling(["cooperatives"], 15000);
 <template>
 
     <Head title="Cooperatives" />
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
-            <div class="px-5 md:px-5 pt-5">
+    <AdminLayout :breadcrumbs="breadcrumbs">
+        <div class="bg-gray-100/90 dark:bg-gray-900 rounded-3xl min-h-screen">
+			<div class="px-5 md:px-8 pt-5 grid gap-6 md:grid-rows-[auto_1fr]">
                 <!-- Top Actions Card -->
                 <div
                     class="bg-gray-200 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 border-gray-300 dark:border-gray-700 rounded-xl shadow-m px-6 py-5 mb-6">
@@ -367,7 +367,7 @@ usePolling(["cooperatives"], 15000);
                                         {{ coop.delinquent_history_count ?? 0 }} / {{ coop.total_program_count ?? 0 }}
 
                                         <span v-if="(coop.delinquent_history_count ?? 0) > 0" class="inline-flex items-center gap-1 ml-2 px-3 py-1 text-m font-semibold rounded-xl
-               bg-red-100 text-red-700 dark:bg-red-700/40 dark:text-red-300">
+                                        bg-red-100 text-red-700 dark:bg-red-700/40 dark:text-red-300">
                                             <XCircle class="w-3 h-3 text-red-600 dark:text-red-300 inline-block mr-1" />
                                             Delinquent
                                         </span>
@@ -415,7 +415,7 @@ usePolling(["cooperatives"], 15000);
 
                                 <!-- Empty State -->
                                 <TableRow v-if="paginatedCooperatives.length === 0">
-                                    <TableCell colspan="7" class="text-center text-gray-500 dark:text-gray-400 py-6">
+                                    <TableCell colspan="8" class="text-center text-gray-500 dark:text-gray-400 py-6">
                                         No Cooperatives found.
                                     </TableCell>
                                 </TableRow>
@@ -650,5 +650,5 @@ usePolling(["cooperatives"], 15000);
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

@@ -415,7 +415,7 @@ usePolling(["cooperatives"], 15000);
 
                                 <!-- Empty State -->
                                 <TableRow v-if="paginatedCooperatives.length === 0">
-                                    <TableCell colspan="7" class="text-center text-gray-500 dark:text-gray-400 py-6">
+                                    <TableCell colspan="8" class="text-center text-gray-500 dark:text-gray-400 py-6">
                                         No Cooperatives found.
                                     </TableCell>
                                 </TableRow>

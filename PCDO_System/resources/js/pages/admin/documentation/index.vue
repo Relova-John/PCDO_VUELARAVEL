@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { Head } from '@inertiajs/vue3'
 import { BreadcrumbItem } from '@/types'
 import { ref } from 'vue'
@@ -29,9 +29,9 @@ const toggleYear = (year: string) => {
 <template>
 
   <Head title="Documentation" />
-  <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="bg-gray-50 dark:bg-gray-900 min-h-screen px-4 sm:px-6 py-8">
-      <div class="mb-8 text-center">
+  <AdminLayout :breadcrumbs="breadcrumbs">
+    <div class="bg-gray-100/90 dark:bg-gray-900 rounded-3xl min-h-screen">
+			<div class="px-5 md:px-8 pt-5 grid gap-6 md:grid-rows-[auto_1fr]">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">
           Documentation by Year
         </h1>
@@ -105,5 +105,5 @@ const toggleYear = (year: string) => {
         </div>
       </div>
     </div>
-  </AppLayout>
+  </AdminLayout>
 </template>

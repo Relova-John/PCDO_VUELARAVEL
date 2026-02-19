@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AdminLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { type BreadcrumbItem } from '@/types'
 import { Head, router, usePage } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 import Switch from '@/components/ui/switch/Switch.vue'
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Admin', href: '/admin' }]
@@ -132,21 +132,21 @@ function createUser() {
 }
 
 function changeRole(user: any, newRole: string) {
-  const oldRoles = [...user.roles]
+    const oldRoles = [...user.roles]
 
-  user.roles = [{ id: 0, name: newRole }]
+    user.roles = [{ id: 0, name: newRole }]
 
-  router.post(
-    `/admin/users/${user.id}/change-role`,
-    { role: newRole },
-    {
-      preserveScroll: true,
-      preserveState: true,
-      onError: () => {
-        user.roles = oldRoles
-      }
-    }
-  )
+    router.post(
+        `/admin/users/${user.id}/change-role`,
+        { role: newRole },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onError: () => {
+                user.roles = oldRoles
+            }
+        }
+    )
 }
 
 const showDialog = ref(false)
@@ -156,41 +156,41 @@ const pendingValue = ref<boolean | null>(null)
 const originalValue = ref<boolean | null>(null)
 
 function onToggle(user: { id: number; active: boolean }) {
-  pendingUserId.value = user.id
-  originalValue.value = user.active
-  pendingAction.value = user.active ? 'deactivate' : 'activate'
-  pendingValue.value = !user.active
-  showDialog.value = true
+    pendingUserId.value = user.id
+    originalValue.value = user.active
+    pendingAction.value = user.active ? 'deactivate' : 'activate'
+    pendingValue.value = !user.active
+    showDialog.value = true
 }
 
 
 function confirmAction() {
-  if (pendingUserId.value === null || pendingValue.value === null) return
+    if (pendingUserId.value === null || pendingValue.value === null) return
 
-  const user = users.value.data.find(u => u.id === pendingUserId.value)
-  if (!user) return
+    const user = users.value.data.find(u => u.id === pendingUserId.value)
+    if (!user) return
 
-  if (pendingAction.value === 'activate') activateUser(user.id)
-  else deactivateUser(user.id)
+    if (pendingAction.value === 'activate') activateUser(user.id)
+    else deactivateUser(user.id)
 
-  resetPending()
+    resetPending()
 }
 
 function cancelAction() {
-  const user = users.value.data.find(u => u.id === pendingUserId.value)
+    const user = users.value.data.find(u => u.id === pendingUserId.value)
 
-  if (user && originalValue.value !== null) {
-    user.active = originalValue.value
-  }
+    if (user && originalValue.value !== null) {
+        user.active = originalValue.value
+    }
 
-  resetPending()
+    resetPending()
 }
 
 function resetPending() {
-  showDialog.value = false
-  pendingUserId.value = null
-  pendingValue.value = null
-  pendingAction.value = null
+    showDialog.value = false
+    pendingUserId.value = null
+    pendingValue.value = null
+    pendingAction.value = null
 }
 
 function deactivateUser(id: number) {
@@ -249,6 +249,34 @@ const valueModalData = ref<{ key: string; value: string }[]>([])
 const modalTitle = ref('')
 const loadingChanges = ref(false)
 
+function formatReadableValue(field: string, value: any): string {
+    if (value === null || value === undefined) return 'empty'
+
+    // Boolean / active flag
+    if (field === 'active') {
+        return value ? 'Active' : 'Inactive'
+    }
+
+    // Date fields
+    if (field.endsWith('_at')) {
+        return new Date(value).toLocaleString()
+    }
+
+    return String(value)
+}
+
+function formatFieldName(field: string): string {
+    const map: Record<string, string> = {
+        active: 'Account Status',
+        updated_at: 'Last Updated',
+        created_at: 'Created At',
+        email: 'Email',
+        name: 'Name'
+    }
+
+    return map[field] ?? field.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
 async function openChangesModal(logId: number) {
     showValueModal.value = true
     valueModalData.value = []
@@ -263,23 +291,37 @@ async function openChangesModal(logId: number) {
 
         if (typeof changes === 'object' && changes !== null) {
             valueModalData.value = Object.entries(changes).map(([key, value]) => {
-                let displayValue: string
+                let displayValue = ''
 
-                if (value === null) displayValue = 'null'
-                else if (Array.isArray(value) || typeof value === 'object') {
-                    displayValue = JSON.stringify(value, null, 2)
-                } else {
-                    displayValue = String(value)
-                }
+                // UPDATE format: { before, after }
                 if (
-                    key === 'file_content' ||
-                    displayValue.length > 500
+                    typeof value === 'object' &&
+                    value !== null &&
+                    'before' in value &&
+                    'after' in value
                 ) {
-                    displayValue =
-                        displayValue.slice(0, 500) + '... [truncated]'
+                    const before = formatReadableValue(key, (value as any).before)
+                    const after = formatReadableValue(key, (value as any).after)
+
+                    displayValue = `Changed from ${before} to ${after}`
+                }
+                // CREATE format: simple value
+                else {
+                    displayValue = formatReadableValue(key, value)
                 }
 
-                return { key, value: displayValue }
+                // Hide sensitive fields
+                if (['password'].includes(key)) {
+                    return {
+                        key: formatFieldName(key),
+                        value: 'Hidden for security reasons'
+                    }
+                }
+
+                return {
+                    key: formatFieldName(key),
+                    value: displayValue
+                }
             })
         } else {
             valueModalData.value = [{ key: 'raw', value: data.changes }]
@@ -294,10 +336,11 @@ async function openChangesModal(logId: number) {
 </script>
 
 <template>
+
     <Head title="Admin Dashboard" />
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen px-4 py-6">
-            <div class="grid gap-4 md:grid-cols-3">
+    <AdminLayout :breadcrumbs="breadcrumbs">
+        <div class="bg-gray-100/90 dark:bg-gray-900 rounded-3xl min-h-screen">
+			<div class="px-5 md:px-8 pt-5 grid gap-6 md:grid-rows-[auto_1fr]">
                 <div class="col-span-3 md:col-span-1 bg-gray-50 dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                     <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">Create User</h3>
                     <div v-if="roles.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
@@ -305,7 +348,7 @@ async function openChangesModal(logId: number) {
                     </div>
                     <div v-else class="space-y-3">
                         <input v-model="name" placeholder="Name" type="text"
-                            class="w-full rounded-lg p-2 bg-white dark:bg-gray-700 border" />
+                                class="w-full rounded-lg p-2 bg-white dark:bg-gray-700 border" />
                         <p v-if="errors.name" class="text-xs text-red-500 mt-1">{{ errors.name }}</p>
                         <input v-model="email" placeholder="Email" type="email"
                             class="w-full rounded-lg p-2 bg-white dark:bg-gray-700 border" />
@@ -314,7 +357,7 @@ async function openChangesModal(logId: number) {
                             <option v-for="r in roles" :key="r.id" :value="r.name">{{ r.name }}</option>
                         </select>
                         <p v-if="errors.role" class="text-xs text-red-500 mt-1">{{ errors.role }}</p>
-                        
+
                         <button @click="createUser"
                             class="w-full sm:w-auto px-4 py-2 rounded-lg font-medium bg-blue-600 text-white shadow-md hover:opacity-95"
                             :disabled="creating">
@@ -358,24 +401,22 @@ async function openChangesModal(logId: number) {
                                             <select
                                                 class="rounded-md border px-2 py-1 text-sm bg-white dark:bg-gray-700"
                                                 :value="user.roles[0]?.name"
-                                                @change="e => changeRole(user, (e.target as HTMLSelectElement).value)"
-                                            >
+                                                @change="e => changeRole(user, (e.target as HTMLSelectElement).value)">
                                                 <option value="admin">admin</option>
                                                 <option value="officer">officer</option>
                                             </select>
                                         </template>
 
                                         <template v-else>
-                                            {{ user.roles.map(r => r.name).join(', ') || '-' }}
+                                            {{user.roles.map(r => r.name).join(', ') || '-'}}
                                         </template>
                                     </td>
                                     <td class="py-2 px-2">{{ formatDate(user.created_at) }}</td>
                                     <td class="py-2 px-2 text-right">
-                                        <Switch
-                                        :model-value="user.active"
-                                        @update:modelValue="() => onToggle(user)"
-                                        :disabled="currentUser.id === user.id"
-                                        />
+                                        <Switch v-if="!(
+                                            currentRole === 'admin' &&
+                                            user.roles.some(r => r.name === 'superadmin')
+                                        )" :model-value="user.active" @update:modelValue="() => onToggle(user)" :disabled="currentUser.id === user.id" />
                                         User is {{ user.active ? 'active' : 'inactive' }}
                                     </td>
                                 </tr>
@@ -632,5 +673,5 @@ async function openChangesModal(logId: number) {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
-    </AppLayout>
+    </AdminLayout>
 </template>

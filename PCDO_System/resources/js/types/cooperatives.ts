@@ -181,6 +181,7 @@ export interface Programs {
   details: string;
   archive: boolean;
   cooperatives_count: number;
+  active_coop_count: number;
 }
 
 export interface Program {

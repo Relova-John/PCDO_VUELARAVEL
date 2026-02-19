@@ -12,13 +12,9 @@ use PhpOffice\PhpWord\Settings;
 class CoopProgramChecklistController extends Controller
 {
     // Show the checklist for a cooperative
-    public function show($programId, $cooperativeId)
+    public function show($coopProgramId)
     {
-        $coopProgram = CoopProgram::with(['program.checklists', 'cooperative'])
-            ->where('program_id', $programId)
-            ->where('coop_id', $cooperativeId)
-            ->orderby('id', 'desc')
-            ->firstOrFail();
+        $coopProgram = CoopProgram::with(['program'])->findOrFail($coopProgramId);
 
         $checklistItems = $coopProgram->program->checklists;
 
@@ -40,7 +36,7 @@ class CoopProgramChecklistController extends Controller
         });
 
         return Inertia::render('programs/checklist', [
-            'cooperative' => [
+            'coopProgram' => [
                 'id' => $coopProgram->id,
                 'loan_amount' => $coopProgram->loan_amount,
                 'with_grace' => $coopProgram->with_grace,
@@ -54,7 +50,7 @@ class CoopProgramChecklistController extends Controller
     }
 
     // Upload a file
-    public function upload(Request $request, $programId, $cooperativeId)
+    public function upload(Request $request, $coopProgramId)
     {
         ini_set('max_execution_time', 120);
         $request->validate([
@@ -62,11 +58,7 @@ class CoopProgramChecklistController extends Controller
             'file' => 'required|file|max:5120',
         ]);
 
-        $coopProgram = CoopProgram::where('program_id', $programId)
-            ->where('coop_id', $cooperativeId)
-            ->orderby('id', 'desc')
-            ->firstOrFail();
-
+        $coopProgram = CoopProgram::findOrFail($coopProgramId);
         $file = $request->file('file');
         $mime = $file->getClientMimeType();
         $fileName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -127,12 +119,11 @@ class CoopProgramChecklistController extends Controller
         }
 
         return redirect()->route('programs.cooperatives.checklist.show', [
-            'program' => $programId,
-            'cooperative' => $cooperativeId,
-        ]);
+            'coopProgramId' => $coopProgram->id,
+        ])->with('success', 'File uploaded successfully!');
     }
 
-    public function preview($programId, $cooperativeId, $fileId)
+    public function preview($fileId)
     {
         $upload = CoopProgramChecklist::findOrFail($fileId);
 
@@ -141,13 +132,9 @@ class CoopProgramChecklistController extends Controller
             ->header('Content-Disposition', 'inline; filename="'.$upload->file_name.'"');
     }
 
-    public function consent($programId, $cooperativeId)
+    public function consent($coopProgramId)
     {
-        $coopProgram = CoopProgram::where('program_id', $programId)
-            ->where('coop_id', $cooperativeId)
-            ->orderby('id', 'desc')
-            ->firstOrFail();
-
+        $coopProgram = CoopProgram::findOrFail($coopProgramId);
         $coopProgram->consenter = auth()->user()->id;
         $coopProgram->save();
 
@@ -155,7 +142,7 @@ class CoopProgramChecklistController extends Controller
     }
 
     // Download a file
-    public function download($programId, $cooperativeId, $fileId)
+    public function download($fileId)
     {
         $upload = CoopProgramChecklist::findOrFail($fileId);
 

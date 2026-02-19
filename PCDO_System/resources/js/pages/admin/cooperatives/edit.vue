@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { ref, computed, reactive } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import SelectSearch from '@/components/SelectSearch.vue'
@@ -307,7 +307,7 @@ usePolling(["cooperatives"], 30000, () => submitting.value);
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AdminLayout :breadcrumbs="breadcrumbs">
         <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
             <div class="max-w-7x7 p-6">
                 <div
@@ -527,5 +527,5 @@ usePolling(["cooperatives"], 30000, () => submitting.value);
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

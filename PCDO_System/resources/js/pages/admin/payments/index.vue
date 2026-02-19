@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { ref, computed, onMounted } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
 import { BreadcrumbItem } from '@/types'
@@ -112,7 +112,7 @@ onMounted(() => {
 <template>
 
   <Head title="Amortization List" />
-  <AppLayout :breadcrumbs="breadcrumbs">
+  <AdminLayout :breadcrumbs="breadcrumbs">
     <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
       <div class="px-5 md:px-5 pt-5">
         <!-- Filter + Actions Card -->
@@ -251,7 +251,7 @@ onMounted(() => {
                 </TableCell>
                 <TableCell class="pl-13 py-4">
                   <template v-if="program.has_schedule">
-                    <Link :href="`/amortizations/${program.coop_program_id}`"
+                    <Link :href="`/admin/amortizations/${program.coop_program_id}`"
                       class="inline-block px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium shadow hover:bg-indigo-700 transition">
                     View Amortization
                     </Link>
@@ -445,5 +445,5 @@ onMounted(() => {
         </div>
       </Transition>
     </div>
-  </AppLayout>
+  </AdminLayout>
 </template>

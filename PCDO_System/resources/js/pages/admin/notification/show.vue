@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { BreadcrumbItem } from '@/types'
 import { Head } from '@inertiajs/vue3'
 import { computed } from 'vue'
@@ -23,8 +23,8 @@ const props = defineProps<{
 }>()
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Notifications', href: '/notifications' },
-  { title: props.notification.subject, href: `/notifications/${props.notification.id}` },
+  { title: 'Notifications', href: '/admin/notifications' },
+  { title: props.notification.subject, href: `/admin/notifications/${props.notification.id}` },
 ]
 
 // Detect due status from message
@@ -47,7 +47,7 @@ const canDownload = computed(() => {
 
   <Head :title="notification.subject" />
 
-  <AppLayout :breadcrumbs="breadcrumbs">
+  <AdminLayout :breadcrumbs="breadcrumbs">
     <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
       <div class="max-w-5xl mx-auto p-4 sm:p-6 md:p-10 space-y-6">
         <!-- Card -->
@@ -154,5 +154,5 @@ const canDownload = computed(() => {
         </div>
       </div>
     </div>
-  </AppLayout>
+  </AdminLayout>
 </template>

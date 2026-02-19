@@ -90,7 +90,7 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->route('admin.dashboard');
             } elseif ($user->hasRole('officer')) {
                 return redirect()->route('dashboard');
-            } elseif ($user->hasRole('coop')) {
+            } elseif ($user->hasRole('cooperative')) {
                 return redirect()->route('coop.dashboard', $user->cooperative?->id);
             } else {
                 Auth::logout();

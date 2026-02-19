@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
+import AdminLayout from '@/layouts/AdminLayout.vue';
 import { BreadcrumbItem } from '@/types';
 import type { Cooperative, Details } from '@/types/cooperatives';
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
@@ -81,19 +81,24 @@ onBeforeUnmount(() => {
 
 // Navigation
 function goToEditPage(id: string) {
-  router.visit(`/cooperatives/${id}/edit`);
+  router.visit(`/admin/cooperatives/${id}/edit`);
 }
 function goToMemberPage(id: string) {
-  router.visit(`/cooperatives/${id}/members`);
+  router.visit(`/admin/cooperatives/${id}/members`);
 }
 function goToProgramDocumentation(programId: string | number) {
-  router.visit(`/documentation/cooperative/${programId}`);
+  router.visit(`/admin/documentation/cooperative/${programId}`);
 }
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Cooperatives', href: '/admin/cooperatives' },
+    { title: props.cooperative.name, href: '#' },
+]
 </script>
 
 <template>
-  <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
+  <AdminLayout :breadcrumbs="breadcrumbs">
+    <div class="bg-gray-100/90 dark:bg-gray-900 rounded-3xl min-h-screen">
       <div class="max-w-7x7 p-6">
         <div
           class="bg-gray-50 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 border-gray-300 dark:border-gray-700 rounded-xl shadow-m px-6 py-5 mb-6">
@@ -299,5 +304,5 @@ function goToProgramDocumentation(programId: string | number) {
         </section>
       </div>
     </div>
-  </AppLayout>
+  </AdminLayout>
 </template>

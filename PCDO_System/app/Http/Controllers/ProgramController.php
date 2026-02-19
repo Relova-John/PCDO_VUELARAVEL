@@ -240,7 +240,7 @@ class ProgramController extends Controller
                 'program_status' => $coopProgram->program_status,
                 'loan_amount' => $coopProgram->loan_amount,
                 'with_grace' => $coopProgram->with_grace,
-                'email' => $coopProgram->email,
+                'email' => $coopProgram->cooperative->details->email,
                 'number' => $coopProgram->number,
                 'exported' => true,
             ]);

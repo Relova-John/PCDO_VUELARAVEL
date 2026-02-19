@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
+import AdminLayout from '@/layouts/AdminLayout.vue';
 import { ref, computed, onMounted } from 'vue';
 import { BreadcrumbItem } from '@/types'
 import { router, usePage } from '@inertiajs/vue3';
@@ -79,21 +79,21 @@ const groupedMembers = computed(() => {
 });
 
 function goToCreatePage() {
-    router.visit(`/cooperatives/${props.cooperative.id}/members/create`);
+    router.visit(`/admin/cooperatives/${props.cooperative.id}/members/create`);
 }
 
 function goToViewPage(id: number) {
-    router.visit(`/cooperatives/${props.cooperative.id}/members/${id}`);
+    router.visit(`/admin/cooperatives/${props.cooperative.id}/members/${id}`);
 }
 
 function goToDeletePage(id: number) {
-    router.delete(`/cooperatives/${props.cooperative.id}/members/${id}`);
+    router.delete(`/admin/cooperatives/${props.cooperative.id}/members/${id}`);
 }
 
 function confirmDelete(id: number, first_name: string, last_name: string) {
     deletingId.value = id
 
-    router.delete(`/cooperatives/${props.cooperative.id}/members/${id}`, {
+    router.delete(`/admin/cooperatives/${props.cooperative.id}/members/${id}`, {
         onSuccess: () => {
             deletingId.value = null
             toast.success(`${first_name} ${last_name} has been deleted successfully!`)
@@ -129,7 +129,7 @@ onMounted(() => {
 <template>
 
     <Head :title="`Members of ${cooperative.name}`" />
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AdminLayout :breadcrumbs="breadcrumbs">
         <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
             <div class="max-w-7x7 p-6">
                 <!-- Top Actions -->
@@ -380,5 +380,5 @@ onMounted(() => {
                 </div>
             </Transition>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

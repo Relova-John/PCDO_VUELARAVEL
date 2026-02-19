@@ -3,7 +3,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import { BreadcrumbItem } from '@/types'
 import { ref, computed } from 'vue'
 import { usePage, useForm, router } from '@inertiajs/vue3'
-import type { Checklists } from 'cooperatives'
+import type { Checklists } from '@/types/cooperatives'
 import { toast } from "vue-sonner"
 
 const page = usePage();

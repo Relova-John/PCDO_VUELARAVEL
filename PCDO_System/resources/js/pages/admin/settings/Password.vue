@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import PasswordController from '@/actions/App/Http/Controllers/Settings/AdminPasswordController';
+import { update } from '@/routes/admin/settings/password';
 import InputError from '@/components/InputError.vue';
 import AppLayout from '@/layouts/app/AppHeaderLayout.vue';
 import SettingsLayout from '@/layouts/settings/AdminLayout.vue';
@@ -36,7 +36,7 @@ const currentPasswordInput = ref<HTMLInputElement | null>(null);
                 />
 
                 <Form
-                    v-bind="PasswordController.update.form()"
+                    v-bind="update.put()"
                     :options="{
                         preserveScroll: true,
                     }"

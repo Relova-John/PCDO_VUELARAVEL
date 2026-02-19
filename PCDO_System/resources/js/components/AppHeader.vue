@@ -22,18 +22,13 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import UserMenuContent from '@/components/AdminMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl, urlIsActive } from '@/lib/utils';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import { InertiaLinkProps, Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-vue-next';
+import { BookOpen, Folder, Menu, Search } from 'lucide-vue-next';
+import { LayoutGrid, Handshake, HandCoins, Bell, FolderKanban, BookMarked } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useSyncStatus } from '@/composables/useSyncStatus'
 
@@ -67,10 +62,30 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
+        title: 'Cooperative',
+        href: '/admin/cooperatives',
+        icon: Handshake,
+    },
+    {
         title: 'Programs',
         href: '/admin/programs',
-        icon: BookOpen,
-    }
+        icon: FolderKanban,
+    },
+    {
+        title: 'Payments',
+        href: '/admin/amortizations',
+        icon: HandCoins,
+    },
+    {
+        title: 'Documentation',
+        href: '/admin/documentation',
+        icon: BookMarked,
+    },
+    {
+        title: 'Notification',
+        href: '/admin/notifications',
+        icon: Bell,
+    },
 ];
 
 const { isOnline} = useSyncStatus()

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { Head, useForm } from '@inertiajs/vue3'
 import { ref } from 'vue'
 import { BreadcrumbItem } from '@/types'
@@ -26,8 +26,8 @@ const props = defineProps<{
 }>()
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Programs', href: '/programs' },
-    { title: props.program.name, href: `/programs/${props.program.id}` },
+    { title: 'Programs', href: '/admin/programs' },
+    { title: props.program.name, href: `/admin/programs/${props.program.id}` },
     { title: 'Add Progress Report', href: '#' },
 ]
 
@@ -60,7 +60,7 @@ function removeFile(index: number) {
 }
 
 function submitForm() {
-    form.post(`/programs/${props.program.id}/progress`, {
+    form.post(`/admin/programs/${props.program.id}/progress`, {
         preserveScroll: true,
         onSuccess: () => {
             toast.success('Progress report uploaded successfully!')
@@ -75,7 +75,7 @@ function submitForm() {
 
     <Head :title="`Add Progress Report - ${props.program.name}`" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AdminLayout :breadcrumbs="breadcrumbs">
         <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
             <div class="max-w-7x7 p-6">
                 <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md space-y-6">
@@ -160,5 +160,5 @@ function submitForm() {
                 </div>
             </div>
         </div>
-    </AppLayout>
+    </AdminLayout>
 </template>

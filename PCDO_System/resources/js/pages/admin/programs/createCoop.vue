@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3'
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { BreadcrumbItem } from '@/types'
 import SelectSearch from '@/components/SelectSearch.vue'
 import { computed } from 'vue'
@@ -12,8 +12,8 @@ const props = defineProps<{
 }>()
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Programs', href: '/programs' },
-  { title: props.program.name, href: `/programs/${props.program.id}` },
+  { title: 'Programs', href: '/admin/programs' },
+  { title: props.program.name, href: `/admin/programs/${props.program.id}` },
   { title: 'Add Cooperative', href: '#' }
 ]
 
@@ -47,7 +47,7 @@ const validateForm = () => {
 
 const handleSubmit = () => {
   if (validateForm()) {
-    form.post(`/programs/${props.program.id}/cooperatives`, {
+    form.post(`/admin/programs/${props.program.id}/cooperatives`, {
       onSuccess: () => {
         toast.success(`${selectedCooperative.value?.name} has been added to ${props.program.name}!`)
       },
@@ -62,7 +62,7 @@ const handleSubmit = () => {
 <template>
 
   <Head :title="`Add Cooperative to ${program.name}`" />
-  <AppLayout :breadcrumbs="breadcrumbs">
+  <AdminLayout :breadcrumbs="breadcrumbs">
     <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
       <div class="max-w-7x7 p-6">
         <div class="p-8 ml-6 mr-6 mt-6 bg-gray-200 dark:bg-gray-800 rounded-2xl shadow-md">
@@ -120,5 +120,5 @@ const handleSubmit = () => {
         </div>
       </div>
     </div>
-  </AppLayout>
+  </AdminLayout>
 </template>

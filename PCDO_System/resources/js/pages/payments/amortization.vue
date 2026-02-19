@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { BreadcrumbItem } from '@/types'
 import { Head, useForm, router, usePage } from '@inertiajs/vue3'
 import { computed, onMounted } from 'vue'
@@ -449,7 +449,7 @@ function canPayPeriod(index: number) {
 <template>
 
   <Head title="Loan Tracker" />
-  <AppLayout :breadcrumbs="breadcrumbs">
+  <AdminLayout :breadcrumbs="breadcrumbs">
     <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
       <div class="px-5 md:px-5 pt-5">
 
@@ -969,5 +969,5 @@ function canPayPeriod(index: number) {
         </div>
       </div>
     </div>
-  </AppLayout>
+  </AdminLayout>
 </template>

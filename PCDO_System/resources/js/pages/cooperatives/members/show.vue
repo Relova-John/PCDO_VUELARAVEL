@@ -7,7 +7,6 @@ import { computed, ref, onMounted } from 'vue'
 import PdfViewer from '@/components/PdfViewer.vue'
 
 const page = usePage()
-const flash = computed(() => page.props.flash as { success?: string; error?: string; info?: string })
 const showFileModal = ref(false)
 const selectedFile = ref<any | null>(null)
 const pdfFailed = ref(false)
