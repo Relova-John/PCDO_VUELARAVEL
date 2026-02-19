@@ -32,7 +32,7 @@ interface LoanFormData {
 
 // Props
 const props = defineProps<{
-  cooperative: CoopProgram
+  coopProgram: CoopProgram
   checklistItems: ChecklistItem[]
 }>()
 
@@ -47,7 +47,7 @@ const allUploadsDone = computed(() =>
     .every(item => item.upload)
 )
 
-const canFinalizeLoan = computed(() => allUploadsDone.value && !!props.cooperative.consenter)
+const canFinalizeLoan = computed(() => allUploadsDone.value && !!props.coopProgram.consenter)
 
 // Disable upload if previous checklist not uploaded
 const isDisabled = (index: number) =>
@@ -62,8 +62,8 @@ const forms = filteredChecklist.value.map(item =>
 )
 
 const loanForm = useForm<LoanFormData>({
-  loan_amount: props.cooperative.loan_amount || null,
-  with_grace: props.cooperative.with_grace || 0,
+  loan_amount: props.coopProgram.loan_amount || null,
+  with_grace: props.coopProgram.with_grace || 0,
   start_date: '',
 })
 
@@ -82,7 +82,7 @@ watch(showPreviewModal, (isOpen) => {
       selectedFile.value = {
         id: firstUploaded.upload.id,
         name: firstUploaded.upload.file_name,
-        url: `/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/checklist/${firstUploaded.upload.id}/preview`
+        url: `/coopProgram/${props.coopProgram.id}/checklist/${firstUploaded.upload.id}/preview`
       }
     }
   } else {
@@ -96,7 +96,7 @@ function saveConsent() {
   if (!isConsented.value) return
 
   router.post(
-    `/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/consent`,
+    `/coopProgram/${props.coopProgram.id}/consent`,
     {},
     {
       onSuccess: () => {
@@ -104,7 +104,7 @@ function saveConsent() {
         isConsented.value = false
         showPreviewModal.value = false
         isChecklistRemade.value = false
-        router.reload({ only: ['checklistItems', 'cooperative'] })
+        router.reload({ only: ['checklistItems', 'coopProgram'] })
       },
       onError: () => {
         toast.error('Failed to record consent.')
@@ -118,7 +118,7 @@ function openFilePreview(item: any) {
   selectedFile.value = {
     id: item.upload.id,
     name: item.upload.file_name,
-    url: `/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/checklist/${item.upload.id}/preview`
+    url: `/coopProgram/${props.coopProgram.id}/checklist/${item.upload.id}/preview`
   }
 }
 
@@ -127,7 +127,7 @@ function handleUpload(index: number, item: ChecklistItem) {
   const uploadedFile = forms[index].file
 
   forms[index].post(
-    `/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/checklist/upload`,
+    `/coopProgram/${props.coopProgram.id}/checklist/upload`,
     {
       forceFormData: true,
       preserveScroll: true,
@@ -152,10 +152,10 @@ function handleUpload(index: number, item: ChecklistItem) {
 
 // Submit loan
 function submitLoan() {
-  if (!props.cooperative.program) return
+  if (!props.coopProgram.program) return
 
   loanForm.post(
-    `/programs/${props.cooperative.program.id}/cooperatives/${props.cooperative.cooperative.id}/finalize-loan`,
+    `/programs/${props.coopProgram.program.id}/cooperatives/${props.coopProgram.cooperative.id}/finalize-loan`,
     {
       onSuccess: () => {
         toast.success('Loan finalized and amortization schedule generated successfully!')
@@ -180,13 +180,13 @@ function handleSaveProgress() {
   if (allUploadsDone.value) {
     showPreviewModal.value = true
   } else {
-    router.visit(`/programs/${props.cooperative.program?.id}`)
+    router.visit(`/programs/${props.coopProgram.program?.id}`)
   }
 }
 
 function handleDelete(uploadId: number, fileName: string) {
   router.delete(
-    `/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/checklist/${uploadId}`,
+    `/coopProgram/${props.coopProgram.id}/checklist/${uploadId}`,
     {
       onSuccess: () => {
         router.reload({ only: ['checklistItems'] })
@@ -202,7 +202,8 @@ function handleDelete(uploadId: number, fileName: string) {
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Programs', href: '/programs' },
-  { title: props.cooperative.program?.name || 'N/A', href: `/programs/${props.cooperative.program?.id}` },
+  { title: props.coopProgram.program?.name || 'N/A', href: `/programs/${props.coopProgram.program?.id}` },
+  { title: `Cooperative Program ID: ${props.coopProgram.id}`, href: '#' },
   { title: 'Checklist', href: '#' },
 ]
 
@@ -215,38 +216,39 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppLayout :breadcrumbs="breadcrumbs" :key="props.cooperative.id">
+  <AppLayout :breadcrumbs="breadcrumbs" :key="props.coopProgram.cooperative.id">
     <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
       <div class="px-5 md:px-8 pt-5 p-6 space-y-6 max-w-7xl mx-auto">
         <!-- Header -->
         <div
           class="bg-gray-50 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 border-gray-300 dark:border-gray-700 rounded-xl shadow-m px-6 py-5 mb-6">
           <h2 class="text-2xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
-            Checklist for {{ props.cooperative.cooperative.name }}
+            Checklist for {{ props.coopProgram.cooperative.name }}
           </h2>
           <p class="text-gray-600 dark:text-gray-400">
-            Program: {{ props.cooperative.program?.name || 'N/A' }}
+            Program: {{ props.coopProgram.program?.name || 'N/A' }}
           </p>
         </div>
 
         <!-- Loan Section -->
-        <div ref="finalizeLoanSection" v-if="props.cooperative.program && !props.cooperative.has_amortization"
+        <div ref="finalizeLoanSection" v-if="props.coopProgram.program && !props.coopProgram.has_amortization"
           class="bg-gray-50 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 border-gray-300 dark:border-gray-700 rounded-xl shadow-m px-6 py-5 mb-6">
           <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
             Finalize Loan
           </h3>
 
           <!-- Already finalized -->
-          <div v-if="typeof props.cooperative.loan_amount === 'number'">
+          <div v-if="typeof props.coopProgram.loan_amount === 'number'">
             <p class="text-gray-800 dark:text-gray-200">
               <strong>Loan Amount:</strong>
-              ₱{{ props.cooperative.loan_amount.toLocaleString() }}
+              ₱{{ props.coopProgram.loan_amount.toLocaleString() }}
             </p>
             <p class="text-gray-800 dark:text-gray-200 mt-2">
               <strong>Grace Period:</strong>
-              {{ props.cooperative.with_grace === 0
+                {{ props.coopProgram.with_grace === 0
                 ? 'No Grace Period'
-                : props.cooperative.with_grace + '-Month Grace Period' }}
+                : props.coopProgram.with_grace + '-Month Grace Period' }}
+                ({{ props.coopProgram.with_grace || 0 }} months selected)
             </p>
           </div>
 
@@ -257,8 +259,8 @@ onMounted(() => {
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Loan Amount
               </label>
-              <input type="number" v-model="loanForm.loan_amount" :min="props.cooperative.program?.min_amount"
-                :max="props.cooperative.program?.max_amount" step="0.01" required
+              <input type="number" v-model="loanForm.loan_amount" :min="props.coopProgram.program?.min_amount"
+                :max="props.coopProgram.program?.max_amount" step="0.01" required
                 class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 placeholder="Enter loan amount" />
 
@@ -267,47 +269,46 @@ onMounted(() => {
               </div>
 
               <div class="flex gap-2 mt-2">
-                <button type="button" @click="loanForm.loan_amount = props.cooperative.program?.min_amount || 0"
+                <button type="button" @click="loanForm.loan_amount = props.coopProgram.program?.min_amount || 0"
                   class="bg-gray-100 dark:bg-[#334155] border border-gray-300 dark:border-[#475569]
                            text-gray-800 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-[#3b445c] px-3 py-1 rounded">
-                  Min: ₱{{ props.cooperative.program?.min_amount || 0 }}
+                  Min: ₱{{ props.coopProgram.program?.min_amount || 0 }}
                 </button>
-                <button type="button" @click="loanForm.loan_amount = props.cooperative.program?.max_amount || 0"
+                <button type="button" @click="loanForm.loan_amount = props.coopProgram.program?.max_amount || 0"
                   class="bg-gray-100 dark:bg-[#334155] border border-gray-300 dark:border-[#475569]
                            text-gray-800 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-[#3b445c] px-3 py-1 rounded">
-                  Max: ₱{{ props.cooperative.program?.max_amount || 0 }}
+                  Max: ₱{{ props.coopProgram.program?.max_amount || 0 }}
                 </button>
               </div>
             </div>
 
             <!-- Grace Period -->
-            <div class="mt-4 border-t pt-4 border-gray-300 dark:border-gray-600">
-              <span class="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
-                Grace Period
-              </span>
-              <div class="flex gap-4 flex-col sm:flex-row">
+<!-- <div class="mt-4 border-t pt-4 border-gray-300 dark:border-gray-600">
+  <span class="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
+    Grace Period
+  </span>
+  <div class="flex gap-4 flex-col sm:flex-row">
+    <label
+      v-for="month in graceOptions"
+      :key="month"
+      class="flex-1 cursor-pointer"
+    >
+      <div :class="[
+          'p-3 rounded-lg border transition',
+          loanForm.with_grace === month
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
+        ]"
+      >
+        <input type="radio" v-model="loanForm.with_grace" :value="month" class="hidden" />
+        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {{ month === 0 ? 'No Grace Period' : month + '-Month Grace Period' }}
+        </p>
+      </div>
+    </label>
+  </div>
+</div> -->
 
-                <label class="flex-1 cursor-pointer">
-                  <div :class="['p-3 rounded-lg border transition',
-                    loanForm.with_grace === 0
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800']">
-                    <input type="radio" v-model="loanForm.with_grace" :value="0" class="hidden" />
-                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">No Grace Period</p>
-                  </div>
-                </label>
-
-                <label class="flex-1 cursor-pointer">
-                  <div :class="['p-3 rounded-lg border transition',
-                    loanForm.with_grace === 4
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800']">
-                    <input type="radio" v-model="loanForm.with_grace" :value="4" class="hidden" />
-                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">4-Month Grace Period</p>
-                  </div>
-                </label>
-              </div>
-            </div>
 
             <!-- Start Date -->
             <div>
@@ -335,7 +336,7 @@ onMounted(() => {
                     <AlertDialogTitle>Finalize Loan?</AlertDialogTitle>
                     <AlertDialogDescription>
                       You are about to finalize the loan for
-                      <strong>{{ props.cooperative.cooperative.name }}</strong>.<br />
+                      <strong>{{ props.coopProgram.cooperative.name }}</strong>.<br />
                       Loan Amount: ₱{{ loanForm.loan_amount?.toLocaleString() }} <br />
                       Grace Period:
                       {{ loanForm.with_grace === 0 ? 'No Grace Period' : loanForm.with_grace + '-Month Grace Period' }}
@@ -353,7 +354,7 @@ onMounted(() => {
           </form>
 
           <!-- When all files are uploaded but no consent yet -->
-          <div v-else-if="allUploadsDone && !props.cooperative.consenter"
+          <div v-else-if="allUploadsDone && !props.coopProgram.consenter"
             class="bg-yellow-50 border border-yellow-200 p-4 rounded text-yellow-800">
             Please confirm the checklist consent before finalizing the loan.
           </div>
@@ -378,7 +379,7 @@ onMounted(() => {
                 <strong>{{ item.upload.file_name }}</strong>
               </span> </p>
             <div class="flex gap-4">
-              <a :href="`/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/checklist/${item.upload.id}/download`"
+              <a :href="`/coopProgram/${props.coopProgram.id}/checklist/${item.upload.id}/download`"
                 class="text-blue-600 dark:text-blue-400 hover:underline">
                 Download
               </a>
@@ -469,7 +470,7 @@ onMounted(() => {
                   <div v-if="isMobile">
                     <template v-if="selectedFile.name.toLowerCase().endsWith('.pdf')">
                       <PdfViewer v-if="!pdfFailed" type="checklist" :url="selectedFile.url"
-                        :cooperative-id="props.cooperative.cooperative.id" :program-id="props.cooperative.program?.id"
+                        :cooperative-id="props.coopProgram.cooperative.id" :program-id="props.coopProgram.program?.id"
                         :file-id="selectedFile.id" @error="pdfFailed = true" />
 
                       <div v-else class="text-center text-gray-600 dark:text-gray-400">
@@ -529,7 +530,7 @@ onMounted(() => {
             Remake Checklist
           </button>
 
-          <button v-else-if="!props.cooperative.consenter" type="button" @click="showPreviewModal = true"
+          <button v-else-if="!props.coopProgram.consenter" type="button" @click="showPreviewModal = true"
             class="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg shadow-md">
             Confirm Checklist
           </button>

@@ -32,7 +32,7 @@ interface LoanFormData {
 
 // Props
 const props = defineProps<{
-  cooperative: CoopProgram
+  coopProgram: CoopProgram
   checklistItems: ChecklistItem[]
 }>()
 
@@ -47,7 +47,7 @@ const allUploadsDone = computed(() =>
     .every(item => item.upload)
 )
 
-const canFinalizeLoan = computed(() => allUploadsDone.value && !!props.cooperative.consenter)
+const canFinalizeLoan = computed(() => allUploadsDone.value && !!props.coopProgram.consenter)
 
 // Disable upload if previous checklist not uploaded
 const isDisabled = (index: number) =>
@@ -62,8 +62,8 @@ const forms = filteredChecklist.value.map(item =>
 )
 
 const loanForm = useForm<LoanFormData>({
-  loan_amount: props.cooperative.loan_amount || null,
-  with_grace: props.cooperative.with_grace || 0,
+  loan_amount: props.coopProgram.loan_amount || null,
+  with_grace: props.coopProgram.with_grace || 0,
   start_date: '',
 })
 
@@ -82,7 +82,7 @@ watch(showPreviewModal, (isOpen) => {
       selectedFile.value = {
         id: firstUploaded.upload.id,
         name: firstUploaded.upload.file_name,
-        url: `/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/checklist/${firstUploaded.upload.id}/preview`
+        url: `/coopProgram/${props.coopProgram.id}/checklist/${firstUploaded.upload.id}/preview`
       }
     }
   } else {
@@ -96,7 +96,7 @@ function saveConsent() {
   if (!isConsented.value) return
 
   router.post(
-    `/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/consent`,
+    `/coopProgram/${props.coopProgram.id}/consent`,
     {},
     {
       onSuccess: () => {
@@ -118,7 +118,7 @@ function openFilePreview(item: any) {
   selectedFile.value = {
     id: item.upload.id,
     name: item.upload.file_name,
-    url: `/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/checklist/${item.upload.id}/preview`
+    url: `/coopProgram/${props.coopProgram.id}/checklist/${item.upload.id}/preview`
   }
 }
 
@@ -127,7 +127,7 @@ function handleUpload(index: number, item: ChecklistItem) {
   const uploadedFile = forms[index].file
 
   forms[index].post(
-    `/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/checklist/upload`,
+    `/coopProgram/${props.coopProgram.id}/checklist/upload`,
     {
       forceFormData: true,
       preserveScroll: true,
@@ -155,7 +155,7 @@ function submitLoan() {
   if (!props.cooperative.program) return
 
   loanForm.post(
-    `/programs/${props.cooperative.program.id}/cooperatives/${props.cooperative.cooperative.id}/finalize-loan`,
+    `/coopProgram/${props.coopProgram.id}/finalize-loan`,
     {
       onSuccess: () => {
         toast.success('Loan finalized and amortization schedule generated successfully!')
@@ -180,13 +180,13 @@ function handleSaveProgress() {
   if (allUploadsDone.value) {
     showPreviewModal.value = true
   } else {
-    router.visit(`/programs/${props.cooperative.program?.id}`)
+    router.visit(`/coopProgram/${props.coopProgram.id}`)
   }
 }
 
 function handleDelete(uploadId: number, fileName: string) {
   router.delete(
-    `/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/checklist/${uploadId}`,
+    `/coopProgram/${props.coopProgram.id}/checklist/${uploadId}`,
     {
       onSuccess: () => {
         router.reload({ only: ['checklistItems'] })
@@ -202,7 +202,7 @@ function handleDelete(uploadId: number, fileName: string) {
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Programs', href: '/programs' },
-  { title: props.cooperative.program?.name || 'N/A', href: `/programs/${props.cooperative.program?.id}` },
+  { title: props.coopProgram.program?.name || 'N/A', href: `/programs/${props.coopProgram.program?.id}` },
   { title: 'Checklist', href: '#' },
 ]
 
@@ -222,31 +222,31 @@ onMounted(() => {
         <div
           class="bg-gray-50 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 border-gray-300 dark:border-gray-700 rounded-xl shadow-m px-6 py-5 mb-6">
           <h2 class="text-2xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
-            Checklist for {{ props.cooperative.cooperative.name }}
+            Checklist for {{ props.coopProgram.cooperative.name }}
           </h2>
           <p class="text-gray-600 dark:text-gray-400">
-            Program: {{ props.cooperative.program?.name || 'N/A' }}
+            Program: {{ props.coopProgram.program?.name || 'N/A' }}
           </p>
         </div>
 
         <!-- Loan Section -->
-        <div ref="finalizeLoanSection" v-if="props.cooperative.program && !props.cooperative.has_amortization"
+        <div ref="finalizeLoanSection" v-if="props.coopProgram.program && !props.coopProgram.has_amortization"
           class="bg-gray-50 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 border-gray-300 dark:border-gray-700 rounded-xl shadow-m px-6 py-5 mb-6">
           <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
             Finalize Loan
           </h3>
 
           <!-- Already finalized -->
-          <div v-if="typeof props.cooperative.loan_amount === 'number'">
+          <div v-if="typeof props.coopProgram.loan_amount === 'number'">
             <p class="text-gray-800 dark:text-gray-200">
               <strong>Loan Amount:</strong>
-              ₱{{ props.cooperative.loan_amount.toLocaleString() }}
+              ₱{{ props.coopProgram.loan_amount.toLocaleString() }}
             </p>
             <p class="text-gray-800 dark:text-gray-200 mt-2">
               <strong>Grace Period:</strong>
-              {{ props.cooperative.with_grace === 0
+              {{ props.coopProgram.with_grace === 0
                 ? 'No Grace Period'
-                : props.cooperative.with_grace + '-Month Grace Period' }}
+                : props.coopProgram.with_grace + '-Month Grace Period' }}
             </p>
           </div>
 

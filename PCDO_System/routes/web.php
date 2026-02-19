@@ -156,7 +156,7 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     Route::get('/progress/{report}/download', [CoopProgramProgressController::class, 'download'])->name('programs.progress.download');
 
     // Nested routes for checklists under a specific program and cooperative
-    Route::prefix('programs/{program}/cooperatives/{cooperative}')->group(function () {
+    Route::prefix('coopProgram/{coopProgramId}')->group(function () {
         Route::get('checklist', [CoopProgramChecklistController::class, 'show'])->name('programs.cooperatives.checklist.show');
         Route::post('checklist/upload', [CoopProgramChecklistController::class, 'upload'])->name('programs.cooperatives.checklist.upload');
         Route::get('checklist/{file}/preview', [CoopProgramChecklistController::class, 'preview'])->name('programs.cooperatives.checklist.preview');
@@ -178,7 +178,6 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     Route::post('/schedules/{schedule}/mark-paid', [AmortizationScheduleController::class, 'markPaid'])->name('schedules.markPaid');
     Route::post('/schedules/{schedule}/note-payment', [AmortizationScheduleController::class, 'notePayment'])->name('schedules.notePayment');
     Route::post('/schedules/{schedule}/penalty', [AmortizationScheduleController::class, 'penalty'])->name('schedules.penalty');
-    Route::post('/schedules/{schedule}/send-overdue-email', [AmortizationScheduleController::class, 'sendOverdueEmail'])->name('schedules.sendOverdueEmail');
 
     // Amortization Incomplete
     Route::post('/amortization/{loan}/incomplete', [AmortizationScheduleController::class, 'markIncomplete'])->name('loan.incomplete');

@@ -203,7 +203,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                             v-if="coop.program_status !== 'Finished' && coop.program_status !== 'Resolved'">
                                             <!-- Upload Checklist -->
                                             <Link v-if="!coop.has_checklist"
-                                                :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                                :href="`/coopProgram/${coop.coopProgramId}/checklist`"
                                                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md transition">
                                             <Upload class="w-4 h-4" />
                                             <span>Upload Checklist</span>
@@ -211,7 +211,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
                                             <!-- Continue only -->
                                             <Link v-else-if="coop.has_checklist && !coop.has_amortization"
-                                                :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                                :href="`/coopProgram/${coop.coopProgramId}/checklist`"
                                                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg shadow-md transition">
                                             <Upload class="w-4 h-4" />
                                             <span>Continue Checklist</span>
@@ -221,7 +221,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                             <div v-else-if="coop.has_checklist && coop.has_amortization"
                                                 class="flex gap-2">
                                                 <Link
-                                                    :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                                    :href="`/coopProgram/${coop.coopProgramId}/checklist`"
                                                     class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg shadow-md transition">
                                                 <Upload class="w-4 h-4" />
                                                 <span>Re-upload</span>
@@ -297,7 +297,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 class="mt-4 space-y-2">
                                 <!-- Upload Checklist -->
                                 <Link v-if="!coop.has_checklist"
-                                    :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                    :href="`/coopProgram/${coop.coopProgramId}/checklist`"
                                     class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md transition w-full justify-center">
                                 <Upload class="w-4 h-4" />
                                 <span>Upload Checklist</span>
@@ -305,7 +305,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
                                 <!-- Continue only -->
                                 <Link v-else-if="coop.has_checklist && !coop.has_amortization"
-                                    :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                    :href="`/coopProgram/${coop.coopProgramId}/checklist`"
                                     class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg shadow-md transition w-full justify-center">
                                 <Upload class="w-4 h-4" />
                                 <span>Continue Checklist</span>
@@ -313,7 +313,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
                                 <!-- Re-upload + View Amortization -->
                                 <template v-else-if="coop.has_checklist && coop.has_amortization">
-                                    <Link :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                    <Link :href="`/coopProgram/${coop.coopProgramId}/checklist`"
                                         class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg shadow-md transition w-full justify-center">
                                     <Upload class="w-4 h-4" />
                                     <span>Re-upload</span>
