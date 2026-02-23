@@ -40,7 +40,7 @@ class NotificationController extends Controller
 
         $datereleased = $coopProgram->start_date->format('F d, Y');
         $maturitydate = $coopProgram->end_date->format('F d, Y');
-        $monthlyDue = $schedule->installment;
+        $monthlyDue = $schedule->current_balance;
         $totalpaid = $coopProgram->amortizationSchedules()->whereNotNull('amount_paid')->sum('amount_paid');
         $lastPayment = $coopProgram->amortizationSchedules()->whereNotNull('date_paid')->orderByDesc('date_paid')->first();
         $lastPaymentDate = $lastPayment?->date_paid

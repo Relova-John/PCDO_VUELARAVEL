@@ -31,3 +31,8 @@ Schedule::command('check:delinquents')
     ->everyMinute()
     ->withoutOverlapping()
     ->onOneServer();
+
+Schedule::command('process:overdue-schedules')
+    ->dailyAt('00:00')
+    ->withoutOverlapping()
+    ->onOneServer();

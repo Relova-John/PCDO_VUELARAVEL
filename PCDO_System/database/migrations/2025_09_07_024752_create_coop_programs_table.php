@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('coop_programs', function (Blueprint $table) {
             $table->id();
             $table->string('coop_id');
-            $table->foreign('coop_id')->references('id')->on('cooperatives')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreignId('program_id')->constrained('programs')->onDelete('cascade');
+            $table->foreign('coop_id')->references('id')->on('cooperatives');
+            $table->foreignId('program_id')->constrained('programs');
             $table->string('project')->nullable();
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date');

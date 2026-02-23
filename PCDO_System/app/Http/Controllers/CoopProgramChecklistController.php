@@ -55,7 +55,7 @@ class CoopProgramChecklistController extends Controller
         ini_set('max_execution_time', 120);
         $request->validate([
             'program_checklist_id' => 'required|exists:program_checklists,id',
-            'file' => 'required|file|max:5120',
+            'file' => 'required|file|max:20000',
         ]);
 
         $coopProgram = CoopProgram::findOrFail($coopProgramId);
@@ -123,10 +123,9 @@ class CoopProgramChecklistController extends Controller
         ])->with('success', 'File uploaded successfully!');
     }
 
-    public function preview($fileId)
+    public function preview($coopProgramId, $fileId)
     {
-        $upload = CoopProgramChecklist::findOrFail($fileId);
-
+        $upload = CoopProgram::findOrFail($coopProgramId)->checklist()->findOrFail($fileId);
         return response($upload->file_content)
             ->header('Content-Type', $upload->mime_type)
             ->header('Content-Disposition', 'inline; filename="'.$upload->file_name.'"');
@@ -142,10 +141,9 @@ class CoopProgramChecklistController extends Controller
     }
 
     // Download a file
-    public function download($fileId)
+    public function download($coopProgramId,$fileId)
     {
-        $upload = CoopProgramChecklist::findOrFail($fileId);
-
+        $upload = CoopProgram::findOrFail($coopProgramId)->checklist()->findOrFail($fileId);
         return response($upload->file_content)
             ->header('Content-Type', $upload->mime_type)
             ->header('Content-Disposition', 'attachment; filename="'.$upload->file_name.'"');

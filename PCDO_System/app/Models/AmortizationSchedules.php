@@ -13,6 +13,7 @@ class AmortizationSchedules extends Model
         'coop_program_id',
         'due_date',
         'installment',
+        'current_balance',
         'status',
         'date_paid',
         'amount_paid',
@@ -38,10 +39,6 @@ class AmortizationSchedules extends Model
     /**
      * Relationship to CoopProgram
      */
-    public function program()
-    {
-        return $this->belongsTo(\App\Models\Programs::class, 'program_id');
-    }
 
     public function cooperative()
     {

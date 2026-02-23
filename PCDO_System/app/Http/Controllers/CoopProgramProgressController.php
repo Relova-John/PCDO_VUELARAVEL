@@ -34,7 +34,7 @@ class CoopProgramProgressController extends Controller
             'coop_program_id' => 'required|exists:coop_programs,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'file.*' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'file.*' => 'nullable|image|mimes:jpeg,png,jpg|max:20000',
         ]);
 
         $fileName = null;

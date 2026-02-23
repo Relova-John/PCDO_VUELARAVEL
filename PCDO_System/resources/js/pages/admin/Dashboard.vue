@@ -398,13 +398,16 @@ async function openChangesModal(logId: number) {
                                     <td class="py-2 px-2">{{ user.email }}</td>
                                     <td class="py-2 px-2">
                                         <template v-if="currentRole === 'superadmin' && currentUser.id !== user.id">
-                                            <select
+                                            <select v-if="!user.roles.some(r => r.name === 'cooperative')"
                                                 class="rounded-md border px-2 py-1 text-sm bg-white dark:bg-gray-700"
                                                 :value="user.roles[0]?.name"
                                                 @change="e => changeRole(user, (e.target as HTMLSelectElement).value)">
                                                 <option value="admin">admin</option>
                                                 <option value="officer">officer</option>
                                             </select>
+                                            <div v-else>
+                                                {{ user.roles.map(r => r.name).join(', ') }}
+                                            </div>
                                         </template>
 
                                         <template v-else>

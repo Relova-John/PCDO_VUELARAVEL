@@ -166,7 +166,7 @@
             <tr>
                 <th>#</th>
                 <th>Due Date</th>
-                <th>Installment</th>
+                <th>current_balance</th>
                 <th>Date Paid</th>
                 <th>Amount Paid</th>
                 <th>Status</th>
@@ -174,17 +174,17 @@
         </thead>
         <tbody>
             @php
-                $totalInstallment = 0;
+                $totalcurrent_balance = 0;
             @endphp
 
             @foreach($schedules as $i => $s)
                 @php
-                    $totalInstallment += $s->installment ?? 0;
+                    $totalcurrent_balance += $s->current_balance ?? 0;
                 @endphp
                 <tr>
                     <td>{{ $i + 1 }}</td>
                     <td>{{ \Carbon\Carbon::parse($s->due_date)->format('Y-m-d') }}</td>
-                    <td>{{ number_format($s->installment, 2) }}</td>
+                    <td>{{ number_format($s->current_balance, 2) }}</td>
                     <td>{{ $s->date_paid ? \Carbon\Carbon::parse($s->date_paid)->format('Y-m-d') : '' }}</td>
                     <td>{{ $s->amount_paid ? number_format($s->amount_paid, 2) : '' }}</td>
                     <td>{{ $s->status }}</td>
@@ -194,7 +194,7 @@
             {{-- Total Row --}}
             <tr class="total-row">
                 <td colspan="2">Total</td>
-                <td>{{ number_format($totalInstallment, 2) }}</td>
+                <td>{{ number_format($totalcurrent_balance, 2) }}</td>
                 <td colspan="3"></td>
             </tr>
         </tbody>

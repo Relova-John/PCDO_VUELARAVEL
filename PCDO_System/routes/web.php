@@ -19,6 +19,7 @@ use App\Http\Controllers\DocumentationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\CoopMemController;
+use App\Http\Controllers\InventoryFormController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -231,6 +232,9 @@ Route::middleware(['auth', 'role:cooperative'])->prefix('coop')->name('coop.')->
     // Details
     Route::get('/details', [CoopController::class, 'details'])->name('details.index');
 });
+
+
+Route::get('/inventory', [InventoryFormController::class, 'index'])->name('inventory.index');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

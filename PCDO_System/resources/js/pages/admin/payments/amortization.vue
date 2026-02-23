@@ -12,7 +12,7 @@ import { ref } from 'vue';
 interface Schedule {
   id: number
   due_date: string
-  installment: number
+  current_balance: number
   penalty_amount?: number
   is_paid?: boolean
   date_paid?: string | null
@@ -95,25 +95,6 @@ const allPeriods = computed(() => {
   for (let i = 1; i <= grace; i++) {
     periods.push({ type: 'grace', label: `Grace Period ${i}` })
   }
-
-  // Schedule rows with dues including carry-over
-  props.coopProgram.schedules.forEach((s, i) => {
-    const installment = Number(s.installment) || 0
-    let penalty = Number(s.penalty_amount) || 0
-
-    const paid = Number(s.amount_paid) || 0
-    const dues = installment + penalty + carryOver
-    const unpaid = Math.max(0, Math.round(dues - paid))
-
-    carryOver = unpaid > 0 ? unpaid : 0
-
-    periods.push({
-      type: 'schedule',
-      label: `Period ${i + 1}`,
-      data: s,
-      totalDue: dues
-    })
-  })
 
   return periods
 })
@@ -540,7 +521,6 @@ function canPayPeriod(index: number) {
                   <TableHead class="px-4 py-3">Due Date</TableHead>
                   <TableHead class="px-4 py-3">Amount</TableHead>
                   <TableHead class="px-4 py-3">Penalty</TableHead>
-                  <TableHead class="px-4 py-3">Dues</TableHead>
                   <TableHead class="px-4 py-3">Status</TableHead>
                   <TableHead class="px-4 py-3">Actions</TableHead>
                   <TableHead class="px-4 py-3">Reminder</TableHead>
@@ -583,7 +563,7 @@ function canPayPeriod(index: number) {
 
                     <!-- Amount -->
                     <TableCell class="px-4 py-3 font-medium">
-                      ₱{{ Math.round(row.data?.installment || 0).toLocaleString() }}
+                      ₱{{ Math.round(row.data?.current_balance || 0).toLocaleString() }}
                     </TableCell>
 
                     <!-- Penalty -->
@@ -611,29 +591,6 @@ function canPayPeriod(index: number) {
                           </span>
                         </Button>
                       </div>
-                    </TableCell>
-
-                    <!-- Dues -->
-                    <TableCell class="font-semibold text-indigo-700 dark:text-indigo-300">
-                      ₱{{ Number(row.data?.installment || 0).toLocaleString('en-PH', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      }) }}
-                      <span v-if="row.data?.penalty_amount && row.data.penalty_amount > 0">
-                        + ₱{{ Number(row.data.penalty_amount || 0).toLocaleString('en-PH', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        }) }}
-                      </span>
-                      = <strong>
-                        ₱{{ row.totalDue !== undefined
-                          ? Number(row.totalDue).toLocaleString('en-PH', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          })
-                          : '0.00'
-                        }}
-                      </strong>
                     </TableCell>
 
                     <!-- Status -->
@@ -761,16 +718,8 @@ function canPayPeriod(index: number) {
                 <!-- Payment Details -->
                 <div class="space-y-1 text-sm text-gray-600 dark:text-gray-300 mb-3">
                   <p><strong>Due Date:</strong> {{ formatDate(row.data?.due_date) }}</p>
-                  <p><strong>Amount:</strong> ₱{{ Math.round(row.data?.installment || 0).toLocaleString() }}</p>
+                  <p><strong>Amount:</strong> ₱{{ Math.round(row.data?.current_balance || 0).toLocaleString() }}</p>
                   <p><strong>Penalty:</strong> ₱{{ Math.round(row.data?.penalty_amount || 0).toLocaleString() }}</p>
-                  <p><strong>Dues:</strong>
-                    ₱{{ row.totalDue !== undefined
-                      ? Number(row.totalDue).toLocaleString('en-PH', {
-                        minimumFractionDigits: 2, maximumFractionDigits: 2
-                      })
-                      : '0.00'
-                    }}
-                  </p>
                 </div>
 
                 <!-- Actions -->

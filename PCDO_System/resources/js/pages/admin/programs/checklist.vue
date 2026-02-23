@@ -152,7 +152,7 @@ function handleUpload(index: number, item: ChecklistItem) {
 
 // Submit loan
 function submitLoan() {
-  if (!props.cooperative.program) return
+  if (!props.coopProgram.id) return
 
   loanForm.post(
     `/coopProgram/${props.coopProgram.id}/finalize-loan`,
@@ -215,7 +215,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppLayout :breadcrumbs="breadcrumbs" :key="props.cooperative.id">
+  <AppLayout :breadcrumbs="breadcrumbs" :key="props.coopProgram.id">
     <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
       <div class="px-5 md:px-8 pt-5 p-6 space-y-6 max-w-7xl mx-auto">
         <!-- Header -->
@@ -257,8 +257,8 @@ onMounted(() => {
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Loan Amount
               </label>
-              <input type="number" v-model="loanForm.loan_amount" :min="props.cooperative.program?.min_amount"
-                :max="props.cooperative.program?.max_amount" step="0.01" required
+              <input type="number" v-model="loanForm.loan_amount" :min="props.coopProgram.program?.min_amount"
+                :max="props.coopProgram.program?.max_amount" step="0.01" required
                 class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 placeholder="Enter loan amount" />
 
@@ -267,15 +267,15 @@ onMounted(() => {
               </div>
 
               <div class="flex gap-2 mt-2">
-                <button type="button" @click="loanForm.loan_amount = props.cooperative.program?.min_amount || 0"
+                <button type="button" @click="loanForm.loan_amount = props.coopProgram.program?.min_amount || 0"
                   class="bg-gray-100 dark:bg-[#334155] border border-gray-300 dark:border-[#475569]
                            text-gray-800 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-[#3b445c] px-3 py-1 rounded">
-                  Min: ₱{{ props.cooperative.program?.min_amount || 0 }}
+                  Min: ₱{{ props.coopProgram.program?.min_amount || 0 }}
                 </button>
-                <button type="button" @click="loanForm.loan_amount = props.cooperative.program?.max_amount || 0"
+                <button type="button" @click="loanForm.loan_amount = props.coopProgram.program?.max_amount || 0"
                   class="bg-gray-100 dark:bg-[#334155] border border-gray-300 dark:border-[#475569]
                            text-gray-800 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-[#3b445c] px-3 py-1 rounded">
-                  Max: ₱{{ props.cooperative.program?.max_amount || 0 }}
+                  Max: ₱{{ props.coopProgram.program?.max_amount || 0 }}
                 </button>
               </div>
             </div>
@@ -335,7 +335,7 @@ onMounted(() => {
                     <AlertDialogTitle>Finalize Loan?</AlertDialogTitle>
                     <AlertDialogDescription>
                       You are about to finalize the loan for
-                      <strong>{{ props.cooperative.cooperative.name }}</strong>.<br />
+                      <strong>{{ props.coopProgram.cooperative.name }}</strong>.<br />
                       Loan Amount: ₱{{ loanForm.loan_amount?.toLocaleString() }} <br />
                       Grace Period:
                       {{ loanForm.with_grace === 0 ? 'No Grace Period' : loanForm.with_grace + '-Month Grace Period' }}
@@ -353,7 +353,7 @@ onMounted(() => {
           </form>
 
           <!-- When all files are uploaded but no consent yet -->
-          <div v-else-if="allUploadsDone && !props.cooperative.consenter"
+          <div v-else-if="allUploadsDone && !props.coopProgram.consenter"
             class="bg-yellow-50 border border-yellow-200 p-4 rounded text-yellow-800">
             Please confirm the checklist consent before finalizing the loan.
           </div>
@@ -378,7 +378,7 @@ onMounted(() => {
                 <strong>{{ item.upload.file_name }}</strong>
               </span> </p>
             <div class="flex gap-4">
-              <a :href="`/programs/${props.cooperative.program?.id}/cooperatives/${props.cooperative.cooperative.id}/checklist/${item.upload.id}/download`"
+              <a :href="`/coopProgram/${props.coopProgram.id}/checklist/${item.upload.id}/download`"
                 class="text-blue-600 dark:text-blue-400 hover:underline">
                 Download
               </a>
@@ -469,7 +469,7 @@ onMounted(() => {
                   <div v-if="isMobile">
                     <template v-if="selectedFile.name.toLowerCase().endsWith('.pdf')">
                       <PdfViewer v-if="!pdfFailed" type="checklist" :url="selectedFile.url"
-                        :cooperative-id="props.cooperative.cooperative.id" :program-id="props.cooperative.program?.id"
+                        :cooperative-id="props.coopProgram.cooperative.id" :program-id="props.coopProgram.program?.id"
                         :file-id="selectedFile.id" @error="pdfFailed = true" />
 
                       <div v-else class="text-center text-gray-600 dark:text-gray-400">
@@ -529,7 +529,7 @@ onMounted(() => {
             Remake Checklist
           </button>
 
-          <button v-else-if="!props.cooperative.consenter" type="button" @click="showPreviewModal = true"
+          <button v-else-if="!props.coopProgram.consenter" type="button" @click="showPreviewModal = true"
             class="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg shadow-md">
             Confirm Checklist
           </button>

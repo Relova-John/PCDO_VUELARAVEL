@@ -29,7 +29,7 @@ class LoanOverdueNotification extends Notification
         $coopProgram = $schedule->coopProgram;
         $datereleased = $coopProgram->start_date->format('F d, Y');
         $maturitydate = $coopProgram->end_date->format('F d, Y');
-        $monthlyDue = $schedule->installment;
+        $monthlyDue = $schedule->current_balance;
         $totalpaid = $schedule->coopProgram?->amortizationSchedules()
             ->whereNotNull('amount_paid')
             ->sum('amount_paid');

@@ -37,7 +37,7 @@ class ExportCompletedLoans extends Command
 
             foreach ($coopPrograms as $coopProgram) {
                 $schedules = $coopProgram->amortizationSchedules()
-                    ->select('id', 'due_date', 'installment', 'date_paid', 'amount_paid', 'status', 'notes', 'receipt_image')
+                    ->select('id', 'due_date', 'current_balance', 'date_paid', 'amount_paid', 'status', 'notes', 'receipt_image')
                     ->orderBy('due_date')
                     ->get();
                 if ($schedules->isEmpty()) {

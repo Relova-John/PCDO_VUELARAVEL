@@ -21,12 +21,12 @@ class DashboardController extends Controller
         $startNextMonth = now()->startOfMonth()->addMonth();
         $endNextMonth = now()->endOfMonth()->addMonth();
 
-        // Sum installments due next month
+        // Sum current_balances due next month
         $upcomingMonthlyDues = AmortizationSchedules::whereBetween('due_date', [$startNextMonth, $endNextMonth])
-            ->sum('installment');
+            ->sum('current_balance');
 
         // Cash Flow totals
-        $totalReleases = AmortizationSchedules::sum('installment');
+        $totalReleases = AmortizationSchedules::sum('current_balance');
         $totalReceived = AmortizationSchedules::sum('amount_paid');
 
         $driver = DB::connection()->getDriverName();

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('coop_program_id')->constrained('coop_programs')->onDelete('cascade');
             $table->date('due_date');
-            $table->decimal('installment', 15, 2); // more accurate than integer
+            $table->decimal('current_balance', 15, 2); // more accurate than integer
 
             // ✅ make optional / default values
             $table->dateTime('date_paid')->nullable();
