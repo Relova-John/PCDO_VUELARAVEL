@@ -117,7 +117,7 @@ class AmortizationScheduleController extends Controller
                 'schedules' => $coopProgram->amortizationSchedules->map(fn($s) => [
                     'id' => $s->id,
                     'due_date' => optional($s->due_date)->format('Y-m-d'),
-                    'current_balance' => $s->current_balance ?? 0,
+                    'installment' => $s->installment ?? 0,
                     'penalty_amount' => $s->penalty_amount ?? 0,
                     'amount_paid' => $s->amount_paid ?? 0,
                     'balance' => $s->balance ?? $s->current_balance ?? 0,

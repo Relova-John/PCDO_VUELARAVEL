@@ -35,9 +35,13 @@ class ProcessOverdueSchedules extends Command
             ->get();
 
         foreach ($overdueSchedules as $schedule) {
-
+            $firstSchedule = AmortizationSchedules::where('coop_program_id', $schedule->coop_program_id)
+                ->orderBy('due_date', 'asc')
+                ->first();
+            $baseInstallment = $firstSchedule->installment ?? 0;
+            $penaltyRate = $schedule->coopProgram->program->penalty ?? 0;
             $remainingBalance = ($schedule->current_balance) - ($schedule->amount_paid ?? 0);
-            $penaltyAmount = ($schedule->coopProgram->program->penalty / 100) * abs($schedule->installment ?? 0);
+            $penaltyAmount = ($penaltyRate / 100) * abs($baseInstallment);
 
             if ($remainingBalance <= 0) {
                 $schedule->overdue_processed = true;
@@ -62,8 +66,7 @@ class ProcessOverdueSchedules extends Command
 
                 AmortizationSchedules::create([
                     'coop_program_id' => $schedule->coop_program_id,
-                    'current_balance' => $remainingBalance,
-                    'amount_paid' => 0,
+                    'current_balance' => $remainingBalance + $penaltyAmount,
                     'balance' => 0,
                     'penalty_amount' => 0,
                     'status' => 'Unpaid',
