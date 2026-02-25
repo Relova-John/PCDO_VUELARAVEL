@@ -226,8 +226,6 @@ class AdminProgramController extends Controller
              ->orderby('id', 'desc')
              ->first();
 
-        dd($coopProgram);
-
         if (!$coopProgram) {
             return back()->withErrors(['loan_amount' => 'Program does not exist for this cooperative.']);
         }
@@ -296,7 +294,7 @@ class AdminProgramController extends Controller
 
         //  Redirect to the loan tracker page after everything
         return redirect()
-            ->route('amortizations.show', $coopProgram->id)
+            ->route('admin.amortizations.show', $coopProgram->id)
             ->with('success', 'Loan finalized and amortization schedule generated successfully!');
     }
 

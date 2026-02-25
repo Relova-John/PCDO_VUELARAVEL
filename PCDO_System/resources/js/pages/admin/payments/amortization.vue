@@ -37,7 +37,7 @@ const props = defineProps<{ coopProgram: CoopProgram }>()
 
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Payments', href: amortizations.index().url },
+  { title: 'Payments', href: 'admin/amortization' },
   { title: 'Amortization', href: '#' },
 ]
 
@@ -56,7 +56,7 @@ onMounted(() => {
     const due = new Date(s.due_date)
     due.setHours(0, 0, 0, 0)
     if (!s.is_paid && due < today && (!s.penalty_amount || s.penalty_amount === 0)) {
-      router.post(`/schedules/${s.id}/penalty`, { add: true }, { preserveScroll: true })
+      router.post(`/admin/schedules/${s.id}/penalty`, { add: true }, { preserveScroll: true })
     }
   })
 })
@@ -96,6 +96,25 @@ const allPeriods = computed(() => {
     periods.push({ type: 'grace', label: `Grace Period ${i}` })
   }
 
+  // Schedule rows with dues including carry-over
+  props.coopProgram.schedules.forEach((s, i) => {
+    const current_balance = Number(s.current_balance) || 0
+    let penalty = Number(s.penalty_amount) || 0
+
+    const paid = Number(s.amount_paid) || 0
+    const dues = current_balance + penalty + carryOver
+    const unpaid = Math.max(0, Math.round(dues - paid))
+
+    carryOver = unpaid > 0 ? unpaid : 0
+
+    periods.push({
+      type: 'schedule',
+      label: `Period ${i + 1}`,
+      data: s,
+      totalDue: dues
+    })
+  })
+
   return periods
 })
 
@@ -121,14 +140,14 @@ function getStatus(schedule: Schedule) {
   let type = 'Pending'
   let label = 'Pending'
 
-  if (schedule.is_paid || (schedule.balance ?? 0) === 0) {
+  if (schedule.is_paid || (schedule.current_balance ?? 0) === 0) {
     type = 'Paid'
     label = schedule.date_paid
       ? `Paid on ${formatDate(schedule.date_paid)}`
       : 'Paid'
-  } else if ((schedule.balance || 0) > 0 && (schedule.amount_paid || 0) > 0) {
+  } else if ((schedule.current_balance || 0) > 0 && (schedule.amount_paid || 0) > 0) {
     type = 'Partial Paid'
-    label = `Partially Paid (Balance: ₱${Math.round(schedule.balance || 0).toLocaleString()})`
+    label = `Partially Paid (Balance: ₱${Math.round(schedule.current_balance || 0).toLocaleString()})`
   } else if (
     dueDate.getFullYear() === today.getFullYear() &&
     dueDate.getMonth() === today.getMonth() &&
@@ -142,6 +161,10 @@ function getStatus(schedule: Schedule) {
   }
 
   return { type, label }
+}
+
+function hasUnpaidSchedules() {
+  return props.coopProgram.schedules.some(s => !s.is_paid)
 }
 
 const showPenaltyModal = ref(false)
@@ -175,7 +198,7 @@ function submitPenaltyRemoval() {
     return
   }
 
-  router.post(`/schedules/${selectedScheduleId.value}/penalty`,
+  router.post(`/admin/schedules/${selectedScheduleId.value}/penalty`,
     { remove: true, remarks: penaltyRemarks.value },
     {
       preserveScroll: true,
@@ -217,7 +240,7 @@ async function submitPaymentReceipt() {
   const formData = new FormData()
   formData.append('receipt_image', paymentReceiptFile.value)
 
-  router.post(`/schedules/${selectedPaymentScheduleId.value}/upload-receipt`, formData, {
+  router.post(`/admin/schedules/${selectedPaymentScheduleId.value}/upload-receipt`, formData, {
     preserveScroll: true,
     onSuccess: () => {
       toast.success('Receipt uploaded successfully. Payment marked as paid!')
@@ -276,7 +299,7 @@ async function submitNotePaymentReceipt() {
   formData.append('amount_paid', amount.toString()) // append as string for FormData
 
   router.post(
-    `/schedules/${selectedNotePaymentScheduleId.value}/upload-note-receipt`,
+    `/admin/schedules/${selectedNotePaymentScheduleId.value}/upload-note-receipt`,
     formData,
     {
       preserveScroll: true,
@@ -298,7 +321,7 @@ async function submitNotePaymentReceipt() {
 //Toggle Penalty
 function togglePenalty(scheduleId: number, hasPenalty: boolean, row: Schedule) {
   router.post(
-    `/schedules/${scheduleId}/penalty`,
+    `/admin/schedules/${scheduleId}/penalty`,
     hasPenalty ? { remove: true } : { add: true },
     {
       preserveScroll: true,
@@ -317,7 +340,7 @@ function togglePenalty(scheduleId: number, hasPenalty: boolean, row: Schedule) {
 //Send Notification
 function sendNotification(scheduleId: number) {
   router.post(
-    `/schedules/${scheduleId}/send-notif`,
+    `/admin/schedules/${scheduleId}/send-notif`,
     {},
     {
       preserveScroll: true,
@@ -367,7 +390,7 @@ async function submitReceipt() {
   const formData = new FormData()
   formData.append('receipt', receiptFile.value)
 
-  router.post(`/amortization/${props.coopProgram.id}/resolve`, formData, {
+  router.post(`/admin/amortization/${props.coopProgram.id}/resolve`, formData, {
     preserveScroll: true,
     onSuccess: () => {
       toast.success("Loan marked as resolved successfully!");
@@ -391,7 +414,7 @@ function onFileChange(e: Event) {
 
 // Download Amortization even if it not finished
 function downloadPdf() {
-  window.location.href = `/amortization/${props.coopProgram.id}/download`
+  window.location.href = `/admin/amortization/${props.coopProgram.id}/download`
 }
 
 function canPayPeriod(index: number) {
@@ -572,23 +595,19 @@ function canPayPeriod(index: number) {
                         <span class="font-medium text-gray-700 dark:text-gray-300">
                           ₱{{ Math.round(row.data.penalty_amount || 0).toLocaleString() }}
                         </span>
-                        <Button size="sm" :disabled="(row.data.penalty_amount! <= 0 && (new Date(row.data.due_date) >= new Date() || row.data.is_paid))
-                          || (row.data.penalty_amount! > 0 && row.data.is_paid)
+                        <Button v-if="(row.data.penalty_amount ?? 0) > 0" size="sm" :disabled="((row.data.penalty_amount ?? 0) <= 0 && (new Date(row.data.due_date) >= new Date() || row.data.is_paid))
+                          || ((row.data.penalty_amount ?? 0) > 0 && row.data.is_paid)
                           " @click="
-                            row.data.penalty_amount! > 0
+                            (row.data.penalty_amount ?? 0) > 0
                               ? openPenaltyModal(row.data.id)
                               : togglePenalty(row.data.id, false, row.data!)
                             " :class="[
                               'flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold shadow transition',
-                              row.data.penalty_amount! > 0
+                              (row.data.penalty_amount ?? 0) > 0
                                 ? 'bg-red-600 hover:bg-red-700 text-white'
                                 : 'bg-orange-500 hover:bg-orange-600 text-white'
                             ]">
-                          <span v-if="row.data.penalty_amount! > 0">✕ Remove</span>
-                          <span v-else class="inline-flex items-center gap-1">
-                            <Plus class="w-3 h-3" />
-                            <span>Add</span>
-                          </span>
+                          <span v-if="(row.data.penalty_amount ?? 0) > 0">✕ Remove</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -645,9 +664,10 @@ function canPayPeriod(index: number) {
                           </Button>
                         </div>
 
-                        <div v-else-if="row.data?.amount_paid && (row.data.balance || 0) > 0"
-                          class="inline-flex items-center gap-1 text-yellow-600 font-semibold">
-                          <TriangleAlert class="w-4 h-4" />
+                        <div v-else-if="
+                          row.data?.amount_paid && (row.data.balance || 0) > 0 && !row.data.is_paid
+                          " class="inline-flex items-center gap-1 text-yellow-600 italic font-semibold">
+                          <Exclamation class="w-5 h-5" />
                           <span>Partially Paid</span>
                         </div>
 
@@ -675,10 +695,18 @@ function canPayPeriod(index: number) {
                         </span>
                       </template>
 
+                      <template v-else-if="row.data?.amount_paid && (row.data.balance || 0) > 0 && !row.data.is_paid">
+                        <div class="inline-flex items-center gap-1 text-yellow-600 italic font-semibold">
+                          <Exclamation class="w-5 h-5" />
+                          <span>Partially Paid</span>
+                        </div>
+                      </template>
+
                       <template v-else>
                         <Button size="sm"
                           class="px-4 py-1.5 rounded-full text-sm font-semibold bg-red-700 hover:bg-red-800 text-white shadow-sm"
-                          @click="sendNotification(row.data!.id)">
+                          @click="sendNotification(row.data!.id)"
+                          :disabled="!canPayPeriod(index)">
                           🔔 Send Reminder
                         </Button>
                       </template>
@@ -720,6 +748,7 @@ function canPayPeriod(index: number) {
                   <p><strong>Due Date:</strong> {{ formatDate(row.data?.due_date) }}</p>
                   <p><strong>Amount:</strong> ₱{{ Math.round(row.data?.current_balance || 0).toLocaleString() }}</p>
                   <p><strong>Penalty:</strong> ₱{{ Math.round(row.data?.penalty_amount || 0).toLocaleString() }}</p>
+
                 </div>
 
                 <!-- Actions -->
@@ -789,7 +818,7 @@ function canPayPeriod(index: number) {
           </div>
 
           <div class="flex justify-end mt-6 p-4">
-            <button v-if="!isResolved" type="button" @click="openReceiptModal"
+            <button v-if="!isResolved && hasUnpaidSchedules()" type="button" @click="openReceiptModal"
               class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg shadow-md transition">
               Resolve / Nullify Amortization
             </button>

@@ -376,7 +376,7 @@ class AdminCoopController extends Controller
             'members_count' => 'required|integer|min:1',
             'total_asset' => 'required|numeric|min:0',
             'net_surplus' => 'required|numeric',
-            'email' => 'required|string|max:25',
+            'email' => 'required|string|max:50',
             'number' => 'required|string|max:20',
         ]);
 

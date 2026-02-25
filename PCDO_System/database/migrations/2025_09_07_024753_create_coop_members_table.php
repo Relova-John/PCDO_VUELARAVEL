@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('first_name');
             $table->char('middle_name');
             $table->string('last_name');
-            $table->string('marital_status');
+            $table->string('marital_status')->nullable();
             $table->string('street')->nullable();
             $table->string('city')->nullable();
             $table->string('telephone')->nullable();

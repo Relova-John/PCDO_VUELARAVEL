@@ -9,7 +9,7 @@ use Inertia\Inertia;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Settings;
 
-class CoopProgramChecklistController extends Controller
+class AdminCoopProgramChecklistController extends Controller
 {
     // Show the checklist for a cooperative
     public function show($coopProgramId)
@@ -35,7 +35,7 @@ class CoopProgramChecklistController extends Controller
             ];
         });
 
-        return Inertia::render('programs/checklist', [
+        return Inertia::render('admin/programs/checklist', [
             'coopProgram' => [
                 'id' => $coopProgram->id,
                 'loan_amount' => $coopProgram->loan_amount,
@@ -118,7 +118,7 @@ class CoopProgramChecklistController extends Controller
             ]);
         }
 
-        return redirect()->route('programs.cooperatives.checklist.show', [
+        return redirect()->route('admin.programs.cooperatives.checklist.show', [
             'coopProgramId' => $coopProgram->id,
         ])->with('success', 'File uploaded successfully!');
     }
@@ -155,7 +155,7 @@ class CoopProgramChecklistController extends Controller
         $upload = CoopProgramChecklist::findOrFail($fileId);
         $upload->delete();
 
-        return redirect()->route('programs.cooperatives.checklist.show', [
+        return redirect()->route('admin.programs.cooperatives.checklist.show', [
             'coopProgramId' => $coopProgramId,
         ])->with('success', 'File deleted successfully!');
     }

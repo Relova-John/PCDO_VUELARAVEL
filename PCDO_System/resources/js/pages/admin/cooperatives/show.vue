@@ -166,7 +166,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                       <DropdownMenuContent side="bottom" align="end"
                         class="w-51 bg-white dark:bg-gray-900 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700 p-1 mt-1">
                         <DropdownMenuItem asChild v-for="program in programs || []" :key="program.id">
-                          <Link :href="`/programs/${program.id}/cooperatives/create?cooperative_id=${cooperative.id}`"
+                          <Link :href="`/admin/programs/${program.id}/cooperatives/create?cooperative_id=${cooperative.id}`"
                             class="block w-full px-4 py-2 text-sm text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                           {{ program.name }}
                           </Link>

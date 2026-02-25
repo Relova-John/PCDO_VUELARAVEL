@@ -49,8 +49,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 
     <Head :title="program.name" />
     <AdminLayout :breadcrumbs="breadcrumbs">
-        <div class="bg-gray-100/90 dark:bg-gray-900 rounded-3xl min-h-screen">
-            <div class="px-5 md:px-8 pt-5 grid gap-6 md:grid-rows-[auto_1fr]">
+        <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
+            <div class="px-4 md:px-4 pt-5">
                 <!-- Program Header -->
                 <div class="p-5 pb-2">
                     <div
@@ -83,17 +83,17 @@ const breadcrumbs: BreadcrumbItem[] = [
                                                     <DropdownMenuItem asChild>
                                                         <Link :href="`/programs/${program.id}/cooperatives/create`"
                                                             class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                                            <Building2
-                                                                class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                                                            Add Cooperative
+                                                        <Building2
+                                                            class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                                                        Add Cooperative
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem asChild>
                                                         <Link :href="`/programs/${program.id}/progress/create`"
                                                             class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                                            <FileText
-                                                                class="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
-                                                            Add Progress Report
+                                                        <FileText
+                                                            class="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+                                                        Add Progress Report
                                                         </Link>
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
@@ -122,17 +122,15 @@ const breadcrumbs: BreadcrumbItem[] = [
                                             <DropdownMenuItem asChild>
                                                 <Link :href="`/admin/programs/${program.id}/cooperatives/create`"
                                                     class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                                    <Building2
-                                                        class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                                                    Add Cooperative
+                                                <Building2 class="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                                                Add Cooperative
                                                 </Link>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem asChild>
                                                 <Link :href="`/admin/programs/${program.id}/progress/create`"
                                                     class="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                                                    <FileText
-                                                        class="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
-                                                    Add Progress Report
+                                                <FileText class="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+                                                Add Progress Report
                                                 </Link>
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -205,33 +203,33 @@ const breadcrumbs: BreadcrumbItem[] = [
                                             v-if="coop.program_status !== 'Finished' && coop.program_status !== 'Resolved'">
                                             <!-- Upload Checklist -->
                                             <Link v-if="!coop.has_checklist"
-                                                :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                                :href="`/admin/coopProgram/${coop.coopProgramId}/checklist`"
                                                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md transition">
-                                                <Upload class="w-4 h-4" />
-                                                <span>Upload Checklist</span>
+                                            <Upload class="w-4 h-4" />
+                                            <span>Upload Checklist</span>
                                             </Link>
 
                                             <!-- Continue only -->
                                             <Link v-else-if="coop.has_checklist && !coop.has_amortization"
-                                                :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                                :href="`/admin/coopProgram/${coop.coopProgramId}/checklist`"
                                                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg shadow-md transition">
-                                                <Upload class="w-4 h-4" />
-                                                <span>Continue Checklist</span>
+                                            <Upload class="w-4 h-4" />
+                                            <span>Continue Checklist</span>
                                             </Link>
 
                                             <!-- Re-upload + View Amortization -->
                                             <div v-else-if="coop.has_checklist && coop.has_amortization"
                                                 class="flex gap-2">
                                                 <Link
-                                                    :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                                    :href="`/admin/coopProgram/${coop.coopProgramId}/checklist`"
                                                     class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg shadow-md transition">
-                                                    <Upload class="w-4 h-4" />
-                                                    <span>Re-upload</span>
+                                                <Upload class="w-4 h-4" />
+                                                <span>Re-upload</span>
                                                 </Link>
-                                                <Link :href="`/amortizations/${coop.coopProgramId}`"
+                                                <Link :href="`/admin/amortizations/${coop.coopProgramId}`"
                                                     class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md transition">
-                                                    <FileText class="w-4 h-4" />
-                                                    <span>View Schedule</span>
+                                                <FileText class="w-4 h-4" />
+                                                <span>View Schedule</span>
                                                 </Link>
                                             </div>
                                         </template>
@@ -239,7 +237,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 </TableRow>
 
                                 <TableRow v-if="cooperatives.length === 0">
-                                    <TableCell colspan="5"
+                                    <TableCell colspan="4"
                                         class="px-6 py-6 text-center text-gray-500 dark:text-gray-400">
                                         🚫 No cooperatives enrolled in this program yet.
                                     </TableCell>
@@ -299,31 +297,31 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 class="mt-4 space-y-2">
                                 <!-- Upload Checklist -->
                                 <Link v-if="!coop.has_checklist"
-                                    :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                    :href="`/admin/coopProgram/${coop.coopProgramId}/checklist`"
                                     class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-md transition w-full justify-center">
-                                    <Upload class="w-4 h-4" />
-                                    <span>Upload Checklist</span>
+                                <Upload class="w-4 h-4" />
+                                <span>Upload Checklist</span>
                                 </Link>
 
                                 <!-- Continue only -->
                                 <Link v-else-if="coop.has_checklist && !coop.has_amortization"
-                                    :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                    :href="`/admin/coopProgram/${coop.coopProgramId}/checklist`"
                                     class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-700 hover:bg-blue-800 rounded-lg shadow-md transition w-full justify-center">
-                                    <Upload class="w-4 h-4" />
-                                    <span>Continue Checklist</span>
+                                <Upload class="w-4 h-4" />
+                                <span>Continue Checklist</span>
                                 </Link>
 
                                 <!-- Re-upload + View Amortization -->
                                 <template v-else-if="coop.has_checklist && coop.has_amortization">
-                                    <Link :href="`/programs/${program.id}/cooperatives/${coop.id}/checklist`"
+                                    <Link :href="`/admin/coopProgram/${coop.coopProgramId}/checklist`"
                                         class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg shadow-md transition w-full justify-center">
-                                        <Upload class="w-4 h-4" />
-                                        <span>Re-upload</span>
+                                    <Upload class="w-4 h-4" />
+                                    <span>Re-upload</span>
                                     </Link>
-                                    <Link :href="`/amortizations/${coop.coopProgramId}`"
+                                    <Link :href="`/admin/amortizations/${coop.coopProgramId}`"
                                         class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md transition w-full justify-center">
-                                        <FileText class="w-4 h-4" />
-                                        <span>View Schedule</span>
+                                    <FileText class="w-4 h-4" />
+                                    <span>View Schedule</span>
                                     </Link>
                                 </template>
                             </div>

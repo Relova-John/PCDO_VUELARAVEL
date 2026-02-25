@@ -288,7 +288,7 @@ function handleSubmit() {
         return;
     }
 
-    form.put(`/cooperatives/${coop.id}`, {
+    form.put(`/admin/cooperatives/${coop.id}`, {
         onError: (errors) => {
             submitting.value = false;
             const messages = Object.values(errors);

@@ -140,14 +140,14 @@ function getStatus(schedule: Schedule) {
   let type = 'Pending'
   let label = 'Pending'
 
-  if (schedule.is_paid || (schedule.balance ?? 0) === 0) {
+  if (schedule.is_paid || (schedule.current_balance ?? 0) === 0) {
     type = 'Paid'
     label = schedule.date_paid
       ? `Paid on ${formatDate(schedule.date_paid)}`
       : 'Paid'
-  } else if ((schedule.balance || 0) > 0 && (schedule.amount_paid || 0) > 0) {
+  } else if ((schedule.current_balance || 0) > 0 && (schedule.amount_paid || 0) > 0) {
     type = 'Partial Paid'
-    label = `Partially Paid (Balance: ₱${Math.round(schedule.balance || 0).toLocaleString()})`
+    label = `Partially Paid (Balance: ₱${Math.round(schedule.current_balance || 0).toLocaleString()})`
   } else if (
     dueDate.getFullYear() === today.getFullYear() &&
     dueDate.getMonth() === today.getMonth() &&
