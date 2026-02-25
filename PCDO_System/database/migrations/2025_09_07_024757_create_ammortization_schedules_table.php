@@ -15,9 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('coop_program_id')->constrained('coop_programs')->onDelete('cascade');
             $table->date('due_date');
-            $table->decimal('current_balance', 15, 2); // more accurate than integer
-
-            // ✅ make optional / default values
+            $table->decimal('installment', 15, 2);
             $table->dateTime('date_paid')->nullable();
             $table->decimal('amount_paid', 15, 2)->nullable();
             $table->enum('status', ['Unpaid', 'Partial Paid', 'Paid', 'Near Due', 'Overdue', 'Resolved'])->default('Unpaid');

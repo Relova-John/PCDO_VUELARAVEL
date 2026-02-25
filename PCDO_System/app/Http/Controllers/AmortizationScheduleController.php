@@ -494,4 +494,22 @@ class AmortizationScheduleController extends Controller
 
         return $pdf->download($filename);
     }
+
+    public function notifyOverdue()
+    {
+        $today = Carbon::today();
+        $overdueSchedules = AmortizationSchedules::whereDate('due_date', '<', $today)
+            ->where('status', '!=', 'Paid')
+            ->get()
+            ->groupBy('coop_program_id')
+            ->map(function ($schedules) {
+                return $schedules->sortByDesc('due_date')->first();
+            });
+
+        foreach ($overdueSchedules as $schedule) {
+            $this->sendOverdueEmail($schedule->id);
+        }
+
+        return back()->with('success', 'Overdue notifications sent successfully!');
+    }
 }

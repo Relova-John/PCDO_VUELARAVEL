@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { ref, computed, onMounted } from 'vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 import { BreadcrumbItem } from '@/types'
 import PdfViewer from '@/components/PdfViewer.vue'
+import { toast } from 'vue-sonner'
 
 const breadcrumbs: BreadcrumbItem[] =
   [{ title: 'Payments', href: '#' }]
@@ -100,6 +101,18 @@ function closeFileModal() {
   selectedMember.value = null
 }
 
+function handleAllNotify() {
+  router.post('/amortizations/notifyOverdue', {}, {
+    preserveScroll: true,
+    onSuccess: () => {
+      toast.success('All overdue accounts have been notified successfully!')
+    },
+    onError: () => {
+      toast.error('Failed to notify overdue accounts. Please try again.')
+    }
+  })
+}
+
 const isMobile = ref(false)
 
 onMounted(() => {
@@ -150,6 +163,23 @@ onMounted(() => {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Notify All Overdue Accounts -->
+      <div class="px-5 md:px-5 pt-0 pb-5">
+        <button
+          @click="handleAllNotify()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium shadow hover:bg-red-700 transition">
+          <ExclamationTriangle class="w-4 h-4" />
+          Notify All Overdue Accounts
+        </button>
+        <!-- <div
+          class="bg-yellow-100 dark:bg-yellow-900/80 border-l-4 border-yellow-500 dark:border-yellow-700 text-yellow-700 dark:text-yellow-300 p-4 rounded-lg shadow-md">
+          <div class="flex items-center gap-3">
+            <ExclamationTriangle class="w-5 h-5" />
+            <p class="text-sm">Please ensure to notify all overdue accounts to avoid penalties and maintain good standing.</p>
+          </div>
+        </div> -->
       </div>
 
       <!-- Table Card -->

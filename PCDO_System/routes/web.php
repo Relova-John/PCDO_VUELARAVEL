@@ -179,7 +179,8 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     Route::post('/schedules/{schedule}/mark-paid', [AmortizationScheduleController::class, 'markPaid'])->name('schedules.markPaid');
     Route::post('/schedules/{schedule}/note-payment', [AmortizationScheduleController::class, 'notePayment'])->name('schedules.notePayment');
     Route::post('/schedules/{schedule}/penalty', [AmortizationScheduleController::class, 'penalty'])->name('schedules.penalty');
-
+    Route::post('amortizations/notifyOverdue', [AmortizationScheduleController::class, 'notifyOverdue'])->name('amortizations.notifyOverdue');
+    
     // Amortization Incomplete
     Route::post('/amortization/{loan}/incomplete', [AmortizationScheduleController::class, 'markIncomplete'])->name('loan.incomplete');
     Route::post('/amortization/{loan}/resolve', [AmortizationScheduleController::class, 'markResolved'])->name('loan.resolve');
