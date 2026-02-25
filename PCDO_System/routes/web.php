@@ -235,7 +235,5 @@ Route::middleware(['auth', 'role:cooperative'])->prefix('coop')->name('coop.')->
 });
 
 
-Route::get('/inventory', [InventoryFormController::class, 'index'])->name('inventory.index');
-
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

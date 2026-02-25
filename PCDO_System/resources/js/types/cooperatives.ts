@@ -200,30 +200,6 @@ export interface Checklists {
   name: string;
 }
 
-export interface InventoryDetails {
-  id: string;
-  name: string;
-  region_code: string;
-  province_code: string;
-  city_code: string;
-  barangay_code: string;
-  email: string;
-  number: string;
-  inventory: InventoryItem[];
-}
-
-export interface InventoryItem {
-  id: number;
-  name: string;
-  category: string;
-  guarantor_agency: string;
-  location: string;
-  value: number;
-  quantity: number;
-  status: string;
-  acquired_date: string;
-}
-
 export enum CoopType {
   Credit = 'Credit', Consumer = 'Consumers', Producers = 'Producers', Marketing = 'Marketing', Service = 'Service',
   Multipurpose = 'Multipurpose', Advocacy = 'Advocacy', Agrarian_Reform = 'Agrarian Reform', Bank = 'Bank', Diary = 'Diary',
