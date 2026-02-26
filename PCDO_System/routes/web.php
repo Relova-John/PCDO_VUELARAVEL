@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminCoopController;
 use App\Http\Controllers\AdminCoopMemberController;
 use App\Http\Controllers\AdminCoopProgramProgressController;
+use App\Http\Controllers\AdminCoopProgramChecklistController;
 use App\Http\Controllers\AdminDocumentationController;
 use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\AdminProgramController;
@@ -93,9 +94,32 @@ Route::middleware(['auth', 'role:admin|superadmin'])->prefix('admin')->name('adm
     Route::get('/progress/{report}', [AdminCoopProgramProgressController::class, 'show'])->name('programs.progress.show');
     Route::get('/progress/{report}/download', [AdminCoopProgramProgressController::class, 'download'])->name('programs.progress.download');
 
-    // Payments
+    // Nested routes for checklists under a specific program and cooperative
+    Route::prefix('coopProgram/{coopProgramId}')->group(function () {
+        Route::get('checklist', [AdminCoopProgramChecklistController::class, 'show'])->name('programs.cooperatives.checklist.show');
+        Route::post('checklist/upload', [AdminCoopProgramChecklistController::class, 'upload'])->name('programs.cooperatives.checklist.upload');
+        Route::get('checklist/{file}/preview', [AdminCoopProgramChecklistController::class, 'preview'])->name('programs.cooperatives.checklist.preview');
+        Route::post('consent', [AdminCoopProgramChecklistController::class, 'consent'])->name('programs.cooperatives.consent');
+        Route::get('checklist/{file}/download', [AdminCoopProgramChecklistController::class, 'download'])->name('programs.cooperatives.checklist.download');
+        Route::delete('checklist/{file}', [AdminCoopProgramChecklistController::class, 'delete'])->name('programs.cooperatives.checklist.delete');
+        Route::post('finalize-loan', [AdminProgramController::class, 'finalizeLoan'])->name('programs.finalizeLoan');
+    });
+    
+    // Payments Routes
     Route::get('amortizations', [AdminAmortizationScheduleController::class, 'index'])->name('amortizations.index');
     Route::get('/amortizations/{coopProgram}', [AdminAmortizationScheduleController::class, 'show'])->name('amortizations.show');
+    Route::post('/schedules/{schedule}/mark-paid', [AdminAmortizationScheduleController::class, 'markPaid'])->name('schedules.markPaid');
+    Route::post('/schedules/{schedule}/note-payment', [AdminAmortizationScheduleController::class, 'notePayment'])->name('schedules.notePayment');
+    Route::post('/schedules/{schedule}/penalty', [AdminAmortizationScheduleController::class, 'penalty'])->name('schedules.penalty');
+    Route::post('amortizations/notifyOverdue', [AdminAmortizationScheduleController::class, 'notifyOverdue'])->name('amortizations.notifyOverdue');
+    
+    // Amortization Incomplete
+    Route::post('/amortization/{loan}/incomplete', [AdminAmortizationScheduleController::class, 'markIncomplete'])->name('loan.incomplete');
+    Route::post('/amortization/{loan}/resolve', [AdminAmortizationScheduleController::class, 'markResolved'])->name('loan.resolve');
+    Route::get('/amortization/{id}/download', [AdminAmortizationScheduleController::class, 'downloadAmortizationPdf'])->name('amortization.download');
+    Route::get('/amortization/{id}/view', [AdminAmortizationScheduleController::class, 'amortizationFile'])->name('amortization.view');
+    Route::post('/schedules/{schedule}/upload-receipt', [AdminAmortizationScheduleController::class, 'markPaid'])->name('schedules.upload-receipt');
+    Route::post('/schedules/{schedule}/upload-note-receipt', [AdminAmortizationScheduleController::class, 'notePayment'])->name('schedules.upload-note-receipt');
 
     // Notification
     Route::get('notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
@@ -178,7 +202,8 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     Route::post('/schedules/{schedule}/mark-paid', [AmortizationScheduleController::class, 'markPaid'])->name('schedules.markPaid');
     Route::post('/schedules/{schedule}/note-payment', [AmortizationScheduleController::class, 'notePayment'])->name('schedules.notePayment');
     Route::post('/schedules/{schedule}/penalty', [AmortizationScheduleController::class, 'penalty'])->name('schedules.penalty');
-
+    Route::post('amortizations/notifyOverdue', [AmortizationScheduleController::class, 'notifyOverdue'])->name('amortizations.notifyOverdue');
+    
     // Amortization Incomplete
     Route::post('/amortization/{loan}/incomplete', [AmortizationScheduleController::class, 'markIncomplete'])->name('loan.incomplete');
     Route::post('/amortization/{loan}/resolve', [AmortizationScheduleController::class, 'markResolved'])->name('loan.resolve');
@@ -230,6 +255,13 @@ Route::middleware(['auth', 'role:cooperative'])->prefix('coop')->name('coop.')->
 
     // Details
     Route::get('/details', [CoopController::class, 'details'])->name('details.index');
+
+    // Checklist
+    Route::get('/checklist', [CoopController::class, 'checklist'])->name('checklist.index');
+
+    // Payment Schedules
+    Route::get('/schedules', [CoopController::class, 'schedules'])->name('schedules.index');
+
 });
 
 require __DIR__.'/settings.php';

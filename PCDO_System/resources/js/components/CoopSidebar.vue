@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { House, Users, BookUser} from 'lucide-vue-next';
+import { House, Users, BookUser, CheckSquare, HandCoins } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 import UserInfo from '@/components/UserInfo.vue';
@@ -55,7 +55,20 @@ const mainNavItems: NavItem[] = [
         title: 'Members',
         href: '/coop/members',
         icon: Users,
-    }
+    },
+
+    {
+        title: 'Checklist',
+        href: '/coop/checklist',
+        icon: CheckSquare,
+    },
+
+    {
+        title: 'Payment Schedule',
+        href: '/coop/schedules',
+        icon: HandCoins,
+    },
+
 
 ];
 </script>

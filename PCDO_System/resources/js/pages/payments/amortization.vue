@@ -450,7 +450,7 @@ function canPayPeriod(index: number) {
 
   <Head title="Loan Tracker" />
   <AdminLayout :breadcrumbs="breadcrumbs">
-    <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
+    <div class="min-h-screen">
       <div class="px-5 md:px-5 pt-5">
 
         <!-- Loan Information Card -->

@@ -155,7 +155,7 @@ function submitLoan() {
   if (!props.coopProgram.program) return
 
   loanForm.post(
-    `/programs/${props.coopProgram.program.id}/cooperatives/${props.coopProgram.cooperative.id}/finalize-loan`,
+    `/coopProgram/${props.coopProgram.id}/finalize-loan`,
     {
       onSuccess: () => {
         toast.success('Loan finalized and amortization schedule generated successfully!')
@@ -217,7 +217,7 @@ onMounted(() => {
 
 <template>
   <AppLayout :breadcrumbs="breadcrumbs" :key="props.coopProgram.cooperative.id">
-    <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
+    <div class="min-h-screen">
       <div class="px-5 md:px-8 pt-5 p-6 space-y-6 max-w-7xl mx-auto">
         <!-- Header -->
         <div

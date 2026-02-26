@@ -93,7 +93,7 @@ function goToNotification(id: number) {
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
+        <div class="min-h-screen">
             <div class="grid gap-4 md:grid-cols-4 mt-6 px-4 pb-6">
                 <!-- Total Cooperatives -->
                 <div

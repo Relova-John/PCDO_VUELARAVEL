@@ -30,7 +30,7 @@ const toggleYear = (year: string) => {
 
   <Head title="Documentation" />
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="bg-gray-50 dark:bg-gray-900 min-h-screen px-4 sm:px-6 py-8">
+    <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen px-4 sm:px-6 py-8">
       <div class="mb-8 text-center">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">
           Documentation by Year

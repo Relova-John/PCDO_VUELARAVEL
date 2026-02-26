@@ -31,13 +31,33 @@ const breadcrumbs: BreadcrumbItem[] = [
 ]
 
 // Dynamic gradients for each program
-const programGradients: Record<number, string> = {
+const fixedProgramGradients: Record<number, string> = {
   1: 'from-yellow-400 to-orange-500',
   2: 'from-blue-500 to-indigo-500',
   3: 'from-emerald-500 to-teal-600',
   4: 'from-red-400 to-pink-500',
   5: 'from-green-300 to-green-600'
 }
+const gradientPool = [
+  'from-purple-500 to-violet-600',
+  'from-cyan-500 to-blue-500',
+  'from-fuchsia-500 to-pink-600',
+  'from-amber-400 to-yellow-500',
+  'from-lime-400 to-emerald-500',
+  'from-sky-400 to-indigo-500',
+  'from-rose-400 to-red-500',
+  'from-teal-400 to-cyan-500',
+]
+
+const getProgramGradient = (id: number) => {
+  if (fixedProgramGradients[id]) {
+    return fixedProgramGradients[id]
+  }
+
+  const index = id % gradientPool.length
+  return gradientPool[index]
+}
+
 
 const selectedMonth = ref(new Date().toISOString().slice(0, 7))
 const selectedProgram = ref('all')
@@ -83,34 +103,35 @@ onMounted(() => {
           </div>
 
           <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Link v-for="program in props.programs" :key="program.id" :href="`/programs/${program.id}`" class="rounded-2xl shadow-md border border-gray-300 dark:border-gray-700 
-                     bg-gray-50 dark:bg-gray-800 
-                     hover:shadow-2xl hover:-translate-y-1.5 transform transition-all block">
-            <!-- Dynamic Gradient Top Bar -->
-            <div
-              :class="`h-2 rounded-t-2xl bg-gradient-to-r ${programGradients[program.id] || 'from-blue-500 to-indigo-500'}`">
-            </div>
+            <Link v-for="program in props.programs" :key="program.id" :href="`/programs/${program.id}`" class="group relative rounded-2xl shadow-md border border-gray-300 dark:border-gray-700 
+         bg-white dark:bg-gray-800 
+         hover:shadow-2xl hover:-translate-y-1.5 
+         transition-all duration-300 
+         flex flex-col overflow-hidden">
+              <!-- Dynamic Gradient Top Bar -->
+              <div :class="`h-3 rounded-t-2xl bg-gradient-to-r ${getProgramGradient(program.id)}`">
+              </div>
 
-            <div class="p-5 flex flex-col h-full">
-              <h2 class="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100">
-                {{ program.name }}
-              </h2>
+              <div class="p-5 flex flex-col flex-grow">
+                <h2 class="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+                  {{ program.name }}
+                </h2>
 
-              <p class="text-gray-800 dark:text-gray-300 text-sm leading-relaxed mb-4">
-                {{ programDescriptions[program.name] }}
-              </p>
+                <p class="text-gray-800 dark:text-gray-300 text-sm leading-relaxed mb-4">
+                  {{ programDescriptions[program.name] }}
+                </p>
 
-              <div class="mt-auto flex items-center justify-between gap-2">
-                <span class="text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center gap-1">
-                  <Handshake class="w-4 h-4 text-gray-600 dark:text-gray-400" /> Active Cooperatives
-                </span>
-                <span class="px-3 py-1 rounded-full text-xs font-semibold 
+                <div class="mt-auto flex items-center justify-between gap-2">
+                  <span class="text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center gap-1">
+                    <Handshake class="w-4 h-4 text-gray-600 dark:text-gray-400" /> Active Cooperatives
+                  </span>
+                  <span class="px-3 py-1 rounded-full text-xs font-semibold 
                                bg-blue-200 text-blue-800 
                                dark:bg-blue-900 dark:text-blue-200 shadow-sm">
-                  {{ program.cooperatives_count }}
-                </span>
+                    {{ program.cooperatives_count }}
+                  </span>
+                </div>
               </div>
-            </div>
             </Link>
           </div>
         </div>
@@ -119,7 +140,7 @@ onMounted(() => {
         <div v-if="showFileModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 sm:p-0"
           @click.self="closeFileModal">
           <div
-            class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden sm:m-0 m-auto">
+            class="bg-gray-100/90 dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden sm:m-0 m-auto">
             <!-- Header -->
             <header
               class="flex flex-wrap justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4 gap-4">

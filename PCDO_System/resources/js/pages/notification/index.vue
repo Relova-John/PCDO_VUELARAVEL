@@ -75,7 +75,7 @@ const sortedDates = Object.keys(groupedNotifications).sort((a, b) => new Date(b)
 <template>
   <Head title="Notifications" />
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
+    <div class="min-h-screen">
       <div class="p-6 space-y-6">
         <p class="text-gray-700 dark:text-gray-200">All Notifications</p>
 

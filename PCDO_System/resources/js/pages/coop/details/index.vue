@@ -97,37 +97,63 @@ function goToProgramDocumentation(programId: string | number) {
 
         <div v-if="history.length">
           <div v-for="yearBlock in history" :key="yearBlock.year" class="mb-4 border rounded-lg">
-            <button
-              class="w-full px-4 py-2 text-left font-semibold bg-gray-200 dark:bg-gray-700 rounded-t-lg"
+            <button class="w-full px-4 py-2 text-left font-semibold bg-gray-200 dark:bg-gray-700 rounded-t-lg"
               @click="yearBlock.open = !yearBlock.open">
               {{ yearBlock.year }}
             </button>
             <div v-show="yearBlock.open" class="p-4 bg-white dark:bg-gray-800 border-t">
-              <table v-if="yearBlock.programs.length" class="w-full text-left text-sm text-gray-700 dark:text-gray-200">
-                <thead>
-                  <tr>
-                    <th>Program</th>
-                    <th>Status</th>
-                    <th>Completed At</th>
-                    <th>Delinquent?</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="program in yearBlock.programs" :key="program.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-                      @click="goToProgramDocumentation(program.id)">
-                    <td>{{ program.program_name }}</td>
-                    <td>{{ program.status }}</td>
-                    <td>{{ program.completed_at }}</td>
-                    <td class="text-center">{{ program.has_delinquent ? '✔' : '—' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p v-else class="italic text-gray-500 dark:text-gray-400">No completed programs for this year.</p>
+
+              <Table v-if="yearBlock.programs.length" class="min-w-full text-sm border-separate border-spacing-0">
+
+                <TableHeader class="bg-gray-200 dark:bg-gray-700/50 border-b border-gray-500">
+                  <TableRow>
+                    <TableHead class="py-3 pl-6 text-left">Program</TableHead>
+                    <TableHead class="py-3 pl-6 text-left">Status</TableHead>
+                    <TableHead class="py-3 pl-6 text-left">Completed At</TableHead>
+                    <TableHead class="py-3 pl-6 text-center">Delinquent?</TableHead>
+                  </TableRow>
+                </TableHeader>
+
+                <TableBody class="bg-white dark:bg-gray-800">
+
+                  <TableRow v-for="program in yearBlock.programs" :key="program.id"
+                    class="hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer transition"
+                    @click="goToProgramDocumentation(program.id)">
+
+                    <TableCell class="pl-6 py-3 text-gray-700 dark:text-gray-300">
+                      {{ program.program_name }}
+                    </TableCell>
+
+                    <TableCell class="pl-6 py-3 text-gray-700 dark:text-gray-300">
+                      {{ program.status }}
+                    </TableCell>
+
+                    <TableCell class="pl-6 py-3 text-gray-700 dark:text-gray-300">
+                      {{ program.completed_at }}
+                    </TableCell>
+
+                    <TableCell class="pl-6 py-3 text-center text-gray-700 dark:text-gray-300">
+                      {{ program.has_delinquent ? '✔' : '—' }}
+                    </TableCell>
+
+                  </TableRow>
+
+                  <TableRow v-if="yearBlock.programs.length === 0">
+                    <TableCell colspan="4" class="text-center py-6 text-gray-500">
+                      No completed programs for this year.
+                    </TableCell>
+                  </TableRow>
+
+                </TableBody>
+
+              </Table>
+
+              <p v-else class="italic text-gray-500 dark:text-gray-400">
+                No completed programs for this year.
+              </p>
             </div>
           </div>
         </div>
-
-        <p v-else class="italic text-gray-500 dark:text-gray-400">No historical program records found.</p>
       </section>
     </div>
   </CoopLayout>

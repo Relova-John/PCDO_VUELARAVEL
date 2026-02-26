@@ -133,13 +133,12 @@ class ProgramController extends Controller
         return redirect()->route(
             'programs.cooperatives.checklist.show',
             [
-                'program' => $program->id,
-                'cooperative' => $cooperative->id,
+                'coopProgramId' => $coopProgram->id,
             ]
         )->with('success', 'Program enrolled successfully. Notification logged.');
     }
 
-    public function finalizeLoan(Request $request, Programs $program, Cooperative $cooperative)
+     public function finalizeLoan(Request $request, $cp)
     {
         $request->validate([
             'loan_amount' => 'required|numeric|min:1',
@@ -147,18 +146,15 @@ class ProgramController extends Controller
             'start_date' => 'required|date',
         ]);
 
-        $coopProgram = CoopProgram::where('program_id', $program->id)
-            ->where('coop_id', $cooperative->id)
-            ->orderby('id', 'desc')
-            ->first();
+        $coopProgram = CoopProgram::findOrFail($cp);
 
-        if (! $coopProgram) {
-            return back()->withErrors(['loan_amount' => 'Program does not exist for this cooperative.']);
+        if (!$coopProgram) {
+            return back()->withErrors(['error' => 'The Cooperative  exist for this cooperative.']);
         }
 
-        if ($request->loan_amount < $program->min_amount || $request->loan_amount > $program->max_amount) {
+        if ($request->loan_amount < $coopProgram->program->min_amount || $request->loan_amount > $coopProgram->program->max_amount) {
             return back()->withErrors([
-                'loan_amount' => "Loan amount must be between ₱{$program->min_amount} and ₱{$program->max_amount}",
+                'loan_amount' => "Loan amount must be between ₱{$coopProgram->program->min_amount} and ₱{$coopProgram->program->max_amount}",
             ]);
         }
 
@@ -169,12 +165,12 @@ class ProgramController extends Controller
             'loan_amount' => $request->loan_amount,
             'with_grace' => $request->with_grace,
             'start_date' => $startDate,
-            'end_date' => $startDate->copy()->addMonths($program->term_months),
+            'end_date' => $startDate->copy()->addMonths($coopProgram->program->term_months),
         ]);
 
         //  Auto-generate amortization schedule
         if (! $coopProgram->amortizationSchedules()->exists()) {
-            $monthsToPay = $program->term_months - $coopProgram->with_grace;
+            $monthsToPay = $coopProgram->program->term_months - $coopProgram->with_grace;
             if ($monthsToPay <= 0) {
                 return back()->withErrors(['loan_amount' => 'Invalid term or grace period.']);
             }
@@ -190,6 +186,7 @@ class ProgramController extends Controller
                     'coop_program_id' => $coopProgram->id,
                     'due_date' => $startDate->copy()->addMonthsNoOverflow($i - 1),
                     'installment' => $amountDue,
+                    'current_balance' => $amountDue,
                     'status' => 'Unpaid',
                 ]);
             }
@@ -197,18 +194,18 @@ class ProgramController extends Controller
             //  Log Notification
             Notifications::create([
                 'schedule_id' => null,
-                'coop_id' => $cooperative->id,
+                'coop_id' => $coopProgram->coop_id,
                 'type' => 'has_schedule',
                 'subject' => 'Amortization Schedule Created',
-                'body' => "The cooperative '{$cooperative->name}' has been issued an amortization schedule under the '{$program->name}' program. First due date: ".$startDate->format('F d, Y').'.',
+                'body' => "The cooperative '{$coopProgram->cooperative->name}' has been issued an amortization schedule under the '{$coopProgram->program->name}' program. First due date: " . $startDate->format('F d, Y') . '.',
                 'processed' => 1,
             ]);
 
             //  Optional: Send Email
-            $coopDetail = $cooperative->coopDetail;
+            $coopDetail = $coopProgram->cooperative->coopDetail;
             if ($coopDetail && $coopDetail->email) {
                 $subject = 'Amortization Schedule Created';
-                $body = "Dear {$cooperative->name},\n\nYour amortization schedule has been successfully generated under the program '{$program->name}'.\nYour first payment of ₱{$amountPerMonth} is due on ".$startDate->format('F d, Y').".\n\nThank you.";
+                $body = "Dear {$coopProgram->cooperative->name},\n\nYour amortization schedule has been successfully generated under the program '{$coopProgram->program->name}'.\nYour first payment of ₱{$amountPerMonth} is due on " . $startDate->format('F d, Y') . ".\n\nThank you.";
 
                 Mail::raw($body, function ($message) use ($coopDetail, $subject) {
                     $message->to($coopDetail->email)
@@ -222,6 +219,7 @@ class ProgramController extends Controller
             ->route('amortizations.show', $coopProgram->id)
             ->with('success', 'Loan finalized and amortization schedule generated successfully!');
     }
+
 
     public function archiveFinishedProgram($coopProgramId)
     {

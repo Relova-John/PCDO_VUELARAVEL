@@ -63,7 +63,7 @@ const handleSubmit = () => {
 
   <Head :title="`Add Cooperative to ${program.name}`" />
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
+    <div class="min-h-screen">
       <div class="max-w-7x7 p-6">
         <div class="p-8 ml-6 mr-6 mt-6 bg-gray-200 dark:bg-gray-800 rounded-2xl shadow-md">
           <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
