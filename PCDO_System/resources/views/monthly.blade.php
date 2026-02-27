@@ -6,7 +6,14 @@
     <title>{{ $selectedProgram }} Monthly Report - {{ $date }}</title>
     <style>
         @page {
-            margin: 60px 40px 80px 40px;
+            margin: 170px 40px 80px 40px;
+        }
+
+        .header {
+            position: fixed;
+            top: -150px;
+            left: 0;
+            right: 0;
         }
 
         body {
@@ -51,14 +58,15 @@
 
         th,
         td {
-            border: 1px solid #ccc;
+            border: 1.5px solid #000;
             padding: 6px 8px;
             text-align: left;
             vertical-align: middle;
         }
 
         th {
-            background: #f2f2f2;
+            background: #ffffff;
+            /* remove gray */
             font-weight: bold;
         }
 
@@ -121,16 +129,44 @@
             display: block;
         }
 
-        table,
-        tr,
-        td,
-        th {
+        table {
+            page-break-inside: auto;
+        }
+
+        tr {
             page-break-inside: avoid;
+            page-break-after: auto;
         }
     </style>
 </head>
 
 <body>
+    <div class="header">
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:0;">
+            <tr>
+                <td width="80" align="left" style="border:0;">
+                    <img src="{{ public_path('img/province_of_palawan_logo.png') }}" width="70">
+                </td>
+
+                <td align="center" style="border:0;">
+                    <div style="text-align:center;">
+                        <strong>Republic of the Philippines</strong><br>
+                        Provincial Government of Palawan<br>
+                        <strong>PROVINCIAL COOPERATIVE DEVELOPMENT OFFICE</strong><br>
+                        Capitol Bldg., Puerto Princesa City<br>
+                        pcdo.palawan@gmail.com<br>
+                        (048) 434-4173
+                    </div>
+                </td>
+
+                <td width="80" align="right" style="border:0;">
+                    <img src="{{ public_path('img/pcdo_logo.png') }}" width="70">
+                </td>
+            </tr>
+        </table>
+
+        <hr style="border:1px solid #000; margin-top:10px;">
+    </div>
     <h1>{{ $selectedProgram }} Monthly Report</h1>
     <p style="text-align:center;"><strong>{{ $date }}</strong></p>
 
@@ -194,7 +230,6 @@
         @endif
     </div>
     <div class="page-break"></div>
-
     {{-- 3 Programs --}}
     @foreach($programs as $program)
         <div class="section">

@@ -3,35 +3,111 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cooperative;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class CoopController extends Controller
 {
     public function index()
     {
-        $cooperative = auth()->user()
-            ->cooperatives()
-            ->with([
-                'details',
-                'programs.checklist',
-                'programs.amortizationSchedules',
-                'programs.olds',
-                'programs.program',
-                'programs.program.checklists',
-            ])
-            ->get();
+        $user = Auth::user();
+
+        $coop = $user->cooperatives()->with([
+            'programs.amortizationSchedules',
+        ])->first();
+
+        if (! $coop) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $programs = $coop->programs;
+
+        // Total Active Programs
+        $activePrograms = $programs
+            ->whereIn('program_status', ['Ongoing', 'Active'])
+            ->load('program')
+            ->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'name' => $p->program->name ?? 'N/A',
+                ];
+            });
+        // Total Loan Amount
+        $totalLoanAmount = $programs->sum('loan_amount');
+
+        // Total Paid (from amortization schedules)
+        $totalPaid = 0;
+
+        foreach ($programs as $program) {
+            $totalPaid += $program->amortizationSchedules
+                ->where('status', 'Paid')
+                ->sum('installment');
+        }
+
+        // Remaining Balance
+        $totalBalance = $totalLoanAmount - $totalPaid;
+
+        // Monthly Chart Data (Current Year)
+        $months = collect(range(1, 12))->map(function ($month) use ($programs) {
+            $total = 0;
+
+            foreach ($programs as $program) {
+                $total += $program->amortizationSchedules
+                    ->where('status', 'Paid')
+                    ->filter(function ($schedule) use ($month) {
+                        return Carbon::parse($schedule->paid_at)->month === $month;
+                    })
+                    ->sum('installment');
+            }
+
+            return $total;
+        });
+
+        $monthlyData = $months->values();
+
+        $monthlyCategories = [
+            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        ];
+
+        $members = $coop->members; // make sure relationship exists
+
+        $memberCounts = [
+            'Chairman' => $members->where('position', 'Chairman')->count(),
+            'Treasurer' => $members->where('position', 'Treasurer')->count(),
+            'Manager' => $members->where('position', 'Manager')->count(),
+            'Member' => $members->where('position', 'Member')->count(),
+        ];
+
+        $totalMembers = $members->count();
+
+        $checklists = $coop->programs()
+            ->with('checklist')
+            ->get()
+            ->flatMap(function ($program) {
+                return $program->checklist;
+            });
+
+        $totalChecklist = $checklists->count();
+        $completedChecklist = $checklists->where('status', 'Completed')->count();
 
         return Inertia::render('coop/Dashboard', [
-            'breadcrumbs' => [
-                ['name' => 'Dashboard', 'link' => route('coop.dashboard')],
-            ],
-            'cooperative' => $cooperative,
+            'activePrograms' => $activePrograms,
+            'totalLoanAmount' => $totalLoanAmount,
+            'totalPaid' => $totalPaid,
+            'totalBalance' => $totalBalance,
+            'monthlyData' => $monthlyData,
+            'monthlyCategories' => $monthlyCategories,
+            'memberCounts' => $memberCounts,
+            'totalMembers' => $totalMembers,
+            'totalChecklist' => $totalChecklist,
+            'completedChecklist' => $completedChecklist,
         ]);
     }
 
-    public function details(Cooperative $cooperative)
+    public function details()
     {
-        $cooperative->load('details'); // load the relationship
+        $cooperative = Cooperative::where('user_id', auth()->id())->first();
 
         $details = (object) [
             'coop_type' => $cooperative->details->coop_type ?? '',
@@ -78,6 +154,65 @@ class CoopController extends Controller
             'cooperative' => $cooperative,
             'details' => $details,
             'history' => $history,
+        ]);
+    }
+
+    public function checklist()
+    {
+        $cooperative = Cooperative::where('user_id', auth()->id())
+            ->with([
+                'programs.program.checklists',
+                'programs.checklist',
+                'programs.amortizationSchedules',
+            ])
+            ->firstOrFail();
+
+        return Inertia::render('coop/checklist/index', [
+            'coop' => $cooperative,
+        ]);
+    }
+
+    public function schedules()
+    {
+        $user = auth()->user();
+
+        $coop = $user->cooperatives()->first();
+
+        if (! $coop) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $coopProgram = $coop->programs()
+            ->with(['program', 'amortizationSchedules'])
+            ->latest()
+            ->first();
+
+        if (! $coopProgram) {
+            return Inertia::render('coop/schedule/index', [
+                'coopProgram' => null,
+            ]);
+        }
+
+        $schedules = $coopProgram->amortizationSchedules
+            ->sortBy('due_date')
+            ->values();
+
+        return Inertia::render('coop/schedule/index', [
+            'coopProgram' => [
+                'id' => $coopProgram->id,
+                'program_name' => $coopProgram->program->name ?? 'N/A',
+                'loan_amount' => $coopProgram->loan_amount,
+                'grace_period' => $coopProgram->grace_period,
+                'term_months' => $coopProgram->term_months,
+                'schedules' => $schedules->map(fn ($schedule) => [
+                    'id' => $schedule->id,
+                    'due_date' => $schedule->due_date,
+                    'installment' => $schedule->installment,
+                    'penalty_amount' => $schedule->penalty_amount,
+                    'status' => $schedule->status,
+                    'paid_at' => $schedule->paid_at,
+                ]),
+            ],
         ]);
     }
 }

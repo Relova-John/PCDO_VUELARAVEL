@@ -62,7 +62,7 @@ onMounted(() => {
 
 <template>
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
+    <div class="min-h-screen">
       <div class="max-w-7x7 p-6">
         <div
           class="bg-gray-50 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 rounded-xl px-6 py-5 mb-6">

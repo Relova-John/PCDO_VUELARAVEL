@@ -288,48 +288,61 @@ onMounted(() => {
 </script>
 
 <template>
-	<AppLayout :breadcrumbs="breadcrumbs" :key="props.coopProgram.cooperative.id">
-		<div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
-			<div class="px-5 md:px-8 pt-5 p-6 space-y-6 max-w-7xl mx-auto">
-				<!-- Header -->
-				<div
-					class="bg-gray-50 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 border-gray-300 dark:border-gray-700 rounded-xl shadow-m px-6 py-5 mb-6">
-					<h2 class="text-2xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
-						Checklist for {{ props.coopProgram.cooperative.name }}
-					</h2>
-					<p class="text-gray-600 dark:text-gray-400">
-						Program: {{ props.coopProgram.program?.name || 'N/A' }}
-					</p>
-				</div>
+  <AppLayout :breadcrumbs="breadcrumbs" :key="props.coopProgram.cooperative.id">
+    <div class="min-h-screen">
+      <div class="px-5 md:px-8 pt-5 p-6 space-y-6 max-w-7xl mx-auto">
+        <!-- Header -->
+        <div
+          class="bg-gray-50 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 border-gray-300 dark:border-gray-700 rounded-xl shadow-m px-6 py-5 mb-6">
+          <h2 class="text-2xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+            Checklist for {{ props.coopProgram.cooperative.name }}
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400">
+            Program: {{ props.coopProgram.program?.name || 'N/A' }}
+          </p>
+        </div>
 
-				<!-- Loan Section -->
-				<div ref="finalizeLoanSection" v-if="props.coopProgram.program && !props.coopProgram.has_amortization"
-					class="bg-gray-50 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 border-gray-300 dark:border-gray-700 rounded-xl shadow-m px-6 py-5 mb-6">
-					<h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
-						Finalize Loan
-					</h3>
+        <!-- Loan Section -->
+        <div ref="finalizeLoanSection" v-if="props.coopProgram.program && !props.coopProgram.has_amortization"
+          class="bg-gray-50 dark:bg-gray-800/80 border ring-1 ring-gray-300 dark:ring-gray-700 border-gray-300 dark:border-gray-700 rounded-xl shadow-m px-6 py-5 mb-6">
+          <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+            Finalize Loan
+          </h3>
 
-					<!-- Loan form -->
-					<form v-if="canFinalizeLoan" @submit.prevent="submitLoan" class="space-y-4">
-						<!-- Loan Amount -->
-						<div>
-							<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-								Loan Amount
-							</label>
-							<input type="number" v-model="loanForm.loan_amount"
-								:min="props.coopProgram.program?.min_amount"
-								:max="props.coopProgram.program?.max_amount" step="0.01" required
-								class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-								placeholder="Enter loan amount" />
+          <!-- Already finalized -->
+          <div v-if="typeof props.coopProgram.loan_amount === 'number'">
+            <p class="text-gray-800 dark:text-gray-200">
+              <strong>Loan Amount:</strong>
+              ₱{{ props.coopProgram.loan_amount.toLocaleString() }}
+            </p>
+            <p class="text-gray-800 dark:text-gray-200 mt-2">
+              <strong>Grace Period:</strong>
+                {{ props.coopProgram.with_grace === 0
+                ? 'No Grace Period'
+                : props.coopProgram.with_grace + '-Month Grace Period' }}
+                ({{ props.coopProgram.with_grace || 0 }} months selected)
+            </p>
+          </div>
 
-							<div v-if="loanForm.errors.loan_amount" class="text-red-600 text-sm mt-1">
-								{{ loanForm.errors.loan_amount }}
-							</div>
+          <!-- Loan form -->
+          <form v-if="canFinalizeLoan" @submit.prevent="submitLoan" class="space-y-4">
+            <!-- Loan Amount -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Loan Amount
+              </label>
+              <input type="number" v-model="loanForm.loan_amount" :min="props.coopProgram.program?.min_amount"
+                :max="props.coopProgram.program?.max_amount" step="0.01" required
+                class="w-full rounded-xl border border-gray-300 dark:border-gray-700 p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                placeholder="Enter loan amount" />
 
-							<div class="flex gap-2 mt-2">
-								<button type="button"
-									@click="loanForm.loan_amount = props.coopProgram.program?.min_amount || 0"
-									class="bg-gray-100 dark:bg-[#334155] border border-gray-300 dark:border-[#475569]
+              <div v-if="loanForm.errors.loan_amount" class="text-red-600 text-sm mt-1">
+                {{ loanForm.errors.loan_amount }}
+              </div>
+
+              <div class="flex gap-2 mt-2">
+                <button type="button" @click="loanForm.loan_amount = props.coopProgram.program?.min_amount || 0"
+                  class="bg-gray-100 dark:bg-[#334155] border border-gray-300 dark:border-[#475569]
                            text-gray-800 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-[#3b445c] px-3 py-1 rounded">
 									Min: ₱{{ props.coopProgram.program?.min_amount || 0 }}
 								</button>

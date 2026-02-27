@@ -39,7 +39,7 @@ onMounted(() => {
     <Head :title="cooperative.name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="bg-gray-50 dark:bg-gray-900 min-h-screen px-4 py-6">
+        <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen px-4 py-6">
             <div class="max-w-7xl mx-auto space-y-6">
 
                 <!-- Cooperative Info Card with Start Date -->

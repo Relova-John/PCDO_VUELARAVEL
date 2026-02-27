@@ -2,83 +2,64 @@
 import CoopLayout from '@/layouts/CoopLayout.vue'
 import { dashboard } from '@/routes'
 import { type BreadcrumbItem } from '@/types'
-import { Coop, Member } from '@/types/cooperatives'
 import { Head } from '@inertiajs/vue3'
-import { useDateFormat } from '@vueuse/core'
 import { ref, computed } from 'vue'
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Home', href: dashboard().url },
 ]
 
-const { cooperative, members } = defineProps<{
-    cooperative: Coop[]
-    members: Member[]
+const {
+    activePrograms,
+    totalLoanAmount,
+    totalPaid,
+    totalBalance,
+    memberCounts,
+    totalMembers,
+    totalChecklist,
+    completedChecklist,
+    checklists,
+} = defineProps<{
+    activePrograms: Array<{ id: number, name: string }>
+    totalLoanAmount: number
+    totalPaid: number
+    totalBalance: number
+    monthlyData: number[]
+    monthlyCategories: string[]
+    memberCounts: Record<string, number>
+    totalMembers: number
+    totalChecklist: number
+    completedChecklist: number
+    checklists?: Array<{
+        id: number
+        name: string
+        status: string
+    }>
 }>()
 
-const activeTab = ref<'overview' | 'status' | 'details' | 'members' | 'history'>('overview')
 
-const coop = computed(() => cooperative[0])
-
-const programStatuses = computed(() => {
-    if (!coop.value?.programs?.length) return []
-
-    return coop.value.programs.map(program => {
-        const required = program.program.checklists.length
-        const submitted = program.checklist.length
-
-        if (submitted < required) {
-            return { label: 'Registering', color: 'red' }
-        }
-
-        if (program.amortizationSchedules.length > 0) {
-            return { label: 'Ongoing', color: 'yellow' }
-        }
-
-        return { label: 'Completed', color: 'green' }
-    })
-})
-
-const formatDate = (date: string) =>
-    useDateFormat(date, 'MM/DD/YYYY').value
-
-const checklistProgress = (program: any) => {
-    const total = program.program.checklists.length
-    const current = program.checklist.length
-    return { current, total }
+function formatCurrency(value: number | null | undefined) {
+    if (!value) return '₱0'
+    return '₱' + Number(value).toLocaleString()
 }
 
-const groupedMembers = computed(() => {
-    const groups: Record<string, Member[]> = {
-        Chairman: [],
-        Treasurer: [],
-        Manager: [],
-        Members: [],
-    }
 
-    if (!coop.value?.id || !members?.length) return groups
+const tab = ref<'checklist' | 'schedule'>('checklist')
 
-    const coopMembers = members.filter(m => m.coop_id === coop.value.id)
+const checklistPercentage = computed(() => {
+    if (!totalChecklist) return 0
+    return Math.round((completedChecklist / totalChecklist) * 100)
+})
 
-    coopMembers.forEach((m: Member) => {
-        switch (m.position) {
-            case 'Chairman':
-                groups.Chairman.push(m)
-                break
-            case 'Treasurer':
-                groups.Treasurer.push(m)
-                break
-            case 'Manager':
-                groups.Manager.push(m)
-                break
-            case 'Member':
-            default:
-                groups.Members.push(m)
-                break
-        }
-    })
+const incompleteChecklist = computed(() => {
+    if (!checklists) return []
+    return checklists.filter(item => item.status !== 'Completed')
+})
 
-    return groups
+const progressColor = computed(() => {
+    if (checklistPercentage.value < 40) return 'bg-red-600'
+    if (checklistPercentage.value < 80) return 'bg-yellow-500'
+    return 'bg-green-600'
 })
 </script>
 
@@ -88,187 +69,158 @@ const groupedMembers = computed(() => {
 
     <CoopLayout :breadcrumbs="breadcrumbs">
         <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
-            <div class="px-5 md:px-5 pt-5">
+            <div class="grid gap-4 md:grid-cols-4 mt-6 px-4 pb-4">
 
-                <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">
-                    {{ coop.name }}
-                </h1>
+                <!-- Active Program -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 text-center">
 
-                <div class="text-m text-gray-600 dark:text-gray-400 mb-4">
-                    <p>Email: <strong>{{ coop.details.email }}</strong></p>
-                    <p>Contact Number: <strong>{{ coop.details.number }}</strong></p>
+                    <h3 class="text-lg font-semibold">Active Program</h3>
+
+                    <div v-if="activePrograms.length > 0" class="mt-3 space-y-1">
+                        <p v-for="program in activePrograms" :key="program.id" class="text-blue-600 font-bold text-lg">
+                            {{ program.name }}
+                        </p>
+                    </div>
+
+                    <p v-else class="text-gray-500 mt-2">
+                        No Active Program
+                    </p>
+
                 </div>
 
-                <div class="flex gap-4 border-b border-gray-300 dark:border-gray-700 mb-3">
-                    <button v-for="tab in ['status', 'details', 'members', 'history']" :key="tab"
-                        @click="activeTab = tab as any" class="pb-2 text-sm font-medium" :class="activeTab === tab
-                            ? 'border-b-2 border-blue-600 text-blue-600'
-                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'">
-                        {{tab.replace(/^\w/, c => c.toUpperCase())}}
-                    </button>
+                <!-- Total Loan -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 text-center">
+                    <h3 class="text-lg font-semibold">Total Loan</h3>
+                    <p class="text-3xl font-bold text-indigo-600 mt-2">
+                        {{ formatCurrency(totalLoanAmount) }}
+                    </p>
                 </div>
 
-                <section v-if="activeTab === 'status'" class="space-y-4">
-                    <div v-for="(program, index) in coop.programs" :key="program.id"
-                        class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow space-y-2">
-                        <div class="flex justify-between items-center">
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                                {{ program.program.name }}
-                            </h2>
+                <!-- Total Paid -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 text-center">
+                    <h3 class="text-lg font-semibold">Total Paid</h3>
+                    <p class="text-3xl font-bold text-green-600 mt-2">
+                        {{ formatCurrency(totalPaid) }}
+                    </p>
+                </div>
 
-                            <span class="font-medium">
-                                {{ program.id }}) {{ program.project }}
-                            </span>
+                <!-- Remaining Balance -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 text-center">
+                    <h3 class="text-lg font-semibold">Remaining Balance</h3>
+                    <p class="text-3xl font-bold text-red-600 mt-2">
+                        {{ formatCurrency(totalBalance) }}
+                    </p>
+                </div>
 
-                            <span>
-                                Created Date: {{ formatDate(program.created_at) }}
-                            </span>
+                <!-- Chart -->
+                <div class="col-span-4 md:col-span-3 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4">
+                        Checklist and Schedule Overview
+                    </h2>
+                    <div class="flex gap-3 mb-6">
+                        <button class="px-4 py-2 rounded-lg font-medium transition" :class="tab === 'checklist'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700'" @click="tab = 'checklist'">
+                            Checklist
+                        </button>
 
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold" :class="{
-                                'bg-red-100 text-red-700': programStatuses[index].color === 'red',
-                                'bg-yellow-100 text-yellow-700': programStatuses[index].color === 'yellow',
-                                'bg-green-100 text-green-700': programStatuses[index].color === 'green',
-                                'bg-gray-200 text-gray-700': programStatuses[index].color === 'gray',
-                            }">
-                                {{ programStatuses[index].label }}
-                            </span>
-                        </div>
-
-                        <div v-if="programStatuses[index].label === 'Registering'" class="text-sm text-gray-500">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th class="text-left text-gray-500">Checklist Item</th>
-                                        <th class="text-left text-gray-500">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="checklist in program.program.checklists" :key="checklist.id">
-                                        <td>{{ checklist.name }}</td>
-                                        <td>
-                                            <span class="px-2 py-1 rounded-full text-xs font-semibold" :class="program.checklist.some(c => c.id === checklist.id)
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-red-100 text-red-700'">
-                                                {{program.checklist.some(c => c.id === checklist.id)
-                                                    ? 'Submitted'
-                                                    : 'Pending'}}
-                                            </span>
-                                            <span>File: {{program.checklist.find(c => c.id === checklist.id)?.file_name
-                                                || 'None'}}</span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <span class="text-sm text-gray-600">
-                                {{ checklistProgress(program).current }}/{{ checklistProgress(program).total }}
-                            </span>
-
-                        </div>
-
-                        <div v-else-if="programStatuses[index].label === 'Ongoing'" class="text-sm text-gray-500">
-                            Your program is currently ongoing. Please check the amortization schedules for details.
-                        </div>
+                        <button class="px-4 py-2 rounded-lg font-medium transition" :class="tab === 'schedule'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700'" @click="tab = 'schedule'">
+                            Schedule
+                        </button>
                     </div>
-                </section>
 
-                <section v-if="activeTab === 'details'" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                    <div class="grid grid-cols-2 gap-y-3 text-sm">
-                        <div class="text-gray-500">Asset Size:</div>
-                        <div>{{ coop.details.asset_size }}</div>
+                    <div v-if="tab === 'checklist'">
 
-                        <div class="text-gray-500">Coop Type:</div>
-                        <div>{{ coop.details.coop_type }}</div>
+                        <!-- Progress Section -->
+                        <div class="mb-6">
+                            <div class="flex justify-between mb-2">
+                                <span class="font-semibold">Checklist Completion</span>
+                                <span class="font-bold text-blue-600">
+                                    {{ checklistPercentage }}%
+                                </span>
+                            </div>
 
-                        <div class="text-gray-500">Area:</div>
-                        <div>{{ coop.details.area_of_operation }}</div>
-
-                        <div class="text-gray-500">Members:</div>
-                        <div>{{ coop.details.members_count }}</div>
-
-                        <div class="text-gray-500">Total Asset</div>
-                        <div>₱{{ coop.details.total_asset.toLocaleString() }}</div>
-                    </div>
-                </section>
-
-                <section v-if="activeTab === 'members'"
-                    class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4">
-
-                    <div v-for="(members, position) in groupedMembers" :key="position" class="mb-6">
-                        <h3 class="text-lg font-semibold text-indigo-700 mb-2">{{ position }}</h3>
-
-                        <!-- Desktop Table -->
-                        <div class="hidden md:block overflow-x-auto">
-                            <table class="min-w-full text-sm border-separate border-spacing-0">
-                                <TableHeader>
-                                    <TableRow
-                                        class="bg-gray-200 dark:bg-gray-700/50 border-b border-gray-500 dark:border-gray-500">
-                                        <th class="py-2 pl-4 text-left">Full Name</th>
-                                        <th class="py-2 text-left">Representative</th>
-                                        <th class="py-2 text-left">Files</th>
-                                        <th class="py-2 text-left">Action</th>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody class="bg-white dark:bg-gray-800">
-                                    <TableRow v-for="mem in members" :key="mem.id"
-                                        class="hover:bg-gray-50 dark:hover:bg-gray-600/50">
-                                        <TableCell class="pl-4 text-gray-600 dark:text-gray-300">
-                                            {{ mem.first_name }} {{ mem.middle_name ? mem.middle_name + '. ' : '' }}{{
-                                            mem.last_name }}
-                                        </TableCell>
-                                        <TableCell class="text-gray-600 dark:text-gray-300">
-                                            <span :class="mem.is_representative ? 'text-green-600' : 'text-red-600'">
-                                                {{ mem.is_representative ? 'Yes' : 'No' }}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell class="text-gray-600 dark:text-gray-300">{{ mem.email || '-' }}</TableCell>
-                                        <TableCell class="text-gray-600 dark:text-gray-300">{{ mem.contact || '-' }}</TableCell>
-                                    </TableRow>
-
-                                    <TableRow v-if="members.length === 0">
-                                        <TableCell colspan="4" class="text-center text-gray-600 dark:text-gray-300 py-4">
-                                            No members for {{ position }}
-                                        </TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </table>
-                        </div>
-
-                        <!-- Mobile Cards -->
-                        <div class="md:hidden space-y-4">
-                            <div v-for="mem in members" :key="mem.id"
-                                class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm p-4">
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <h4 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-                                            {{ mem.first_name }} {{ mem.middle_name ? mem.middle_name + '. ' : '' }}{{
-                                            mem.last_name }}
-                                        </h4>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ mem.position || 'Member'
-                                            }}</p>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">Email: {{ mem.email || '-'
-                                            }}</p>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">Contact: {{ mem.contact ||
-                                            '-' }}</p>
-                                    </div>
-                                    <span class="text-xs font-medium px-2 py-1 rounded-full" :class="mem.is_representative
-                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                                        : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'">
-                                        {{ mem.is_representative ? 'Representative' : 'Not Representative' }}
-                                    </span>
-                                </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
+                                <div :class="[
+                                    progressColor,
+                                    'h-4 rounded-full transition-all duration-500'
+                                ]" :style="{ width: checklistPercentage + '%' }"></div>
                             </div>
                         </div>
-                    </div>
-                </section>
-            </div>
 
-            <section v-if="activeTab === 'history'" class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                <ul class="text-sm space-y-2">
-                    <li v-for="program in coop.programs" :key="program.id">
-                        {{ program.project }} — {{ program.program_status }}
-                    </li>
-                </ul>
-            </section>
+                        <!-- Uncompleted Items -->
+                        <div>
+                            <h3 class="font-semibold mb-3">Remaining Requirements</h3>
+
+                            <ul class="space-y-2">
+                                <li v-for="item in incompleteChecklist" :key="item.id"
+                                    class="bg-red-50 dark:bg-red-900/30 text-red-600 p-3 rounded-lg text-sm">
+                                    {{ item.name }}
+                                </li>
+                            </ul>
+
+                            <p v-if="incompleteChecklist.length === 0" class="text-green-600 font-medium">
+                                All checklist completed!
+                            </p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- Member Count -->
+                <div class="col-span-4 md:col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+
+                    <h2 class="text-xl font-semibold mb-4 text-center">
+                        Members
+                    </h2>
+
+                    <!-- Total Members -->
+                    <div class="text-center mb-4">
+                        <p class="text-sm text-gray-500">Total Members</p>
+                        <p class="text-3xl font-bold text-indigo-600">
+                            {{ totalMembers }}
+                        </p>
+                    </div>
+
+                    <!-- Position Breakdown -->
+                    <div class="space-y-3 text-sm">
+
+                        <div class="flex justify-between">
+                            <span>Chairman</span>
+                            <span class="font-semibold text-blue-600">
+                                {{ memberCounts.Chairman }}
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span>Treasurer</span>
+                            <span class="font-semibold text-green-600">
+                                {{ memberCounts.Treasurer }}
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span>Manager</span>
+                            <span class="font-semibold text-yellow-600">
+                                {{ memberCounts.Manager }}
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span>Members</span>
+                            <span class="font-semibold text-gray-600 dark:text-gray-300">
+                                {{ memberCounts.Member }}
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
         </div>
     </CoopLayout>
 </template>

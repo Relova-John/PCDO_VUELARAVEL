@@ -76,7 +76,7 @@ function submitForm() {
     <Head :title="`Add Progress Report - ${props.program.name}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
+        <div class="min-h-screen">
             <div class="max-w-7x7 p-6">
                 <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-md space-y-6">
                     <h2 class="text-3xl font-semibold text-gray-800 dark:text-gray-200 text-center">

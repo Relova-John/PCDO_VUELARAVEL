@@ -130,7 +130,7 @@ onMounted(() => {
 
     <Head :title="`Members of ${cooperative.name}`" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="bg-gray-100/90 dark:bg-gray-900 min-h-screen">
+        <div class="min-h-screen">
             <div class="max-w-7x7 p-6">
                 <!-- Top Actions -->
                 <div

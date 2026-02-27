@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminCoopController;
 use App\Http\Controllers\AdminCoopMemberController;
 use App\Http\Controllers\AdminCoopProgramChecklistController;
 use App\Http\Controllers\AdminCoopProgramProgressController;
+use App\Http\Controllers\AdminCoopProgramChecklistController;
 use App\Http\Controllers\AdminDocumentationController;
 use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\AdminProgramController;
@@ -260,6 +261,13 @@ Route::middleware(['auth', 'role:cooperative'])->prefix('coop')->name('coop.')->
 
     // Details
     Route::get('/details', [CoopController::class, 'details'])->name('details.index');
+
+    // Checklist
+    Route::get('/checklist', [CoopController::class, 'checklist'])->name('checklist.index');
+
+    // Payment Schedules
+    Route::get('/schedules', [CoopController::class, 'schedules'])->name('schedules.index');
+
 });
 
 
