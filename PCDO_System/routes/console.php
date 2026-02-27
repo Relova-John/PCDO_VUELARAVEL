@@ -17,7 +17,13 @@ Schedule::command('notifications:cleanup')
     ->withoutOverlapping()
     ->onOneServer();
 
+// Schedule::command('export:montly-reports')
+//     ->monthlyOn(1, '0:00')
+//     ->withoutOverlapping()
+//     ->onOneServer();
+
 Schedule::command('export:completed-loans')
+    // ->monthlyOn(1, '1:00')
     ->everyMinute()
     ->withoutOverlapping()
     ->onOneServer();

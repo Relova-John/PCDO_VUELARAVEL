@@ -21,6 +21,7 @@ interface CoopProgram {
 	with_grace?: number | null
 	consenter?: string | null
 	has_amortization?: boolean
+	moa?: { id: number; file_name: string } | null
 }
 
 // Loan form
@@ -78,6 +79,7 @@ const showPreviewModal = ref(false)
 
 const finalizeLoanSection = ref<HTMLElement | null>(null)
 const isChecklistRemade = ref(false)
+
 const pdfFailed = ref(false)
 
 watch(showPreviewModal, (isOpen) => {
@@ -95,6 +97,52 @@ watch(showPreviewModal, (isOpen) => {
 		isConsented.value = false
 	}
 })
+
+const isDragging = ref(false)
+const moaForm = useForm({
+	file: null as File | null,
+})
+
+const hasMoaUploaded = computed(() => !!props.coopProgram.moa)
+
+function handleMoaSelect(e: Event) {
+	const input = e.target as HTMLInputElement
+	if (input.files?.length) {
+		moaForm.file = input.files[0]
+	}
+}
+
+function handleDrop(e: DragEvent) {
+	e.preventDefault()
+	isDragging.value = false
+
+	if (e.dataTransfer?.files.length) {
+		moaForm.file = e.dataTransfer.files[0]
+	}
+}
+
+function uploadMoa() {
+	if (!moaForm.file) return
+
+	moaForm.post(
+		`/coopProgram/${props.coopProgram.id}/upload-moa`,
+		{
+			forceFormData: true,
+			preserveScroll: true,
+			onSuccess: () => {
+				toast.success('MOA uploaded successfully!')
+				moaForm.reset()
+				router.visit(window.location.href, {
+					only: ['coopProgram'],
+					preserveScroll: true,
+					preserveState: true,
+					replace: true,
+				})
+			},
+			onError: () => toast.error('Failed to upload MOA. Please try again.')
+		}
+	)
+}
 
 //Saves the Consent
 function saveConsent() {
@@ -158,7 +206,10 @@ function handleUpload(index: number, item: ChecklistItem) {
 // Submit loan
 function submitLoan() {
 	if (!props.coopProgram.program) return
-
+	if (!isLoanFormValid.value) {
+		toast.error('Please enter valid loan details before finalizing.')
+		return
+	}
 	loanForm.post(
 		`/coopProgram/${props.coopProgram.id}/finalize-loan`,
 		{
@@ -204,6 +255,22 @@ function handleDelete(uploadId: number, fileName: string) {
 	)
 }
 
+const isLoanFormValid = computed(() => {
+	if (!props.coopProgram.program) return false
+
+	const minAmount = props.coopProgram.program.min_amount
+	const maxAmount = props.coopProgram.program.max_amount
+	const loan = loanForm.loan_amount
+	const startDate = loanForm.start_date
+
+	return (
+		loan !== null &&
+		loan >= minAmount &&
+		loan <= maxAmount &&
+		startDate !== ''
+	)
+})
+
 // Breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
 	{ title: 'Programs', href: '/programs' },
@@ -241,21 +308,6 @@ onMounted(() => {
 					<h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
 						Finalize Loan
 					</h3>
-
-					<!-- Already finalized
-					<div v-if="typeof props.coopProgram.loan_amount === 'number'">
-						<p class="text-gray-800 dark:text-gray-200">
-							<strong>Loan Amount:</strong>
-							₱{{ props.coopProgram.loan_amount.toLocaleString() }}
-						</p>
-						<p class="text-gray-800 dark:text-gray-200 mt-2">
-							<strong>Grace Period:</strong>
-							{{ props.coopProgram.with_grace === 0
-								? 'No Grace Period'
-								: props.coopProgram.with_grace + '-Month Grace Period' }}
-							({{ props.coopProgram.with_grace || 0 }} months selected)
-						</p>
-					</div> -->
 
 					<!-- Loan form -->
 					<form v-if="canFinalizeLoan" @submit.prevent="submitLoan" class="space-y-4">
@@ -323,13 +375,58 @@ onMounted(() => {
 								{{ loanForm.errors.start_date }}
 							</div>
 						</div>
+						<!-- MOA Upload -->
+						<div class="border-t pt-5 mt-5">
 
+							<h4 class="font-semibold mb-3 text-gray-900 dark:text-gray-100">
+								Memorandum of Agreement (MOA)
+							</h4>
+
+							<!-- Drag Area -->
+							<div class="border-2 border-dashed rounded-xl p-6 text-center transition" :class="isDragging
+								? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+								: 'border-gray-300 dark:border-gray-600'" @dragover.prevent="isDragging = true"
+								@dragleave.prevent="isDragging = false" @drop="handleDrop">
+
+								<input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="hidden"
+									id="moaUpload" @change="handleMoaSelect" />
+								<label for="moaUpload" class="cursor-pointer">
+									<p class="text-sm text-gray-600 dark:text-gray-300">
+										Drag & drop MOA or
+										<span class="text-blue-600 font-medium">
+											Select File
+										</span>
+									</p>
+								</label>
+
+								<p class="mt-2 mb-3 text-sm break-words overflow-hidden line-clamp-2"
+									:title="moaForm.file?.name || props.coopProgram.moa?.file_name">
+									<template v-if="moaForm.file">
+										{{ moaForm.file.name }}
+									</template>
+									<template v-else-if="props.coopProgram.moa">
+										{{ props.coopProgram.moa.file_name }}
+									</template>
+								</p>
+
+								<button v-if="!props.coopProgram.moa" type="button" @click="uploadMoa"
+									class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm shadow-sm"
+									:disabled="moaForm.file === null">
+									Upload MOA
+								</button>
+								<button v-else type="button" @click="uploadMoa"
+									class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm shadow-sm"
+									:disabled="moaForm.file === null">
+									Reupload MOA
+								</button>
+							</div>
+
+						</div>
 						<div class="flex justify-end mt-4">
 							<AlertDialog>
 								<AlertDialogTrigger as-child>
-									<button type="button"
-										class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg shadow-md"
-										:disabled="loanForm.processing">
+									<button v-if="hasMoaUploaded && isLoanFormValid" type="button"
+										class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg shadow-md">
 										Finalize Loan
 									</button>
 								</AlertDialogTrigger>
@@ -342,7 +439,7 @@ onMounted(() => {
 											Loan Amount: ₱{{ loanForm.loan_amount?.toLocaleString() }} <br />
 											Grace Period:
 											{{ loanForm.with_grace === 0 ? 'No Grace Period' : loanForm.with_grace +
-											'-Month Grace Period' }}
+												'-Month Grace Period' }}
 										</AlertDialogDescription>
 									</AlertDialogHeader>
 									<AlertDialogFooter>

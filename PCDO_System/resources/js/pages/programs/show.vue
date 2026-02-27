@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue'
 import { BreadcrumbItem } from '@/types'
+import { ref, computed } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
+import { Filter } from 'lucide-vue-next'
 import { Pin, Plus, ChevronDown, Building2, FileText, CheckCircle, CircleDashed, Upload } from 'lucide-vue-next'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
@@ -10,7 +12,7 @@ const props = defineProps<{
     program: {
         id: number
         name: string
-        description: string
+        details: string
     },
     cooperatives: Array<{
         id: number
@@ -23,13 +25,22 @@ const props = defineProps<{
     }>
 }>()
 
-const programDescriptions: Record<string, string> = {
-    USAD: 'Upgrading Support for Advancement and Development of Enterprises in Cooperative',
-    LICAP: 'Livelihood Credit Assistance Program',
-    COPSE: 'Cooperative Program For Sustainable Enterprise',
-    SULONG: 'Sustained Livelihood Opportunities and Growth',
-    PCLRP: 'Provincial Cooperative Livelihood Recovery Program'
-}
+const statusFilter = ref<string>('all')
+const showFilterDropdown = ref(false)
+
+const statusOptions = [
+    { value: 'all', label: 'All Status', icon: null },
+    { value: 'Ongoing', label: 'Ongoing', icon: CircleDashed, color: 'text-yellow-600 dark:text-yellow-400' },
+    { value: 'Finished', label: 'Finished', icon: CheckCircle, color: 'text-green-600 dark:text-green-400' },
+    { value: 'Resolved', label: 'Resolved', icon: CheckCircle, color: 'text-blue-600 dark:text-blue-400' }
+]
+
+const filteredCooperatives = computed(() => {
+    if (statusFilter.value === 'all') {
+        return props.cooperatives
+    }
+    return props.cooperatives.filter(coop => coop.program_status === statusFilter.value)
+})
 
 const programGradients: Record<number, string> = {
     1: 'from-yellow-400 to-orange-500',
@@ -102,7 +113,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     </div>
                                     <p
                                         class="text-gray-700 dark:text-gray-400 text-lg md:text-m font-medium leading-relaxed max-w-2xl mt-3">
-                                        <em>{{ programDescriptions[program.name] }}</em>
+                                        <em>{{ program.details }}</em>
                                     </p>
                                 </div>
                                 <!-- Desktop Add Button -->
@@ -148,6 +159,63 @@ const breadcrumbs: BreadcrumbItem[] = [
                         Cooperatives under this Program
                     </h2>
 
+<!-- Filter Section -->
+<div class="mb-6 w-full">
+    <div class="relative w-full sm:w-auto">
+        <button @click="showFilterDropdown = !showFilterDropdown"
+            class="w-full sm:w-64 inline-flex items-center justify-between gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+            <div class="flex items-center gap-2">
+                <Filter class="w-4 h-4" />
+                <span>{{ statusFilter === 'all' ? 'Filter by Status' : statusOptions.find(o => o.value === statusFilter)?.label }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span v-if="statusFilter !== 'all'" class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                    {{ filteredCooperatives.length }}
+                </span>
+                <ChevronDown class="w-4 h-4 transition-transform" :class="{ 'rotate-180': showFilterDropdown }" />
+            </div>
+        </button>
+        
+        <!-- Dropdown Menu -->
+        <div v-if="showFilterDropdown" class="absolute left-0 mt-2 w-full sm:w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+            <div class="py-1">
+                <!-- Total Count Option -->
+                <button @click="statusFilter = 'all'; showFilterDropdown = false"
+                    class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between"
+                    :class="statusFilter === 'all' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'">
+                    <span>All Status</span>
+                    <span class="text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">
+                        {{ props.cooperatives.length }}
+                    </span>
+                </button>
+                
+                <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                
+                <button v-for="option in statusOptions.filter(o => o.value !== 'all')" :key="option.value"
+                    @click="statusFilter = option.value; showFilterDropdown = false"
+                    class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between"
+                    :class="statusFilter === option.value ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'">
+                    <div class="flex items-center gap-2">
+                        <component v-if="option.icon" :is="option.icon" class="w-4 h-4" :class="option.color" />
+                        {{ option.label }}
+                    </div>
+                    <span class="text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">
+                        {{ props.cooperatives.filter(c => c.program_status === option.value).length }}
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Filter Indicator (only shows on mobile below the button) -->
+    <div v-if="statusFilter !== 'all'" class="mt-2 sm:hidden text-sm text-gray-600 dark:text-gray-400">
+        Showing: <span class="font-medium">{{ statusOptions.find(o => o.value === statusFilter)?.label }}</span>
+        <button @click="statusFilter = 'all'" class="ml-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+            Clear Filter
+        </button>
+    </div>
+</div>
+
                     <!-- Desktop Table -->
                     <div class="hidden md:block overflow-x-auto rounded-2xl">
                         <Table class="min-w-full border-separate border-spacing-0 text-sm">
@@ -162,7 +230,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 </TableRow>
                             </TableHeader>
                             <TableBody class="bg-white dark:bg-gray-900/50">
-                                <TableRow v-for="(coop, index) in cooperatives" :key="coop.id"
+                                <TableRow v-for="(coop, index) in filteredCooperatives" :key="coop.id"
                                     class="hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors bg-gray-200/ dark:bg-gray-800">
                                     <TableCell class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ index + 1 }}
                                     </TableCell>
@@ -235,7 +303,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         </template>
                                     </TableCell>
                                 </TableRow>
-
+                                <TableRow v-if="filteredCooperatives.length === 0">
+                                    <TableCell colspan="5" class="px-6 py-6 text-center text-gray-500 dark:text-gray-400">
+                                        🚫 No cooperatives found matching the selected filter.
+                                    </TableCell>
+                                </TableRow>
                                 <TableRow v-if="cooperatives.length === 0">
                                     <TableCell colspan="4"
                                         class="px-6 py-6 text-center text-gray-500 dark:text-gray-400">
@@ -248,7 +320,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
                     <!-- Mobile View -->
                     <div class="md:hidden space-y-4">
-                        <div v-for="(coop, index) in cooperatives" :key="coop.id"
+                        <div v-for="(coop, index) in filteredCooperatives" :key="coop.id"
                             class="bg-white dark:bg-gray-900 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
                             <div class="flex justify-between items-center">
                                 <div>
@@ -325,6 +397,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     </Link>
                                 </template>
                             </div>
+                        </div>
+
+                        <div v-if="filteredCooperatives.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-4">
+                            🚫 No cooperatives found matching the selected filter.
                         </div>
 
                         <div v-if="cooperatives.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-4">

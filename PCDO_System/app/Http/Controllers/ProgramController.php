@@ -8,6 +8,10 @@ use App\Models\Cooperative;
 use App\Models\CoopProgram;
 use App\Models\Notifications;
 use App\Models\Programs;
+use App\Models\Region;
+use App\Models\Province;
+use App\Models\City;
+use App\Models\Barangay;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -17,22 +21,35 @@ use Inertia\Response;
 
 class ProgramController extends Controller
 {
-    // Display a listing of the programs with cooperative count.
-
     public function index()
     {
         $programs = Programs::withCount('coopProgram')->get();
+        $regions = Region::orderBy('name')->get(['code', 'name']);
+        $provinces = Province::orderBy('name')->get(['code', 'name', 'region_code']);
+        $cities = City::orderBy('name')->get(['code', 'name', 'province_code', 'region_code']);
+        $cities = collect([
+            [
+                'code' => 'all',
+                'name' => 'All Municipality',
+                'province_code' => null,
+                'region_code' => null,
+            ]
+        ])->merge($cities);
 
         return inertia('programs/index', [
             'programs' => $programs->map(fn($program) => [
                 'id' => $program->id,
                 'name' => $program->name,
+                'details' => $program->details,
+                'active_cooperatives' => $program->coopProgram()->where('program_status', 'Ongoing')->count(),
                 'cooperatives_count' => $program->coop_program_count,
+
             ]),
+            'regions' => $regions,
+            'provinces' => $provinces,
+            'cities' => $cities,
         ]);
     }
-
-    // Show one program and its cooperatives.
 
     public function show($id)
     {
@@ -81,7 +98,6 @@ class ProgramController extends Controller
 
         $cooperative = Cooperative::findOrFail($data['cooperative_id']);
 
-        // Same validation logic you had before...
         $ongoingPrograms = CoopProgram::where('coop_id', $cooperative->id)
             ->where('program_status', 'Ongoing')
             ->with('program')
@@ -110,7 +126,6 @@ class ProgramController extends Controller
             'with_grace' => null,
         ]);
 
-        //  Log notification of enrollment
         Notifications::create([
             'schedule_id' => null,
             'coop_id' => $cooperative->id,
@@ -120,13 +135,11 @@ class ProgramController extends Controller
             'processed' => 1,
         ]);
 
-        //  Send email notification if coop has an email
         if ($cooperative->coopDetail && $cooperative->coopDetail->email) {
             Mail::to($cooperative->coopDetail->email)
                 ->send(new CoopProgramEnrolled($cooperative, $program));
         }
 
-        //  Redirect to checklist show page
         return redirect()->route(
             'programs.cooperatives.checklist.show',
             [
@@ -157,7 +170,6 @@ class ProgramController extends Controller
 
         $startDate = Carbon::parse($request->start_date)->addMonths($request->with_grace);
 
-        //  Update coop program
         $coopProgram->update([
             'loan_amount' => $request->loan_amount,
             'with_grace' => $request->with_grace,
@@ -165,7 +177,6 @@ class ProgramController extends Controller
             'end_date' => $startDate->copy()->addMonths($coopProgram->program->term_months),
         ]);
 
-        //  Auto-generate amortization schedule
         if (! $coopProgram->amortizationSchedules()->exists()) {
             $monthsToPay = $coopProgram->program->term_months - $coopProgram->with_grace;
             if ($monthsToPay <= 0) {
@@ -188,7 +199,6 @@ class ProgramController extends Controller
                 ]);
             }
 
-            //  Log Notification
             Notifications::create([
                 'schedule_id' => null,
                 'coop_id' => $coopProgram->coop_id,
@@ -198,7 +208,6 @@ class ProgramController extends Controller
                 'processed' => 1,
             ]);
 
-            //  Optional: Send Email
             $coopDetail = $coopProgram->cooperative->coopDetail;
             if ($coopDetail && $coopDetail->email) {
                 $subject = 'Amortization Schedule Created';
@@ -211,7 +220,6 @@ class ProgramController extends Controller
             }
         }
 
-        //  Redirect to the loan tracker page after everything
         return redirect()
             ->route('amortizations.show', $coopProgram->id)
             ->with('success', 'Loan finalized and amortization schedule generated successfully!');
@@ -219,139 +227,204 @@ class ProgramController extends Controller
 
     public function monthlyReport(Request $request)
     {
-        $selectedMonth = $request->input('month')
-            ? Carbon::parse($request->input('month'))
-            : Carbon::now();
+        $selectedProgram = $request->program ?? 'all';
+        $selectedMunicipality = $request->municipality ?? 'all';
 
-        $selectedProgramId = $request->input('program_id');
-        $selectedProgramName = 'All Programs';
-        $selectedProgramFileName = 'All_Programs';
+        $monthStart = $request->filled('month')
+            ? Carbon::parse($request->month)->startOfMonth()
+            : ($request->filled('start_date')
+                ? Carbon::parse($request->start_date)->startOfDay()
+                : now()->startOfMonth());
 
-        if ($selectedProgramId && $selectedProgramId !== 'all') {
-            $program = Programs::find($selectedProgramId);
-            if ($program) {
-                $selectedProgramName = $program->name;
-                $selectedProgramFileName = str_replace(' ', '_', $program->name);
-            } else {
-                $selectedProgramName = 'Unknown Program';
-                $selectedProgramFileName = 'Unknown_Program';
-            }
-        }
+        $monthEnd = $request->filled('month')
+            ? Carbon::parse($request->month)->endOfMonth()
+            : ($request->filled('end_date')
+                ? Carbon::parse($request->end_date)->endOfDay()
+                : now()->endOfMonth());
 
-        $monthStart = $selectedMonth->copy()->startOfMonth();
-        $monthEnd = $selectedMonth->copy()->endOfMonth();
+        $dateLabel = $monthStart->isSameDay($monthEnd)
+            ? $monthStart->format('F d, Y')
+            : ($request->filled('month')
+                ? $monthStart->format('F Y')
+                : $monthStart->format('F d, Y') . ' - ' . $monthEnd->format('F d, Y'));
 
-        // 1️⃣ Registered Cooperatives
-        $registeredCoopsQuery = CoopProgram::with('program', 'cooperative')
-            ->whereBetween('created_at', [$monthStart, $monthEnd]);
+        $program = $selectedProgram !== 'all'
+            ? Programs::select('id', 'name')->find($selectedProgram)
+            : null;
 
-        if ($selectedProgramId && $selectedProgramId !== 'all') {
-            $registeredCoopsQuery->where('program_id', $selectedProgramId);
-        }
+        $selectedProgramName = $program->name ?? 'All Programs';
+        $selectedProgramFileName = str_replace(' ', '_', $selectedProgramName);
 
-        $registeredCoops = $registeredCoopsQuery->get()->map(fn($cp) => (object) [
-            'cooperative_name' => $cp->cooperative->name,
-            'registered_at' => $cp->created_at,
-            'program_name' => $cp->program->name,
-        ]);
+        $municipality = $selectedMunicipality !== 'all'
+            ? City::select('code', 'name')->find($selectedMunicipality)
+            : null;
 
-        // 2️⃣ Completed Programs
-        $finishedCoopsQuery = CoopProgram::with('program', 'cooperative')
-            ->whereIn('program_status', ['Resolved', 'Completed'])
-            ->where(function ($query) use ($monthStart, $monthEnd) {
-                $query->where(function ($q) use ($monthStart, $monthEnd) {
-                    $q->where('program_status', 'Completed')
-                        ->whereBetween('end_date', [$monthStart, $monthEnd]);
-                })
-                    ->orWhere(function ($q) use ($monthStart, $monthEnd) {
-                        $q->where('program_status', 'Resolved')
-                            ->whereBetween('updated_at', [$monthStart, $monthEnd]);
+        $selectedMunicipalityName = $municipality->name ?? 'All Municipality';
+        $selectedMunicipalityFileName = str_replace(' ', '_', $selectedMunicipalityName);
+
+        $registeredCoops = CoopProgram::with(['program:id,name', 'cooperative:id,name'])
+            ->when($selectedProgram !== 'all', fn($q) => $q->where('program_id', $selectedProgram))
+            ->when($selectedMunicipality !== 'all', function ($q) use ($selectedMunicipality) {
+                $q->whereHas('cooperative', function ($coop) use ($selectedMunicipality) {
+                    $coop->whereHas('details', function ($details) use ($selectedMunicipality) {
+                        $details->where('city_code', $selectedMunicipality);
                     });
-            });
+                });
+            })
+            ->whereBetween('start_date', [$monthStart, $monthEnd])
+            ->get()
+            ->map(fn($cp) => (object)[
+                'cooperative_name' => $cp->cooperative->name,
+                'registered_at' => $cp->start_date,
+                'program_name' => $cp->program->name,
+            ]);
 
-        if ($selectedProgramId && $selectedProgramId !== 'all') {
-            $finishedCoopsQuery->where('program_id', $selectedProgramId);
-        }
+        $finishedCoops = CoopProgram::with(['program:id,name', 'cooperative:id,name'])
+            ->when($selectedProgram !== 'all', fn($q) => $q->where('program_id', $selectedProgram))
+            ->when($selectedMunicipality !== 'all', function ($q) use ($selectedMunicipality) {
+                $q->whereHas('cooperative', function ($coop) use ($selectedMunicipality) {
+                    $coop->whereHas('details', function ($details) use ($selectedMunicipality) {
+                        $details->where('city_code', $selectedMunicipality);
+                    });
+                });
+            })
+            ->where(function ($q) use ($monthStart, $monthEnd) {
+                $q->where(function ($q2) use ($monthStart, $monthEnd) {
+                    $q2->where('program_status', 'Completed')
+                        ->whereBetween('end_date', [$monthStart, $monthEnd]);
+                })->orWhere(function ($q2) use ($monthStart, $monthEnd) {
+                    $q2->where('program_status', 'Resolved')
+                        ->whereBetween('updated_at', [$monthStart, $monthEnd]);
+                });
+            })
+            ->get()
+            ->map(fn($cp) => (object)[
+                'cooperative_name' => $cp->cooperative->name,
+                'finished_at' => $cp->program_status === 'Completed'
+                    ? $cp->end_date
+                    : $cp->updated_at,
+                'program_name' => $cp->program->name,
+                'status' => $cp->program_status,
+            ]);
 
-        $finishedCoops = $finishedCoopsQuery->get()->map(fn($cp) => (object) [
-            'cooperative_name' => $cp->cooperative->name,
-            'finished_at' => $cp->program_status === 'Completed' ? $cp->end_date : $cp->updated_at,
-            'program_name' => $cp->program->name,
-            'status' => $cp->program_status,
-        ]);
+        $programs = Programs::with([
+            'coopProgram' => function ($q) use ($selectedProgram, $selectedMunicipality, $monthStart, $monthEnd) {
+                if ($selectedProgram !== 'all') {
+                    $q->where('program_id', $selectedProgram);
+                }
 
-        // 3️⃣ Programs Summary
-        $programsQuery = Programs::with(['coopProgram.cooperative', 'coopProgram.amortizationSchedules']);
+                if ($selectedMunicipality !== 'all') {
+                    $q->whereHas('cooperative', function ($coop) use ($selectedMunicipality) {
+                        $coop->whereHas('details', function ($details) use ($selectedMunicipality) {
+                            $details->where('city_code', $selectedMunicipality);
+                        });
+                    });
+                }
 
-        if ($selectedProgramId && $selectedProgramId !== 'all') {
-            $programsQuery->where('id', $selectedProgramId);
-        }
-
-        $programs = $programsQuery->get()->map(function ($program) use ($monthStart, $monthEnd) {
-            $hasAmortization = [];
-            $checklistOnly = [];
-            $coopPrograms = $program->coopProgram ? collect($program->coopProgram) : collect();
-
-            foreach ($coopPrograms as $cp) {
-                $amortizations = $cp->amortizationSchedules ?? collect();
-
-                if ($amortizations->count() > 0) {
-                    $paidAmortizations = $amortizations->filter(fn($a) => $a->date_paid <= $monthEnd);
-                    $totalPaid = $paidAmortizations->sum('amount_paid');
-                    $totalLoan = $cp->loan_amount;
-                    $totalPenalty = $paidAmortizations->sum('penalty_amount');
-                    $remaining = $totalLoan - $totalPaid;
-                    $lastPaid = $paidAmortizations->sortByDesc('date_paid')->first();
-                    $lastPaidDate = $lastPaid?->date_paid?->format('F d, Y');
-
-                    $thisMonthPayments = $amortizations->filter(fn($a) => $a->date_paid >= $monthStart && $a->date_paid <= $monthEnd);
-
-                    if ($thisMonthPayments->sum('amount_paid') == 0) {
-                        $monthStatus = 'Overdue';
-                    } elseif ($thisMonthPayments->sum('amount_paid') < ($totalLoan + $totalPenalty)) {
-                        $monthStatus = 'Partial Paid';
-                    } else {
-                        $monthStatus = 'Fully Paid';
+                $q->where('start_date', '<=', $monthEnd);
+                $q->where(function ($q2) use ($monthEnd) {
+                    $q2->where('program_status', 'Ongoing')
+                        ->orWhere('end_date', '>=', $monthEnd)
+                        ->orWhere('updated_at', '>=', $monthEnd);
+                });
+                $q->with([
+                    'cooperative:id,name',
+                    'amortizationSchedules' => function ($q3) use ($monthEnd) {
+                        $q3->where('due_date', '<=', $monthEnd)
+                            ->select('coop_program_id', 'amount_paid', 'penalty_amount', 'date_paid', 'due_date', 'status');
                     }
+                ]);
+            }
+        ])
+            ->when($selectedProgram !== 'all', fn($q) => $q->where('id', $selectedProgram))
+            ->get()
+            ->map(function ($program) use ($monthStart, $monthEnd) {
 
-                    $hasAmortization[] = [
-                        'cooperative_name' => $cp->cooperative->name,
-                        'payment_status' => $monthStatus,
-                        'loan_amount' => $totalLoan,
-                        'amount_paid' => $totalPaid,
-                        'remaining_balance' => $remaining,
-                        'last_paid' => $lastPaidDate,
-                        'penalty' => $totalPenalty,
-                    ];
-                } else {
-                    if (! in_array($cp->program_status, ['Resolved', 'Completed'])) {
+                $hasAmortization = [];
+                $checklistOnly = [];
+
+                foreach ($program->coopProgram as $cp) {
+
+                    $paid = $cp->amortizationSchedules
+                        ->whereNotNull('date_paid')
+                        ->where('date_paid', '<=', $monthEnd);
+
+                    if ($cp->amortizationSchedules->isNotEmpty()) {
+                        $totalPaid = $paid->sum('amount_paid');
+                        $totalPenalty = $paid->sum('penalty_amount');
+                        $totalLoan = $cp->loan_amount ?? 0;
+                        $remainingBalance = $totalLoan - $totalPaid;
+                        $dueSchedules = $cp->amortizationSchedules
+                            ->where('due_date', '<=', $monthEnd);
+
+                        $overdueCount = $dueSchedules
+                            ->where('status', 'Overdue')
+                            ->count();
+
+                        // $paidCount = $dueSchedules
+                        //     ->where('status', 'Paid')
+                        //     ->count();
+
+                        // $partialCount = $dueSchedules
+                        //     ->where('status', 'Partial Paid')
+                        //     ->count();
+
+                        // $pendingCount = $dueSchedules
+                        //     ->where('status', 'Pending')
+                        //     ->count();
+
+                        $currentInstallment = $cp->amortizationSchedules
+                            ->where('due_date', '<=', $monthEnd)
+                            ->sortByDesc('due_date')
+                            ->first();
+
+                        $currentStatus = $currentInstallment?->status ?? 'Ongoing';
+
+                        $lastPaid = $cp->amortizationSchedules
+                            ->where('date_paid', '<=', $monthEnd)
+                            ->whereNotNull('date_paid')
+                            ->sortByDesc('date_paid')
+                            ->first();
+
+                        $hasAmortization[] = [
+                            'cooperative_name' => $cp->cooperative->name,
+                            'payment_status' => $currentStatus,
+                            'overdue_status' => $overdueCount,
+                            'loan_amount' => $totalLoan,
+                            'amount_paid' => $totalPaid,
+                            'remaining_balance' => $remainingBalance,
+                            'last_paid' => optional($lastPaid?->date_paid)->format('F d, Y'),
+                            'penalty' => $totalPenalty,
+                        ];
+                    } elseif (!in_array($cp->program_status, ['Resolved', 'Completed'])) {
+
                         $checklistOnly[] = [
                             'cooperative_name' => $cp->cooperative->name,
                             'program_status' => $cp->program_status,
                         ];
                     }
                 }
-            }
 
-            return [
-                'program_name' => $program->name ?? 'N/A',
-                'has_amortization' => $hasAmortization,
-                'checklist_only' => $checklistOnly,
-            ];
-        });
+                return [
+                    'program_name' => $program->name,
+                    'has_amortization' => $hasAmortization,
+                    'checklist_only' => $checklistOnly,
+                ];
+            });
 
         $pdf = Pdf::loadView('monthly', [
             'selectedProgram' => $selectedProgramName,
-            'date' => $selectedMonth->format('F Y'),
+            'date' => $dateLabel,
             'registeredCoops' => $registeredCoops,
             'finishedCoops' => $finishedCoops,
             'programs' => $programs,
         ])->setPaper('a4', 'portrait');
 
-        if ($request->has('download')) {
-            return $pdf->download($selectedProgramFileName . '_Monthly_Report_' . $selectedMonth->format('F_Y') . '.pdf');
-        }
+        $fileName = $selectedProgramFileName . '_' . $selectedMunicipalityFileName . '_' .
+            str_replace([',', ' '], ['', '_'], $dateLabel) . '_Report' . '.pdf';
 
-        return $pdf->stream($selectedProgramFileName . '_Monthly_Report_' . $selectedMonth->format('F_Y') . '.pdf');
+        return $request->has('download')
+            ? $pdf->download($fileName)
+            : $pdf->stream($fileName);
     }
 }

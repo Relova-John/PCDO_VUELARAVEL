@@ -155,11 +155,13 @@ class CoopMemberController extends Controller
         $validated = $request->validate($rules);
         $memberData = collect($validated)->except('files')->toArray();
         $member = $cooperative->members()->create($memberData);
-
+        $date = now()->format('Ymd_His');
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $uploaded) {
                 $mime = $uploaded->getClientMimeType();
                 $originalName = pathinfo($uploaded->getClientOriginalName(), PATHINFO_FILENAME);
+                $safeName = Str::slug($originalName, '_');
+                $newFileName = "{$cooperative->name}_{$validated['first_name']}_{$validated['last_name']}_{$date}_{$safeName}";
                 $extension = strtolower($uploaded->getClientOriginalExtension());
                 $finalPath = null;
                 $finalFileName = null;
@@ -183,12 +185,12 @@ class CoopMemberController extends Controller
                     $pdfContent = file_get_contents($tempPdf);
                     unlink($tempPdf);
 
-                    $finalFileName = $originalName.'.pdf';
+                    $finalFileName = $newFileName.'.pdf';
                     $finalPath = 'member_files/'.Str::uuid().'.pdf';
                     Storage::put($finalPath, $pdfContent);
                 } else {
                     // For other file types: pdf, jpg, jpeg, png
-                    $finalFileName = $uploaded->getClientOriginalName();
+                    $finalFileName = $newFileName.'.'.$extension;
                     $finalMime = $mime;
                     $finalPath = $uploaded->store('member_files');
                 }
@@ -345,11 +347,14 @@ class CoopMemberController extends Controller
 
         $memberData = collect($validated)->except('files')->toArray();
         $member->update($memberData);
+        $date = now()->format('Ymd_His');
 
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $uploaded) {
                 $mime = $uploaded->getClientMimeType();
                 $originalName = pathinfo($uploaded->getClientOriginalName(), PATHINFO_FILENAME);
+                $safeName = Str::slug($originalName, '_');
+                $newFileName = "{$cooperative->name}_{$validated['first_name']}_{$validated['last_name']}_{$date}_{$safeName}";
                 $extension = strtolower($uploaded->getClientOriginalExtension());
                 $finalPath = null;
                 $finalFileName = null;
@@ -373,12 +378,12 @@ class CoopMemberController extends Controller
                     $pdfContent = file_get_contents($tempPdf);
                     unlink($tempPdf);
 
-                    $finalFileName = $originalName.'.pdf';
+                    $finalFileName = $newFileName.'.pdf';
                     $finalPath = 'member_files/'.Str::uuid().'.pdf';
                     Storage::put($finalPath, $pdfContent);
                 } else {
                     // For other file types: pdf, jpg, jpeg, png
-                    $finalFileName = $uploaded->getClientOriginalName();
+                    $finalFileName = $newFileName.'.'.$extension;
                     $finalMime = $mime;
                     $finalPath = $uploaded->store('member_files');
                 }

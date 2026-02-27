@@ -121,7 +121,7 @@ class ExportCompletedLoans extends Command
                 $coopProgram->save();
 
                 // Optionally clear schedules
-                $coopProgram->amortizationSchedules()->delete();
+                // $coopProgram->amortizationSchedules()->delete();
 
                 $this->info("Exported PDF for {$coop->name} saved in database (BLOB)");
             }

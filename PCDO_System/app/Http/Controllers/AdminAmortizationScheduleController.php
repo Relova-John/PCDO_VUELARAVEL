@@ -155,7 +155,7 @@ class AdminAmortizationScheduleController extends Controller
     public function OneTap(Request $request, $coopProgramId)
     {
         $request->validate([
-            'receipt_image' => 'required|image|mimes:jpeg,png,jpg|max:20000s',
+            'receipt_image' => 'required|image|mimes:jpeg,png,jpg|max:20000',
         ]);
 
         $binaryImage = file_get_contents($request->file('receipt_image')->getRealPath());
@@ -392,7 +392,7 @@ class AdminAmortizationScheduleController extends Controller
 
         // Validate uploaded file
         $request->validate([
-            'receipt' => 'required|mimes:jpg,jpeg,png,pdf|max:20000s',
+            'receipt' => 'required|mimes:jpg,jpeg,png,pdf|max:20000',
         ]);
 
         // Directly read the file as binary (no storage or unlink)

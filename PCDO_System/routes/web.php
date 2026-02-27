@@ -189,6 +189,8 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
         Route::get('checklist/{file}/download', [CoopProgramChecklistController::class, 'download'])->name('programs.cooperatives.checklist.download');
         Route::delete('checklist/{file}', [CoopProgramChecklistController::class, 'delete'])->name('programs.cooperatives.checklist.delete');
         Route::post('finalize-loan', [ProgramController::class, 'finalizeLoan'])->name('cooperatives.finalizeLoan');
+        Route::post('upload-moa', [CoopProgramChecklistController::class, 'uploadMoa'])->name('programs.cooperatives.uploadMoa.post');
+        Route::get('preview-moa', [CoopProgramChecklistController::class, 'previewMoa'])->name('programs.cooperatives.previewMoa');
     });
 
     // Cooperatives Programs Routes
@@ -229,7 +231,9 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     Route::get('/documentation/{id}/member-files/', [DocumentationController::class, 'memberFile'])->name('documentation.member-files');
     Route::get('/documentation/{id}/delinquent', [DocumentationController::class, 'delinquentReport'])->name('documentation.delinquent');
     Route::get('/documentation/{id}/progress', [DocumentationController::class, 'progressReportFile'])->name('documentation.progress.file');
+    Route::get('/documentation/{id}/moa', [DocumentationController::class, 'moaFile'])->name('documentation.moa');
     Route::get('/documentation/{id}/allfiles', [DocumentationController::class, 'allFile'])->name('documentation.allfiles.file');
+    Route::get('/documentation/downloads', [DocumentationController::class, 'downloadFiltered'])->name('documentation.filtered.download');
 
     // // Resolved Routes
     // Route::get('/resolved/{coopProgram}/upload', [ResolvedController::class, 'create'])->name('resolved.create');

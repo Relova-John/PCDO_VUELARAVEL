@@ -123,6 +123,7 @@ onMounted(() => {
                                     { name: 'Delinquent Reports', url: `/documentation/${cooperative.program_id}/delinquent` },
                                     { name: 'Progress Reports', url: `/documentation/${cooperative.program_id}/progress` },
                                     { name: 'Resolved File', url: `/documentation/${cooperative.program_id}/resolved` },
+                                    { name: 'Memorandum of Agreement', url: `/documentation/${cooperative.program_id}/moa` },
                                 ]" :key="i">
                                     <DropdownMenuItem asChild>
                                         <button @click="selectedFile = { name: item.name, url: item.url }"

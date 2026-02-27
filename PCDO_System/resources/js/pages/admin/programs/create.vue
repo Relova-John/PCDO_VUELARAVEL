@@ -32,47 +32,105 @@ const form = useForm({
     penalty: null,
     selected_checklists: selectedChecklists.value,
 });
-
 function handleSubmit() {
+    const errors: string[] = []
+
+    // Permission check
     if (!userRoles.value.includes('admin') && !userRoles.value.includes('superadmin')) {
-        toast.error('You do not have permission to perform this action.');
-        return;
+        errors.push('You do not have permission to perform this action.')
     }
 
-    const requiredFields = ['name', 'details','term_months', 'grace_period', 'min_amount', 'max_amount', 'penalty'];
+    // Numeric validations
+    if (form.term_months !== null && form.term_months < 0) {
+        errors.push('Term (Months) must be a positive number.')
+    }
 
-    const emptyFields = requiredFields.filter(field => {
-        return (
-            form[field as keyof typeof form] === '' ||
-            form[field as keyof typeof form] === null
-        );
-    });
+    if (form.grace_period !== null && form.grace_period < 0) {
+        errors.push('Grace Period (Months) must be a positive number.')
+    }
 
-    if (emptyFields.length) {
-        toast.error(
-            `Please fill in all required fields:\n${emptyFields
-                .map((field, i) => `${i + 1}. ${field}`)
-                .join('\n')}`
-        )
+    if (form.min_amount !== null && form.min_amount < 0) {
+        errors.push('Minimum Amount must be a positive number.')
+    }
+
+    if (form.max_amount !== null && form.max_amount < 0) {
+        errors.push('Maximum Amount must be a positive number.')
+    }
+
+    if (form.penalty !== null && (form.penalty < 0 || form.penalty > 100)) {
+        errors.push('Penalty (%) must be between 0 and 100.')
+    }
+
+    if (
+        form.min_amount !== null &&
+        form.max_amount !== null &&
+        form.min_amount > form.max_amount
+    ) {
+        errors.push('Minimum Amount cannot be greater than Maximum Amount.')
+    }
+
+    if (
+        form.term_months !== null &&
+        form.grace_period !== null &&
+        form.grace_period >= form.term_months
+    ) {
+        errors.push('Grace Period must be less than Term (Months).')
+    }
+
+    // Required fields
+    const requiredFields = [
+        'name',
+        'details',
+        'term_months',
+        'grace_period',
+        'min_amount',
+        'max_amount',
+        'penalty'
+    ]
+
+    const emptyFields = requiredFields.filter(field =>
+        form[field as keyof typeof form] === '' ||
+        form[field as keyof typeof form] === null
+    )
+
+    emptyFields.forEach(field => {
+        errors.push(`${field} is required`)
+    })
+
+    // Show numbered errors
+    if (errors.length > 0) {
+        const numberedErrors = errors
+            .map((error, index) => `${index + 1}. ${error}`)
+            .join('\n')
+
+        toast.error(numberedErrors)
         return
     }
 
-    submitting.value = true;
-    form.selected_checklists = selectedChecklists.value;
+    // Submit
+    submitting.value = true
+    form.selected_checklists = selectedChecklists.value
 
     form.post(`/admin/programs`, {
         preserveState: true,
-        onError: (errors) => {
-            submitting.value = false;
-            const messages = Object.values(errors);
-            if (messages.length) toast.error(messages.join('\n'));
+        onError: (serverErrors) => {
+            submitting.value = false
+            const messages = Object.values(serverErrors)
+
+            if (messages.length) {
+                const numberedServerErrors = messages
+                    .map((msg, index) => `${index + 1}. ${msg}`)
+                    .join('\n')
+
+                toast.error(numberedServerErrors)
+            }
         },
         onSuccess: () => {
-            toast.success(`${form.name} created successfully!`);
-            submitting.value = false;
-            router.reload();
+            toast.success(`${form.name} created successfully!`)
+            submitting.value = false
+            router.reload()
         },
-    });
+    })
 }
 
 function addChecklist() {

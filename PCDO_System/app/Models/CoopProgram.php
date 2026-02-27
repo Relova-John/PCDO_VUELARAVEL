@@ -99,6 +99,11 @@ class CoopProgram extends Model
         return $this->hasMany(Resolved::class, 'coop_program_id');
     }
 
+    public function moa()
+    {
+        return $this->hasOne(CoopProgramMoa::class, 'coop_program_id');
+    }
+
     public function generateChecklists()
     {
         $items = $this->program->checklists;
@@ -109,4 +114,5 @@ class CoopProgram extends Model
             ]);
         }
     }
+
 }
