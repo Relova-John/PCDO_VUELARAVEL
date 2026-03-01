@@ -142,7 +142,7 @@ function addChecklist() {
         return;
     }
 
-    router.post('/checklists', { name }, {
+    router.post('checklists', { name }, {
         preserveState: true,
         onSuccess: () => {
             newChecklistName.value = '';
@@ -168,7 +168,7 @@ function saveEdit(id: number) {
         return;
     }
 
-    router.put(`/checklists/${id}`, { name: editingChecklistName.value }, {
+    router.put(`checklists/${id}`, { name: editingChecklistName.value }, {
         preserveState: true,
         onSuccess: () => {
             editingChecklistId.value = null;
@@ -180,7 +180,7 @@ function saveEdit(id: number) {
 
 function deleteChecklist(id: number, name: string) {
     const checklistName = name;
-    router.delete(`/checklists/${id}`, {
+    router.delete(`checklists/${id}`, {
         preserveState: true,
         onSuccess: () => {
             selectedChecklists.value = selectedChecklists.value.filter(c => c !== id);

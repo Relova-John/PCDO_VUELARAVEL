@@ -268,6 +268,7 @@
                                             'partial paid' => 'partial',
                                             'pending' => 'pending',
                                             'unpaid' => 'unpaid',
+                                            'resolved' => 'resolved',
                                             default => 'unpaid',
                                         };
                                     @endphp

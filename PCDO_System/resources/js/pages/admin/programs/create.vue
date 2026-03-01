@@ -142,6 +142,7 @@ function addChecklist() {
 
     router.post('checklists', { name }, {
         preserveState: true,
+        preserveScroll: true,
         onSuccess: () => {
             newChecklistName.value = '';
             router.reload({ only: ['checklist'] });
@@ -168,6 +169,7 @@ function saveEdit(id: number) {
 
     router.put(`checklists/${id}`, { name: editingChecklistName.value }, {
         preserveState: true,
+        preserveScroll: true,
         onSuccess: () => {
             editingChecklistId.value = null;
             router.reload({ only: ['checklist'] });
@@ -180,6 +182,7 @@ function deleteChecklist(id: number, name: string) {
     const checklistName = name;
     router.delete(`checklists/${id}`, {
         preserveState: true,
+        preserveScroll: true,
         onSuccess: () => {
             selectedChecklists.value = selectedChecklists.value.filter(c => c !== id);
             router.reload({ only: ['checklist'] });

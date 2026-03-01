@@ -2,10 +2,12 @@
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { BreadcrumbItem } from '@/types'
 import { Head, Link, usePage, router } from '@inertiajs/vue3'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, watch, reactive, computed } from 'vue'
 import PdfViewer from '@/components/PdfViewer.vue'
 import type { Programs } from '@/types/cooperatives'
 import { toast } from "vue-sonner"
+import { Cities } from '@/types/cooperatives'
+import SelectSearch from '@/components/SelectSearch.vue'
 
 const showFileModal = ref(false)
 const pdfUrl = ref('/admin/programs/reports/monthly')
@@ -23,12 +25,12 @@ const closeMenu = () => {
 
 const props = defineProps<{
 	programs: Programs[],
+	cities: Cities[]
 	breadcrumbs: BreadcrumbItem[]
 }>()
 
 const page = usePage();
 const authUser = computed(() => (page.props.auth as any)?.user);
-const userRoles = computed(() => authUser.value?.roles?.map((r: any) => r.name) || []);
 
 // Dynamic gradients for each program
 const fixedProgramGradients: Record<number, string> = {
@@ -58,6 +60,31 @@ const getProgramGradient = (id: number) => {
 	return gradientPool[index]
 }
 
+const openState = reactive({
+	city_code: false,
+})
+
+const today = new Date().toISOString().split('T')[0]
+const currentMonth = new Date().toISOString().slice(0, 7)
+
+const selectedCity = ref<string>('all')
+const selectedMonth = ref(new Date().toISOString().slice(0, 7))
+const selectedProgram = ref('all')
+const reportMode = ref<'month' | 'range'>('month')
+
+const startDate = ref(new Date().toISOString().slice(0, 10))
+const endDate = ref(new Date().toISOString().slice(0, 10))
+
+const updateReport = () => {
+	pdfLoading.value = true
+
+	if (reportMode.value === 'month') {
+		pdfUrl.value = `/admin/programs/reports/monthly?program=${selectedProgram.value}&month=${selectedMonth.value}&municipality=${selectedCity.value}`
+	} else {
+		pdfUrl.value = `/admin/programs/reports/monthly?program=${selectedProgram.value}&start_date=${startDate.value}&end_date=${endDate.value}&municipality=${selectedCity.value}`
+	}
+}
+
 function goToAddProgram() {
 	router.visit('programs/create')
 }
@@ -83,13 +110,6 @@ function unarchiveProgram(programId: number) {
 		}
 	})
 
-}
-
-const selectedMonth = ref(new Date().toISOString().slice(0, 7))
-const selectedProgram = ref('all')
-
-const updateMonth = () => {
-	pdfUrl.value = `programs/reports/monthly?month=${selectedMonth.value}&program_id=${selectedProgram.value}`
 }
 
 const pdfLoading = ref(true)
@@ -144,7 +164,7 @@ onMounted(() => {
 						</div>
 
 						<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-							<Link v-for="program in props.programs" :key="program.id"
+							<Link v-for="program in activePrograms" :key="program.id"
 								:href="`/admin/programs/${program.id}`" class="group relative rounded-2xl shadow-md border border-gray-300 dark:border-gray-700 
 								bg-white dark:bg-gray-800 
 								hover:shadow-2xl hover:-translate-y-1.5 
@@ -218,73 +238,6 @@ onMounted(() => {
 						</div>
 					</div>
 				</div>
-				<Transition name="fade">
-					<div v-if="showFileModal"
-						class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 sm:p-0"
-						@click.self="closeFileModal">
-						<div
-							class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden sm:m-0 m-auto">
-							<!-- Header -->
-							<header
-								class="flex flex-wrap justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4 gap-4">
-								<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">
-									Monthly Program Report
-								</h2>
-								<button v-if="isMobile" @click="closeFileModal"
-									class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none">
-									✕
-								</button>
-								<div class="flex items-center gap-3 flex-wrap justify-end">
-									<!-- Program Selector -->
-									<select v-model="selectedProgram" @change="updateMonth" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
-					text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-										<option value="all">All Programs</option>
-										<option v-for="program in props.programs" :key="program.id" :value="program.id">
-											{{ program.name }}
-										</option>
-									</select>
-
-									<!-- Month Selector -->
-									<input type="month" v-model="selectedMonth" @change="updateMonth" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
-					text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-
-									<button v-if="!isMobile" @click="closeFileModal"
-										class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none">
-										✕
-									</button>
-								</div>
-							</header>
-
-							<!-- Content -->
-							<div class="p-4 overflow-auto max-h-[80vh] bg-gray-50 dark:bg-gray-800 rounded-b-2xl">
-								<div v-if="pdfLoading"
-									class="flex justify-center items-center h-[80vh] text-gray-600 dark:text-gray-300">
-									<div
-										class="animate-spin rounded-full h-10 w-10 border-4 border-gray-400 border-t-transparent">
-									</div>
-								</div>
-
-								<!-- Desktop PDF -->
-								<iframe v-if="!isMobile" :src="`${pdfUrl}`" class="w-full h-[75vh] rounded" key="pdfUrl"
-									@load="pdfLoading = false"></iframe>
-
-								<!-- Mobile PDF -->
-								<template v-else>
-									<PdfViewer v-if="!pdfFailed" :url="`${pdfUrl}`" type="report"
-										@error="pdfFailed = true; pdfLoading = false" :key="pdfUrl"
-										@load="pdfLoading = false" />
-
-									<div v-else class="text-center text-gray-600 dark:text-gray-400">
-										<p class="mb-2">PDF preview not supported on your device.</p>
-										<a :href="`${pdfUrl}?download=1`"
-											class="text-blue-600 hover:underline font-medium">Download the PDF
-											file</a>
-									</div>
-								</template>
-							</div>
-						</div>
-					</div>
-				</Transition>
 			</div>
 			<div class="bg-gray-100/90 dark:bg-gray-900 rounded-3xl p-5 px-22">
 				<h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Archived Programs</h2>
@@ -329,7 +282,7 @@ onMounted(() => {
 								<span
 									class="text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center gap-1">
 									<Handshake class="w-4 h-4 text-gray-600 dark:text-gray-400" /> Recorded
-									Cooperatives
+									Cooperatives Programs
 								</span>
 								<span class="px-3 py-1 rounded-full text-xs font-semibold 
 									bg-blue-200 text-blue-800 
@@ -341,6 +294,103 @@ onMounted(() => {
 					</div>
 				</div>
 			</div>
+			<Transition name="fade">
+				<div v-if="showFileModal"
+					class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 sm:p-0"
+					@click.self="closeFileModal">
+					<div
+						class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden sm:m-0 m-auto">
+						<!-- Header -->
+						<header
+							class="flex flex-wrap justify-between items-center border-b border-gray-200 dark:border-gray-700 p-4 gap-4">
+							<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">
+								Monthly Program Report
+							</h2>
+							<button v-if="!isMobile" @click="closeFileModal"
+								class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none">
+								✕
+							</button>
+							<button v-if="isMobile" @click="closeFileModal"
+								class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none">
+								✕
+							</button>
+							<div
+								class="flex items-center gap-3 flex-wrap justify-center sm:justify-end w-full sm:w-auto">
+								<!-- Program Selector -->
+								<select v-model="selectedProgram" @change="updateReport"
+									class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+									text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none w-full sm:w-auto">
+									<option value="all">All Programs</option>
+									<option v-for="program in props.programs" :key="program.id" :value="program.id">
+										{{ program.name }}
+									</option>
+								</select>
+
+								<!-- Mode Selector -->
+								<select v-model="reportMode" @change="updateReport"
+									class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+									text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none w-full sm:w-auto">
+									<option value="month">By Month</option>
+									<option value="range">Date Range</option>
+								</select>
+
+								<!-- Month Selector -->
+								<input v-if="reportMode === 'month'" type="month" v-model="selectedMonth"
+									:max="currentMonth" @change="updateReport"
+									class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+									text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none w-full sm:w-auto" />
+
+								<!-- Date Range -->
+								<div v-else class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+									<input type="date" v-model="startDate" :max="today" @change="updateReport"
+										class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+										text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none w-full sm:w-auto" />
+									<input type="date" v-model="endDate" :max="today" @change="updateReport"
+										class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+										text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none w-full sm:w-auto" />
+								</div>
+
+								<!-- Location Selector -->
+								<div class="w-full sm:w-[320px]">
+									<SelectSearch id="city" :items="props.cities" itemLabelKey="name" itemKeyProp="code"
+										v-model="selectedCity" :open="openState.city_code"
+										@update:open="val => openState.city_code = val" placeholder="Search City" class="w-full [&_input]:w-full [&_input]:px-3 [&_input]:py-2 [&_input]:border [&_input]:border-gray-300 [&_input]:dark:border-gray-700 
+										[&_input]:rounded-md [&_input]:bg-white [&_input]:dark:bg-gray-800 [&_input]:text-gray-800 [&_input]:dark:text-gray-100 
+										[&_input]:text-sm [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:focus:outline-none
+										[&_input]:h-[38px]" />
+								</div>
+							</div>
+						</header>
+
+						<!-- Content -->
+						<div class="p-4 overflow-auto max-h-[80vh] bg-gray-50 dark:bg-gray-800 rounded-b-2xl">
+							<div v-if="pdfLoading"
+								class="flex justify-center items-center h-[80vh] text-gray-600 dark:text-gray-300">
+								<div
+									class="animate-spin rounded-full h-10 w-10 border-4 border-gray-400 border-t-transparent">
+								</div>
+							</div>
+
+							<!-- Desktop PDF -->
+							<iframe v-if="!isMobile" :src="pdfUrl" class="w-full h-[75vh] rounded" key="pdfUrl"
+								@load="pdfLoading = false"></iframe>
+
+							<!-- Mobile PDF -->
+							<template v-else>
+								<PdfViewer v-if="!pdfFailed" :url="pdfUrl" type="report"
+									@error="pdfFailed = true; pdfLoading = false" :key="pdfUrl"
+									@load="pdfLoading = false" />
+
+								<div v-else class="text-center text-gray-600 dark:text-gray-400">
+									<p class="mb-2">PDF preview not supported on your device.</p>
+									<a :href="`${pdfUrl}?download=1`"
+										class="text-blue-600 hover:underline font-medium">Download the PDF file</a>
+								</div>
+							</template>
+						</div>
+					</div>
+				</div>
+			</Transition>
 		</div>
 	</AdminLayout>
 </template>

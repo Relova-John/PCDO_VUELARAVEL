@@ -133,7 +133,7 @@ onMounted(() => {
                                             @click="$inertia.get(`/documentation/cooperative/${coop.id}`)"
                                             class="cursor-pointer hover:bg-indigo-50 dark:hover:bg-gray-700 transition">
                                             <TableCell class="font-medium text-gray-800 dark:text-gray-100">{{ coop.name
-                                                }}</TableCell>
+                                            }}</TableCell>
                                             <TableCell class="text-gray-700 dark:text-gray-300">{{ coop.program_name }}
                                             </TableCell>
                                             <TableCell class="text-gray-600 dark:text-gray-400">{{ coop.completed_at }}
@@ -149,9 +149,9 @@ onMounted(() => {
                                     class="p-4 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-3 active:bg-indigo-50 dark:active:bg-gray-700 transition">
                                     <span class="font-semibold text-gray-900 dark:text-gray-100">{{ coop.name }}</span>
                                     <span class="text-sm text-gray-600 dark:text-gray-400">{{ coop.program_name
-                                        }}</span>
+                                    }}</span>
                                     <span class="text-xs text-gray-500 dark:text-gray-500 mt-1">{{ coop.completed_at
-                                        }}</span>
+                                    }}</span>
                                 </div>
                             </div>
                         </div>
@@ -193,131 +193,129 @@ onMounted(() => {
                         </div>
                     </div>
 
-<!-- Filters Section (Collapsible) -->
-<div v-if="showFilters && !isMobile"
-    class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50">
-    <div class="space-y-4">
-        <!-- First Row - Program and File Type -->
-        <div class="flex flex-col sm:flex-row gap-4">
-            <!-- Program Selector -->
-            <select v-model="selectedProgram" @change="updateReport" 
-                class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+                    <!-- Filters Section (Collapsible) -->
+                    <div v-if="showFilters && !isMobile"
+                        class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50">
+                        <div class="space-y-4">
+                            <!-- First Row - Program and File Type -->
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <!-- Program Selector -->
+                                <select v-model="selectedProgram" @change="updateReport" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
                 text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                <option value="all">All Programs</option>
-                <option v-for="program in props.programs" :key="program.id" :value="program.id">
-                    {{ program.name }}
-                </option>
-            </select>
+                                    <option value="all">All Programs</option>
+                                    <option v-for="program in props.programs" :key="program.id" :value="program.id">
+                                        {{ program.name }}
+                                    </option>
+                                </select>
 
-            <!-- File Type Selector -->
-            <select v-model="selectedFileType" @change="updateReport" 
-                class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+                                <!-- File Type Selector -->
+                                <select v-model="selectedFileType" @change="updateReport" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
                 text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                <option value="0">All Files</option>
-                <option value="1">Cooperative Details</option>
-                <option value="2">Amortization Schedule</option>
-                <option value="3">Checklist of Documents</option>
-                <option value="4">Cooperative Members Documents</option>
-                <option value="5">Delinquent Reports</option>
-                <option value="6">Progress Reports</option>
-                <option value="7">Resolved File'</option>
-                <option value="8">Memorandum of Agreement</option>
-            </select>
-        </div>
+                                    <option value="0">All Files</option>
+                                    <option value="1">Cooperative Details</option>
+                                    <option value="2">Amortization Schedule</option>
+                                    <option value="3">Checklist of Documents</option>
+                                    <option value="4">Cooperative Members Documents</option>
+                                    <option value="5">Delinquent Reports</option>
+                                    <option value="6">Progress Reports</option>
+                                    <option value="7">Resolved File'</option>
+                                    <option value="8">Memorandum of Agreement</option>
+                                </select>
+                            </div>
 
-        <!-- Second Row - Municipality and Date Range -->
-        <div class="flex flex-col sm:flex-row gap-4 items-center">
-            <!-- Municipality/Location Selector -->
-            <div class="flex-1 w-full">
-                <SelectSearch id="city" :items="props.cities" itemLabelKey="name" itemKeyProp="code"
-                    v-model="selectedCity" :open="openState.city_code"
-                    @update:open="val => openState.city_code = val" placeholder="Search Municipality"
-                    class="w-full !p-2 !text-sm !rounded-md !border-gray-300 dark:!border-gray-700" />
-            </div>
+                            <!-- Second Row - Municipality and Date Range -->
+                            <div class="flex flex-col sm:flex-row gap-4 items-center">
+                                <!-- Municipality/Location Selector -->
+                                <div class="flex-1 w-full">
+                                    <SelectSearch id="city" :items="props.cities" itemLabelKey="name" itemKeyProp="code"
+                                        v-model="selectedCity" :open="openState.city_code"
+                                        @update:open="val => openState.city_code = val"
+                                        placeholder="Search Municipality"
+                                        class="w-full !p-2 !text-sm !rounded-md !border-gray-300 dark:!border-gray-700" />
+                                </div>
 
-            <!-- Date Range -->
-            <div class="flex-1 w-full flex flex-col sm:flex-row gap-2">
-                <input type="date" v-model="startDate" :max="today" @change="updateReport"
-                    placeholder="Start Date" 
-                    class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+                                <!-- Date Range -->
+                                <div class="flex-1 w-full flex flex-col sm:flex-row gap-2">
+                                    <input type="date" v-model="startDate" :max="today" @change="updateReport"
+                                        placeholder="Start Date" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
                     text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                <input type="date" v-model="endDate" :max="today" @change="updateReport"
-                    placeholder="End Date" 
-                    class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+                                    <input type="date" v-model="endDate" :max="today" @change="updateReport"
+                                        placeholder="End Date" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
                     text-gray-800 dark:text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-            </div>
-        </div>
-    </div>
-</div>
-<!-- Filters Section (Collapsible) - MOBILE VIEW -->
-<div v-if="showFilters && isMobile"
-    class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50">
-    <div class="space-y-4">
-        <!-- Program Selector - Full Width -->
-        <div class="w-full">
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Program</label>
-            <select v-model="selectedProgram" @change="updateReport" 
-                class="w-full px-3 py-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Filters Section (Collapsible) - MOBILE VIEW -->
+                    <div v-if="showFilters && isMobile"
+                        class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50">
+                        <div class="space-y-4">
+                            <!-- Program Selector - Full Width -->
+                            <div class="w-full">
+                                <label
+                                    class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Program</label>
+                                <select v-model="selectedProgram" @change="updateReport" class="w-full px-3 py-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
                 text-gray-800 dark:text-gray-100 text-base focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none
                 bg-no-repeat bg-right-2 bg-[length:20px]">
-                <option value="all">All Programs</option>
-                <option v-for="program in props.programs" :key="program.id" :value="program.id">
-                    {{ program.name }}
-                </option>
-            </select>
-        </div>
+                                    <option value="all">All Programs</option>
+                                    <option v-for="program in props.programs" :key="program.id" :value="program.id">
+                                        {{ program.name }}
+                                    </option>
+                                </select>
+                            </div>
 
-        <!-- File Type Selector - Full Width -->
-        <div class="w-full">
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">File Type</label>
-            <select v-model="selectedFileType" @change="updateReport" 
-                class="w-full px-3 py-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+                            <!-- File Type Selector - Full Width -->
+                            <div class="w-full">
+                                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">File
+                                    Type</label>
+                                <select v-model="selectedFileType" @change="updateReport" class="w-full px-3 py-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
                 text-gray-800 dark:text-gray-100 text-base focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none
                 bg-no-repeat bg-right-2 bg-[length:20px]">
-                <option value="0">All Files</option>
-                <option value="1">Cooperative Details</option>
-                <option value="2">Amortization Schedule</option>
-                <option value="3">Checklist of Documents</option>
-                <option value="4">Cooperative Members Documents</option>
-                <option value="5">Delinquent Reports</option>
-                <option value="6">Progress Reports</option>
-                <option value="7">Resolved File</option>
-                <option value="8">Memorandum of Agreement</option>
-            </select>
-        </div>
+                                    <option value="0">All Files</option>
+                                    <option value="1">Cooperative Details</option>
+                                    <option value="2">Amortization Schedule</option>
+                                    <option value="3">Checklist of Documents</option>
+                                    <option value="4">Cooperative Members Documents</option>
+                                    <option value="5">Delinquent Reports</option>
+                                    <option value="6">Progress Reports</option>
+                                    <option value="7">Resolved File</option>
+                                    <option value="8">Memorandum of Agreement</option>
+                                </select>
+                            </div>
 
-        <!-- Municipality/Location Selector - Full Width with custom styling -->
-        <div class="w-full">
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Municipality</label>
-            <div class="relative">
-                <SelectSearch id="city" :items="props.cities" itemLabelKey="name" itemKeyProp="code"
-                    v-model="selectedCity" :open="openState.city_code"
-                    @update:open="val => openState.city_code = val" placeholder="All Municipality"
-                    class="w-full [&_input]:w-full [&_input]:px-3 [&_input]:py-3 [&_input]:border [&_input]:border-gray-300 [&_input]:dark:border-gray-700 
+                            <!-- Municipality/Location Selector - Full Width with custom styling -->
+                            <div class="w-full">
+                                <label
+                                    class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Municipality</label>
+                                <div class="relative">
+                                    <SelectSearch id="city" :items="props.cities" itemLabelKey="name" itemKeyProp="code"
+                                        v-model="selectedCity" :open="openState.city_code"
+                                        @update:open="val => openState.city_code = val" placeholder="All Municipality"
+                                        class="w-full [&_input]:w-full [&_input]:px-3 [&_input]:py-3 [&_input]:border [&_input]:border-gray-300 [&_input]:dark:border-gray-700 
                     [&_input]:rounded-md [&_input]:bg-white [&_input]:dark:bg-gray-800 [&_input]:text-gray-800 [&_input]:dark:text-gray-100 
                     [&_input]:text-base [&_input]:focus:ring-2 [&_input]:focus:ring-blue-500 [&_input]:focus:outline-none
                     [&_input]:pl-6[&_input]:bg-no-repeat [&_input]:bg-left-2 [&_input]:bg-[length:20px]
                     [&_input]:placeholder:text-gray-400 [&_input]:dark:placeholder:text-gray-500" />
-            </div>
-        </div>
+                                </div>
+                            </div>
 
-        <!-- Date Range - Stacked on Mobile -->
-        <div class="w-full space-y-3">
-            <div class="w-full">
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Start Date</label>
-                <input type="date" v-model="startDate" :max="today" @change="updateReport"
-                    class="w-full px-3 py-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+                            <!-- Date Range - Stacked on Mobile -->
+                            <div class="w-full space-y-3">
+                                <div class="w-full">
+                                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Start
+                                        Date</label>
+                                    <input type="date" v-model="startDate" :max="today" @change="updateReport" class="w-full px-3 py-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
                     text-gray-800 dark:text-gray-100 text-base focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-            </div>
-            <div class="w-full">
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">End Date</label>
-                <input type="date" v-model="endDate" :max="today" @change="updateReport"
-                    class="w-full px-3 py-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
+                                </div>
+                                <div class="w-full">
+                                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">End
+                                        Date</label>
+                                    <input type="date" v-model="endDate" :max="today" @change="updateReport" class="w-full px-3 py-3 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800
                     text-gray-800 dark:text-gray-100 text-base focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-            </div>
-        </div>
-    </div>
-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Content -->
                     <div class="p-4 overflow-auto max-h-[80vh] bg-gray-50 dark:bg-gray-800 rounded-b-2xl">
                         <div v-if="pdfLoading"

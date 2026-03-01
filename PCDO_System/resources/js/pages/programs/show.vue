@@ -134,7 +134,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
                             <p
                                 class="text-gray-700 dark:text-gray-400 text-lg font-medium leading-relaxed max-w-2xl mt-3">
-                                <em>{{ programDescriptions[program.name] }}</em>
+                                <em>{{ program.name }}</em>
                             </p>
                         </div>
 

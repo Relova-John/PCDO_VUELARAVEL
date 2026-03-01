@@ -24,9 +24,7 @@ class ProgramController extends Controller
     public function index()
     {
         $programs = Programs::withCount('coopProgram')->get();
-        $regions = Region::orderBy('name')->get(['code', 'name']);
-        $provinces = Province::orderBy('name')->get(['code', 'name', 'region_code']);
-        $cities = City::orderBy('name')->get(['code', 'name', 'province_code', 'region_code']);
+        $cities = City::orderBy('name')->get(['code', 'name']);
         $cities = collect([
             [
                 'code' => 'all',
@@ -43,10 +41,9 @@ class ProgramController extends Controller
                 'details' => $program->details,
                 'active_cooperatives' => $program->coopProgram()->where('program_status', 'Ongoing')->count(),
                 'cooperatives_count' => $program->coop_program_count,
+                'archive' => $program->archive,
 
             ]),
-            'regions' => $regions,
-            'provinces' => $provinces,
             'cities' => $cities,
         ]);
     }

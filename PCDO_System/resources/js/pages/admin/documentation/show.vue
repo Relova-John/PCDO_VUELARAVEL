@@ -115,14 +115,15 @@ onMounted(() => {
                                 class="w-80 bg-white dark:bg-gray-900 shadow-2xl rounded-lg border border-gray-200 dark:border-gray-700 p-1 mt-1">
                                 <!-- Dropdown Items -->
                                 <template v-for="(item, i) in [
-                                    { name: 'All Files', url: `/documentation/${cooperative.program_id}/allfiles` },
-                                    { name: 'Cooperative Details', url: `/documentation/${cooperative.program_id}/details` },
-                                    { name: 'Amortization Schedule', url: `/documentation/${cooperative.program_id}/amortization` },
-                                    { name: 'Checklist of Documents', url: `/documentation/${cooperative.program_id}/checklist` },
-                                    { name: 'Cooperative Members Documents', url: `/documentation/${cooperative.program_id}/member-files` },
-                                    { name: 'Delinquent Reports', url: `/documentation/${cooperative.program_id}/delinquent` },
-                                    { name: 'Progress Reports', url: `/documentation/${cooperative.program_id}/progress` },
-                                    { name: 'Resolved File', url: `/documentation/${cooperative.program_id}/resolved` },
+                                    { name: 'All Files', url: `/admin/documentation/${cooperative.program_id}/allfiles` },
+                                    { name: 'Cooperative Details', url: `/admin/documentation/${cooperative.program_id}/details` },
+                                    { name: 'Amortization Schedule', url: `/admin/documentation/${cooperative.program_id}/amortization` },
+                                    { name: 'Checklist of Documents', url: `/admin/documentation/${cooperative.program_id}/checklist` },
+                                    { name: 'Cooperative Members Documents', url: `/admin/documentation/${cooperative.program_id}/member-files` },
+                                    { name: 'Delinquent Reports', url: `/admin/documentation/${cooperative.program_id}/delinquent` },
+                                    { name: 'Progress Reports', url: `/admin/documentation/${cooperative.program_id}/progress` },
+                                    { name: 'Resolved File', url: `/admin/documentation/${cooperative.program_id}/resolved` },
+                                    { name: 'MOA File', url: `/admin/documentation/${cooperative.program_id}/moa` },
                                 ]" :key="i">
                                     <DropdownMenuItem asChild>
                                         <button @click="selectedFile = { name: item.name, url: item.url }"

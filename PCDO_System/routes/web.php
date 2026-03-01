@@ -6,7 +6,6 @@ use App\Http\Controllers\AdminCoopController;
 use App\Http\Controllers\AdminCoopMemberController;
 use App\Http\Controllers\AdminCoopProgramChecklistController;
 use App\Http\Controllers\AdminCoopProgramProgressController;
-use App\Http\Controllers\AdminCoopProgramChecklistController;
 use App\Http\Controllers\AdminDocumentationController;
 use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\AdminProgramController;
@@ -79,9 +78,9 @@ Route::middleware(['auth', 'role:admin|superadmin'])->prefix('admin')->name('adm
     Route::resource('programs', AdminProgramController::class);
 
     // Program Checklist
-    Route::post('programs/checklists', [AdminProgramController::class, 'storeChecklist'])->name('programs.checklists.store');
-    Route::put('programs/checklists/{id}', [AdminProgramController::class, 'updateChecklist'])->name('programs.checklists.update');
-    Route::delete('programs/checklists/{id}', [AdminProgramController::class, 'destroyChecklist'])->name('programs.checklists.destroy');
+    Route::post('/programs/checklists', [AdminProgramController::class, 'storeChecklist'])->name('programs.checklists.store');
+    Route::put('/programs/checklists/{id}', [AdminProgramController::class, 'updateChecklist'])->name('programs.checklists.update');
+    Route::delete('/programs/checklists/{id}', [AdminProgramController::class, 'destroyChecklist'])->name('programs.checklists.destroy');
 
     // Nested routes for adding cooperatives to a program
     Route::get('/programs/{program}/cooperatives/create', [AdminProgramController::class, 'createCooperative'])->name('programs.cooperatives.create');
@@ -137,7 +136,9 @@ Route::middleware(['auth', 'role:admin|superadmin'])->prefix('admin')->name('adm
     Route::get('/documentation/{id}/member-files/', [AdminDocumentationController::class, 'memberFile'])->name('documentation.member-files');
     Route::get('/documentation/{id}/delinquent', [AdminDocumentationController::class, 'delinquentReport'])->name('documentation.delinquent');
     Route::get('/documentation/{id}/progress', [AdminDocumentationController::class, 'progressReportFile'])->name('documentation.progress.file');
+    Route::get('/documentation/{id}/moa', [AdminDocumentationController::class, 'moaFile'])->name('documentation.moa');
     Route::get('/documentation/{id}/allfiles', [AdminDocumentationController::class, 'allFile'])->name('documentation.allfiles.file');
+    Route::get('/documentation/downloads', [AdminDocumentationController::class, 'downloadFiltered'])->name('documentation.filtered.download');
 });
 
 Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {

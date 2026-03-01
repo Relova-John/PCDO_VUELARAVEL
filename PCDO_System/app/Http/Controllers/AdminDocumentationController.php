@@ -6,14 +6,20 @@ use App\Models\AmortizationOld;
 use App\Models\CoopProgram;
 use App\Models\Delinquent;
 use App\Models\Resolved;
+use App\Models\City;
+use App\Models\CoopProgramMoa;
+use App\Models\Programs;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use setasign\Fpdi\Fpdi;
+use Illuminate\Http\Request;
+use PhpOffice\PhpWord\IOFactory;
 
 class AdminDocumentationController extends Controller
 {
+    // Show the Documentation yearly filter of Cooperative
     public function index()
     {
         // Fetch completed, exported, and archived cooperative programs
@@ -29,8 +35,19 @@ class AdminDocumentationController extends Controller
         });
 
         // Determine range of years (from earliest record to current year)
-        $minYear = $coopPrograms->min(fn ($c) => $c->updated_at->year) ?? date('Y');
+        $minYear = $coopPrograms->min(fn($c) => $c->updated_at->year) ?? date('Y');
         $maxYear = date('Y');
+        $cities = City::orderBy('name')->get(['code', 'name', 'province_code', 'region_code']);
+        $cities = collect([
+            [
+                'code' => 'all',
+                'name' => 'All Municipality',
+                'province_code' => null,
+                'region_code' => null,
+            ]
+        ])->merge($cities);
+
+        $programs = Programs::all();
 
         // Create all years even if empty
         $years = collect(range($minYear, $maxYear))->map(function ($year) use ($groupedByYear) {
@@ -51,6 +68,8 @@ class AdminDocumentationController extends Controller
 
         return inertia('admin/documentation/index', [
             'years' => $years,
+            'cities' => $cities,
+            'programs' => $programs
         ]);
     }
 
@@ -174,7 +193,7 @@ class AdminDocumentationController extends Controller
         // Footer content
         $footerLines = [
             'Provincial Cooperative Development Office',
-            'Generated on: '.now()->format('F d, Y h:i A').' | Printed by: '.($generatedBy ?? 'N/A'),
+            'Generated on: ' . now()->format('F d, Y h:i A') . ' | Printed by: ' . ($generatedBy ?? 'N/A'),
         ];
 
         foreach ($footerLines as $line) {
@@ -243,7 +262,7 @@ class AdminDocumentationController extends Controller
             ->setPaper('legal', 'portrait')
             ->output();
 
-        $tempPath = storage_path('app/temp_coop_details_'.uniqid().'.pdf');
+        $tempPath = storage_path('app/temp_coop_details_' . uniqid() . '.pdf');
         file_put_contents($tempPath, $bladePdf);
 
         // Import into FPDI
@@ -323,7 +342,7 @@ class AdminDocumentationController extends Controller
             default => 'jpg',
         };
 
-        $tempPath = storage_path('app/temp_resolved_image_'.uniqid().'.'.$extension);
+        $tempPath = storage_path('app/temp_resolved_image_' . uniqid() . '.' . $extension);
         file_put_contents($tempPath, $resolved->file_content);
 
         $mime = mime_content_type($tempPath);
@@ -334,7 +353,7 @@ class AdminDocumentationController extends Controller
                 abort(415, 'Invalid or corrupted image data.');
             }
 
-            $convertedPath = storage_path('app/public/tmp_converted_'.uniqid().'.jpg');
+            $convertedPath = storage_path('app/public/tmp_converted_' . uniqid() . '.jpg');
             imagejpeg($imgData, $convertedPath, 90);
             imagedestroy($imgData);
 
@@ -429,16 +448,16 @@ class AdminDocumentationController extends Controller
                 }
 
                 $extension = str_contains($item->mime_type, 'pdf') ? 'pdf' : 'jpg';
-                $tmpPath = storage_path('app/public/tmp_'.uniqid().'.'.$extension);
+                $tmpPath = storage_path('app/public/tmp_' . uniqid() . '.' . $extension);
                 file_put_contents($tmpPath, $item->file_content);
 
                 if (str_contains($item->mime_type, 'png')) {
                     $image = @imagecreatefrompng($tmpPath);
                     if ($image) {
-                        imagejpeg($image, $tmpPath.'.jpg', 90);
+                        imagejpeg($image, $tmpPath . '.jpg', 90);
                         imagedestroy($image);
                         unlink($tmpPath);
-                        $tmpPath = $tmpPath.'.jpg';
+                        $tmpPath = $tmpPath . '.jpg';
                         $item->mime_type = 'image/jpeg';
                     }
                 }
@@ -475,7 +494,7 @@ class AdminDocumentationController extends Controller
     {
         $coopProgram = CoopProgram::with(['cooperative.members', 'coopMemberFiles'])->findOrFail($coopProgramId);
 
-        $memberFiles = $coopProgram->cooperative?->members->flatMap(fn ($m) => $m->files) ?? collect();
+        $memberFiles = $coopProgram->cooperative?->members->flatMap(fn($m) => $m->files) ?? collect();
         $members = $coopProgram->cooperative?->members ?? collect();
 
         if ($memberFiles->isEmpty() && $members->isEmpty()) {
@@ -493,10 +512,10 @@ class AdminDocumentationController extends Controller
                 'active_year' => $member->active_year,
                 'given_name' => $member->first_name,
                 'surname' => $member->last_name,
-                'middle_initial' => $member->middle_name ? substr($member->middle_name, 0, 1).'.' : '',
+                'middle_initial' => $member->middle_name ? substr($member->middle_name, 0, 1) . '.' : '',
                 'date' => now()->format('F d, Y'),
 
-                'present_address' => trim(($member->street ? $member->street.', ' : '').($member->city ?? '')),
+                'present_address' => trim(($member->street ? $member->street . ', ' : '') . ($member->city ?? '')),
                 'present_tel' => $member->telephone,
                 'permanent_address' => $member->parent_address,
                 'permanent_tel' => $member->contact,
@@ -508,15 +527,15 @@ class AdminDocumentationController extends Controller
                 'age' => $member->age,
                 'sex' => $member->sex,
                 'civil_status' => $member->marital_status,
-                'height' => $member->height ? $member->height.' cm' : '',
-                'weight' => $member->weight ? $member->weight.' kg' : '',
+                'height' => $member->height ? $member->height . ' cm' : '',
+                'weight' => $member->weight ? $member->weight . ' kg' : '',
 
                 'spouse' => $member->spouse_name,
                 'spouse_occupation' => $member->spouse_occupation,
                 'spouse_age' => $member->spouse_age,
                 'children' => collect([
-                    $member->dependent1_name ? $member->dependent1_name.' ('.$member->dependent1_age.')' : null,
-                    $member->dependent2_name ? $member->dependent2_name.' ('.$member->dependent2_age.')' : null,
+                    $member->dependent1_name ? $member->dependent1_name . ' (' . $member->dependent1_age . ')' : null,
+                    $member->dependent2_name ? $member->dependent2_name . ' (' . $member->dependent2_age . ')' : null,
                 ])->filter()->join(', '),
 
                 'father' => $member->father_name,
@@ -560,22 +579,22 @@ class AdminDocumentationController extends Controller
                 'job_company_1' => $member->company1_name,
                 'job_occupation_1' => $member->company1_position,
                 'job_period_1' => $member->company1_start && $member->company1_end
-                                    ? Carbon::parse($member->company1_start)->format('M Y').' - '.Carbon::parse($member->company1_end)->format('M Y')
-                                    : '',
+                    ? Carbon::parse($member->company1_start)->format('M Y') . ' - ' . Carbon::parse($member->company1_end)->format('M Y')
+                    : '',
                 'job_earnings_1' => $member->company1_rfl,
 
                 'job_company_2' => $member->company2_name,
                 'job_occupation_2' => $member->company2_position,
                 'job_period_2' => $member->company2_start && $member->company2_end
-                                    ? Carbon::parse($member->company2_start)->format('M Y').' - '.Carbon::parse($member->company2_end)->format('M Y')
-                                    : '',
+                    ? Carbon::parse($member->company2_start)->format('M Y') . ' - ' . Carbon::parse($member->company2_end)->format('M Y')
+                    : '',
                 'job_earnings_2' => $member->company2_rfl,
 
                 'job_company_3' => $member->company3_name,
                 'job_occupation_3' => $member->company3_position,
                 'job_period_3' => $member->company3_start && $member->company3_end
-                                    ? Carbon::parse($member->company3_start)->format('M Y').' - '.Carbon::parse($member->company3_end)->format('M Y')
-                                    : '',
+                    ? Carbon::parse($member->company3_start)->format('M Y') . ' - ' . Carbon::parse($member->company3_end)->format('M Y')
+                    : '',
                 'job_earnings_3' => $member->company3_rfl,
 
                 // === CHARACTER REFERENCES ===
@@ -615,7 +634,7 @@ class AdminDocumentationController extends Controller
 
         // Merge Existing Uploaded Files
         foreach ($memberFiles as $file) {
-            $filePath = storage_path('app/private/'.$file->file_path);
+            $filePath = storage_path('app/private/' . $file->file_path);
             if (! file_exists($filePath)) {
                 continue;
             }
@@ -633,13 +652,11 @@ class AdminDocumentationController extends Controller
 
                     $this->addFooterBySize($pdf, $size, Auth::user()?->name ?? 'N/A');
                 }
-
             } elseif (str_contains($mime, 'image')) {
                 $pdf->AddPage();
                 $pdf->Image($filePath, 15, 25, 180, 230);
 
                 $this->addFooterBySize($pdf, ['width' => $pdf->GetPageWidth(), 'height' => $pdf->GetPageHeight()], Auth::user()?->name ?? 'N/A');
-
             }
         }
 
@@ -700,7 +717,7 @@ class AdminDocumentationController extends Controller
         }
 
         // Save temporary file
-        $tempPath = storage_path('app/temp_delinquent_'.uniqid().'.pdf');
+        $tempPath = storage_path('app/temp_delinquent_' . uniqid() . '.pdf');
         file_put_contents($tempPath, $bladePdf);
 
         // Import into FPDI for footer
@@ -757,7 +774,7 @@ class AdminDocumentationController extends Controller
             // Handle image file
             if ($progress->file_content && str_contains($progress->mime_type ?? '', 'image')) {
                 $decoded = base64_decode($progress->file_content);
-                $tmpPath = storage_path('app/temp_'.uniqid().'.jpg');
+                $tmpPath = storage_path('app/temp_' . uniqid() . '.jpg');
                 file_put_contents($tmpPath, $decoded);
 
                 // Adjust placement or size as needed
@@ -772,7 +789,96 @@ class AdminDocumentationController extends Controller
 
         // Output PDF inline to browser/iframe
         return $this->pdfResponse($output, $coopProgram, 'Progress_Report');
+    }
 
+    public function moaFile($coopProgramId)
+    {
+        $user = Auth::user();
+
+        $coopProgram = CoopProgram::findOrFail($coopProgramId);
+        $moa = CoopProgramMoa::where('coop_program_id', $coopProgramId)->first();
+
+        if (! $moa || empty($moa->file_path) || empty($moa->file_name) || empty($moa->file_type)) {
+            abort(404, 'MOA file not found.');
+        }
+
+        $filePath = storage_path('app/private/' . $moa->file_path . '/' . $moa->file_name);
+        $filePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath);
+        if (!is_file($filePath)) {
+            abort(404, 'MOA file does not exist or is not a file. Path: ' . $filePath);
+        }
+
+        // Ensure it's a file
+        if (!is_file($filePath)) {
+            abort(404, 'MOA file does not exist on server.');
+        }
+
+        $mime = $moa->file_type; // use the type stored in DB
+        $pdf = new Fpdi;
+
+        if (str_contains($mime, 'pdf')) {
+            $pageCount = $pdf->setSourceFile($filePath);
+            for ($i = 1; $i <= $pageCount; $i++) {
+                $tpl = $pdf->importPage($i);
+                $size = $pdf->getTemplateSize($tpl);
+
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($tpl);
+
+                $this->addFooterBySize($pdf, $size, $user?->name ?? 'N/A');
+            }
+        } elseif (str_contains($mime, 'jpeg') || str_contains($mime, 'png')) {
+            $pdf->AddPage();
+
+            // Get image dimensions
+            [$imgWidthPx, $imgHeightPx] = getimagesize($filePath);
+            $pageWidth = $pdf->GetPageWidth() - 20; // leave some margin
+            $pageHeight = $pdf->GetPageHeight() - 30;
+
+            // Calculate scale to fit page without stretching
+            $widthScale = $pageWidth / $imgWidthPx;
+            $heightScale = $pageHeight / $imgHeightPx;
+            $scale = min($widthScale, $heightScale); // scale proportionally
+
+            $imgWidth = $imgWidthPx * $scale;
+            $imgHeight = $imgHeightPx * $scale;
+
+            // Center the image on the page
+            $x = ($pdf->GetPageWidth() - $imgWidth) / 2;
+            $y = ($pdf->GetPageHeight() - $imgHeight) / 2;
+
+            $pdf->Image($filePath, $x, $y, $imgWidth, $imgHeight, strtoupper(pathinfo($filePath, PATHINFO_EXTENSION)));
+
+            $this->addFooterBySize(
+                $pdf,
+                ['width' => $pdf->GetPageWidth(), 'height' => $pdf->GetPageHeight()],
+                $user?->name ?? 'N/A'
+            );
+        } elseif (str_contains($mime, 'vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+            $phpWord = IOFactory::load($filePath, 'Word2007');
+            $tempPdfPath = storage_path('app/temp_moa_' . uniqid() . '.pdf');
+
+            $xmlWriter = IOFactory::createWriter($phpWord, 'PDF');
+            $xmlWriter->save($tempPdfPath);
+
+            $pageCount = $pdf->setSourceFile($tempPdfPath);
+            for ($i = 1; $i <= $pageCount; $i++) {
+                $tpl = $pdf->importPage($i);
+                $size = $pdf->getTemplateSize($tpl);
+
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($tpl);
+
+                $this->addFooterBySize($pdf, $size, $user?->name ?? 'N/A');
+            }
+
+            @unlink($tempPdfPath);
+        } else {
+            abort(415, 'Unsupported file type for MOA.');
+        }
+
+        $output = $pdf->Output('S');
+        return $this->pdfResponse($output, $coopProgram, 'MOA');
     }
 
     public function allFile($coopProgramId)
@@ -787,6 +893,7 @@ class AdminDocumentationController extends Controller
             'delinquents',
             'coopDetails',
             'resolvedItems',
+            'moa',
         ])->findOrFail($coopProgramId);
 
         $pdf = new Fpdi;
@@ -799,7 +906,7 @@ class AdminDocumentationController extends Controller
                 ->setPaper('legal', 'portrait')
                 ->output();
 
-            $detailsPath = storage_path('app/temp_details_'.uniqid().'.pdf');
+            $detailsPath = storage_path('app/temp_details_' . uniqid() . '.pdf');
             file_put_contents($detailsPath, $detailsPdf);
             $tempFiles[] = $detailsPath;
         }
@@ -807,7 +914,7 @@ class AdminDocumentationController extends Controller
         // Amortization File
         $amortization = AmortizationOld::where('coop_program_id', $coopProgramId)->first();
         if ($amortization && $amortization->file_content) {
-            $amortPath = storage_path('app/temp_amortization_'.uniqid().'.pdf');
+            $amortPath = storage_path('app/temp_amortization_' . uniqid() . '.pdf');
             file_put_contents($amortPath, $amortization->file_content);
             $tempFiles[] = $amortPath;
         }
@@ -816,7 +923,7 @@ class AdminDocumentationController extends Controller
         if ($coopProgram->program && $coopProgram->program->checklists->isNotEmpty()) {
             $checklistResponse = app(self::class)->checklistFile($coopProgramId);
             $checklistPdf = $checklistResponse->getContent();
-            $checklistPath = storage_path('app/temp_checklist_'.uniqid().'.pdf');
+            $checklistPath = storage_path('app/temp_checklist_' . uniqid() . '.pdf');
             file_put_contents($checklistPath, $checklistPdf);
             $tempFiles[] = $checklistPath;
         }
@@ -825,14 +932,14 @@ class AdminDocumentationController extends Controller
         if ($coopProgram->cooperative && $coopProgram->cooperative->members->isNotEmpty()) {
             $memberResponse = app(self::class)->memberFile($coopProgramId);
             $memberPdf = $memberResponse->getContent();
-            $memberPath = storage_path('app/temp_member_'.uniqid().'.pdf');
+            $memberPath = storage_path('app/temp_member_' . uniqid() . '.pdf');
             file_put_contents($memberPath, $memberPdf);
             $tempFiles[] = $memberPath;
         }
 
         // Delinquent Report
         $delinquentPdf = app(self::class)->delinquentReport($coopProgramId, true);
-        $delinquentPath = storage_path('app/temp_delinquent_'.uniqid().'.pdf');
+        $delinquentPath = storage_path('app/temp_delinquent_' . uniqid() . '.pdf');
         file_put_contents($delinquentPath, $delinquentPdf);
         $tempFiles[] = $delinquentPath;
 
@@ -840,7 +947,7 @@ class AdminDocumentationController extends Controller
         if ($coopProgram->programProgress->isNotEmpty()) {
             $progressResponse = app(self::class)->progressReportFile($coopProgramId);
             $progressPdf = $progressResponse->getContent();
-            $progressPath = storage_path('app/temp_progress_'.uniqid().'.pdf');
+            $progressPath = storage_path('app/temp_progress_' . uniqid() . '.pdf');
             file_put_contents($progressPath, $progressPdf);
             $tempFiles[] = $progressPath;
         }
@@ -849,11 +956,20 @@ class AdminDocumentationController extends Controller
         if ($coopProgram->resolvedItems->isNotEmpty()) {
             foreach ($coopProgram->resolvedItems as $resolved) {
                 if (! empty($resolved->file_content)) {
-                    $resolvedPath = storage_path('app/temp_resolved_'.uniqid().'.pdf');
+                    $resolvedPath = storage_path('app/temp_resolved_' . uniqid() . '.pdf');
                     file_put_contents($resolvedPath, $resolved->file_content);
                     $tempFiles[] = $resolvedPath;
                 }
             }
+        }
+
+        // MOA
+        if ($coopProgram->moa) {
+            $moaResponse = app(self::class)->moaFile($coopProgramId);
+            $moaPdf = $moaResponse->getContent();
+            $moaPath = storage_path('app/temp_moa_' . uniqid() . '.pdf');
+            file_put_contents($moaPath, $moaPdf);
+            $tempFiles[] = $moaPath;
         }
 
         // Merge Everything
@@ -896,7 +1012,7 @@ class AdminDocumentationController extends Controller
 
         return response($pdfContent, 200)
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', $disposition.'; filename="'.$this->generateFileName($coopProgram, $suffix).'"')
+            ->header('Content-Disposition', $disposition . '; filename="' . $this->generateFileName($coopProgram, $suffix) . '"')
             ->header('Content-Length', strlen($pdfContent))
             ->header('Cache-Control', 'public, max-age=0, must-revalidate')
             ->header('Accept-Ranges', 'bytes')
@@ -915,5 +1031,110 @@ class AdminDocumentationController extends Controller
         $safeSuffix = preg_replace('/[^A-Za-z0-9_\-]/', '_', $suffix);
 
         return "{$safeCoop}_{$safeProgram}_{$createdDate}_{$safeSuffix}.pdf";
+    }
+
+    public function downloadFiltered(Request $request)
+    {
+        $program        = $request->program;
+        $municipality   = $request->municipality;
+        $startDate      = $request->start_date;
+        $endDate        = $request->end_date;
+        $fileType       = $request->file_type ?? '0';
+
+        $coopPrograms = CoopProgram::with(['cooperative', 'program'])
+            ->whereIn('program_status', ['Finished', 'Resolved'])
+            ->when($program && $program !== 'all', function ($query) use ($program) {
+                $query->where('program_id', $program);
+            })
+            ->when($municipality && $municipality !== 'all', function ($query) use ($municipality) {
+                $query->whereHas('coopDetails', function ($q) use ($municipality) {
+                    $q->where('city_code', 'like', '%' . $municipality . '%');
+                });
+            })
+            ->when($startDate, function ($query) use ($startDate) {
+                $query->whereDate('updated_at', '>=', $startDate);
+            })
+            ->when($endDate, function ($query) use ($endDate) {
+                $query->whereDate('updated_at', '<=', $endDate);
+            })
+            ->get();
+
+        if ($coopPrograms->isEmpty()) {
+            abort(404, 'No cooperative programs found matching the specified criteria.');
+        }
+        $pdf = new Fpdi;
+
+        foreach ($coopPrograms as $coopProgram) {
+            try {
+                switch ($fileType) {
+                    case '1':
+                        $response = app(self::class)->cooperativeDetailsFile($coopProgram->id);
+                        break;
+
+                    case '2':
+                        $response = app(self::class)->amortizationFile($coopProgram->id);
+                        break;
+
+                    case '3':
+                        $response = app(self::class)->checklistFile($coopProgram->id);
+                        break;
+
+                    case '4':
+                        $response = app(self::class)->memberFile($coopProgram->id);
+                        break;
+                    case '5':
+                        $response = app(self::class)->delinquentReport($coopProgram->id);
+                        break;
+
+                    case '6':
+                        $response = app(self::class)->progressReportFile($coopProgram->id);
+                        break;
+
+                    case '7':
+                        $response = app(self::class)->resolvedFile($coopProgram->id);
+                        break;
+                    
+                    case '8':
+                        $response = app(self::class)->moaFile($coopProgram->id);
+                        break;
+
+                    default:
+                        $response = app(self::class)->allFile($coopProgram->id);
+                        break;
+                }
+
+                $content = $response->getContent();
+
+                // Save temp
+                $tmpPath = storage_path('app/temp_batch_' . uniqid() . '.pdf');
+                file_put_contents($tmpPath, $content);
+
+                $pageCount = $pdf->setSourceFile($tmpPath);
+
+                for ($i = 1; $i <= $pageCount; $i++) {
+                    $tpl = $pdf->importPage($i);
+                    $size = $pdf->getTemplateSize($tpl);
+
+                    $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                    $pdf->useTemplate($tpl);
+
+                    $this->addFooterBySize(
+                        $pdf,
+                        $size,
+                        Auth::user()?->name ?? 'N/A'
+                    );
+                }
+
+                unlink($tmpPath);
+            } catch (\Exception $e) {
+                continue; // skip invalid program
+            }
+        }
+
+        $output = $pdf->Output('S');
+
+        return response($output, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . $startDate . ' - ' . $endDate . '.pdf"');
     }
 }
