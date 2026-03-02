@@ -340,7 +340,7 @@ async function openChangesModal(logId: number) {
     <Head title="Admin Dashboard" />
     <AdminLayout :breadcrumbs="breadcrumbs">
         <div class="bg-gray-100/90 dark:bg-gray-900 rounded-3xl min-h-screen">
-			<div class="px-5 md:px-8 pt-5 grid gap-6 md:grid-rows-[auto_1fr]">
+            <div class="px-5 md:px-8 pt-5 grid gap-6 md:grid-rows-[auto_1fr]">
                 <div class="col-span-3 md:col-span-1 bg-gray-50 dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                     <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">Create User</h3>
                     <div v-if="roles.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
@@ -348,7 +348,7 @@ async function openChangesModal(logId: number) {
                     </div>
                     <div v-else class="space-y-3">
                         <input v-model="name" placeholder="Name" type="text"
-                                class="w-full rounded-lg p-2 bg-white dark:bg-gray-700 border" />
+                            class="w-full rounded-lg p-2 bg-white dark:bg-gray-700 border" />
                         <p v-if="errors.name" class="text-xs text-red-500 mt-1">{{ errors.name }}</p>
                         <input v-model="email" placeholder="Email" type="email"
                             class="w-full rounded-lg p-2 bg-white dark:bg-gray-700 border" />
@@ -406,7 +406,7 @@ async function openChangesModal(logId: number) {
                                                 <option value="officer">officer</option>
                                             </select>
                                             <div v-else>
-                                                {{ user.roles.map(r => r.name).join(', ') }}
+                                                {{user.roles.map(r => r.name).join(', ')}}
                                             </div>
                                         </template>
 
@@ -418,8 +418,9 @@ async function openChangesModal(logId: number) {
                                     <td class="py-2 px-2 text-right">
                                         <Switch v-if="!(
                                             currentRole === 'admin' &&
-                                            user.roles.some(r => r.name === 'superadmin')
-                                        )" :model-value="user.active" @update:modelValue="() => onToggle(user)" :disabled="currentUser.id === user.id" />
+                                            user.roles.some(r => r.name === 'superadmin' || r.name === 'admin')
+                                        )" :model-value="user.active" @update:modelValue="() => onToggle(user)"
+                                            :disabled="currentUser.id === user.id" />
                                         User is {{ user.active ? 'active' : 'inactive' }}
                                     </td>
                                 </tr>
@@ -433,18 +434,54 @@ async function openChangesModal(logId: number) {
                     <!-- Mobile Cards -->
                     <div class="sm:hidden space-y-4">
                         <div v-for="user in filteredUsers" :key="user.id"
-                            class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col space-y-2 bg-white dark:bg-gray-800 shadow-sm">
+                            class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-800 shadow-sm space-y-3">
                             <div>
-                                <p class="font-semibold text-gray-800 dark:text-gray-100 text-base">{{ user.name }}</p>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 break-all">{{ user.email }}</p>
-                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                    Roles: {{user.roles.map(r => r.name).join(', ') || '-'}}
+                                <p class="font-semibold text-gray-800 dark:text-gray-100 text-base">
+                                    {{ user.name }}
                                 </p>
-                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                    {{ formatDate(user.created_at) }}
+                                <p class="text-sm text-gray-500 dark:text-gray-400 break-all">
+                                    {{ user.email }}
                                 </p>
                             </div>
-                            deactivate
+
+                            <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                                <p>
+                                    Roles:
+                                    <span class="font-medium text-gray-700 dark:text-gray-300">
+                                        {{user.roles.map(r => r.name).join(', ') || '-'}}
+                                    </span>
+                                </p>
+                                <p>
+                                    Created:
+                                    <span class="font-medium text-gray-700 dark:text-gray-300">
+                                        {{ formatDate(user.created_at) }}
+                                    </span>
+                                </p>
+                            </div>
+
+                            <!-- Role changer for superadmin -->
+                            <div v-if="currentRole === 'superadmin' && currentUser.id !== user.id">
+                                <select v-if="!user.roles.some(r => r.name === 'cooperative')"
+                                    class="w-full rounded-md border px-2 py-1 text-sm bg-white dark:bg-gray-700"
+                                    :value="user.roles[0]?.name"
+                                    @change="e => changeRole(user, (e.target as HTMLSelectElement).value)">
+                                    <option value="admin">admin</option>
+                                    <option value="officer">officer</option>
+                                </select>
+                            </div>
+
+                            <!-- Activation toggle -->
+                            <div v-if="!(
+                                currentRole === 'admin' &&
+                                user.roles.some(r => r.name === 'superadmin' || r.name === 'admin')
+                            )" class="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <span class="text-sm text-gray-600 dark:text-gray-300">
+                                    {{ user.active ? 'Active' : 'Inactive' }}
+                                </span>
+
+                                <Switch :model-value="user.active" @update:modelValue="() => onToggle(user)"
+                                    :disabled="currentUser.id === user.id" />
+                            </div>
                         </div>
 
                         <div v-if="filteredUsers.length === 0" class="py-4 text-center text-gray-500">

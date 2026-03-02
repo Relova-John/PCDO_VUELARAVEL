@@ -112,6 +112,11 @@
             margin-bottom: 30px;
         }
 
+        .header+h1,
+        .section h1 {
+            margin-top: 30px;
+        }
+
         .footer {
             position: fixed;
             bottom: -10px;

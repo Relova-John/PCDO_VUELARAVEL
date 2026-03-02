@@ -44,6 +44,12 @@ class AuthenticatedSessionController extends Controller
                 'email' => 'Your account is inactive. Please contact the administrator account at PCDO.palawan@gmail.com to reactivate your account.',
             ]);
         }
+
+        if ($user->hasRole('superadmin')) {
+            Auth::login($user);
+            $request->session()->regenerate();
+            return redirect()->route('admin.dashboard');
+        }
         $code = rand(100000, 999999);
 
         session([
@@ -86,7 +92,7 @@ class AuthenticatedSessionController extends Controller
             $user = Auth::user();
 
             // Redirect based on role
-            if ($user->hasRole('admin')||$user->hasRole('superadmin')) {
+            if ($user->hasRole('admin') || $user->hasRole('superadmin')) {
                 return redirect()->route('admin.dashboard');
             } elseif ($user->hasRole('officer')) {
                 return redirect()->route('dashboard');
