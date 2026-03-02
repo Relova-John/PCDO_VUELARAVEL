@@ -453,7 +453,7 @@ function canPayPeriod(index: number) {
 <template>
 
   <Head title="Loan Tracker" />
-  <AdminLayout :breadcrumbs="breadcrumbs">
+  <AppLayout :breadcrumbs="breadcrumbs">
     <div class="min-h-screen">
       <div class="px-5 md:px-5 pt-5">
 
