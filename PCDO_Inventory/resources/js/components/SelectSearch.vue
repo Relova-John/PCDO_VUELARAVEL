@@ -1,0 +1,102 @@
+<!-- src/components/SelectSearch.vue -->
+
+<template>
+    <div class="relative w-full" v-click-outside="onOutside" ref="root">
+        <input v-bind="$attrs" :id="id" v-model="searchValue" :placeholder="placeholder" @focus="openLocal()"
+            @input="onInput" :disabled="disabled" class=""/>
+        <div v-if="open && filtered.length > 0"
+            class="">
+            <ul>
+                <li v-for="item in filtered" :key="itemKey(item)" @click="selectItem(item)"
+                    class="">
+                    {{ itemLabel(item) }}
+                </li>
+            </ul>
+        </div>
+    </div>
+</template>
+
+
+<script setup lang="ts">
+import { ref, watch, computed } from 'vue'
+
+const props = defineProps({
+	id: { type: String, default: '' },
+	items: { type: Array as () => any[], default: () => [] },
+	placeholder: { type: String, default: 'Search' },
+	disabled: { type: Boolean, default: false },
+	modelValue: { type: [String, Number], default: '' },
+	open: { type: Boolean, default: false },
+	itemLabelKey: { type: String, default: 'name' },
+	itemKeyProp: { type: String, default: 'id' },
+})
+
+const emits = defineEmits(['update:modelValue', 'select', 'update:open', 'update:search'])
+const searchValue = ref(props.modelValue ?? '')
+const open = ref(props.open)
+
+watch(() => props.open, v => open.value = v)
+watch(
+	() => props.modelValue,
+	(val) => {
+		if (!val) {
+			searchValue.value = ''
+			return
+		}
+		const match = props.items.find(i => itemKey(i) === val)
+		searchValue.value = match ? itemLabel(match) : ''
+	},
+	{ immediate: true }
+)
+const filtered = computed(() => {
+	if (!searchValue.value) return props.items
+	const q = searchValue.value.toString().toLowerCase()
+	return props.items.filter(it => {
+		const text = itemLabel(it).toString().toLowerCase()
+		return text.includes(q)
+	})
+})
+
+function itemLabel(it: any) {
+	return typeof it === 'string' ? it : it[props.itemLabelKey]
+}
+
+function itemKey(it: any) {
+	return typeof it === 'string' ? it : it[props.itemKeyProp] ?? itemLabel(it)
+}
+
+function selectItem(it: any) {
+	const label = itemLabel(it)
+	const id = itemKey(it)
+	emits('update:modelValue', id)
+	emits('select', { name: label, id })
+	searchValue.value = label
+	open.value = false
+	emits('update:open', false)
+	emits('update:search', label)
+}
+
+function onInput() {
+	const q = searchValue.value.toString().toLowerCase()
+	const match = props.items.find(it => itemLabel(it).toString().toLowerCase() === q)
+	if (match) {
+		selectItem(match)
+	} else {
+		emits('update:modelValue', '')
+		emits('update:search', searchValue.value)
+		open.value = true
+		emits('update:open', true)
+	}
+}
+function openLocal() {
+	if (!props.disabled) {
+		searchValue.value = ''
+		open.value = true
+		emits('update:open', true)
+	}
+}
+function onOutside() {
+	open.value = false
+	emits('update:open', false)
+}
+</script>
