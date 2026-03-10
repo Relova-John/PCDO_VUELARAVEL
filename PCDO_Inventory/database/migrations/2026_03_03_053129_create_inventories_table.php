@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('location');
             $table->decimal('value', 15, 2);
             $table->integer('quantity');
-            $table->string('status');
+            $table->integer('status');
             $table->date('acquired_date');
             $table->string('guarantor_agency');
             $table->timestamps();

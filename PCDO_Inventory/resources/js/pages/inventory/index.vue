@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AuthLayout.vue'
+import AppLayout from '@/layouts/InventoryLayout.vue'
 import { ref, computed, reactive, watch } from 'vue'
 import { useForm, Head } from '@inertiajs/vue3'
 import SelectSearch from '@/components/SelectSearch.vue'
 import type { Regions, Provinces, Cities, Barangays, CoopDetails } from '@/types/inventory'
 import { BreadcrumbItem } from '@/types'
 import { toast } from "vue-sonner"
-// import { useDrafts } from '@/composables/useDrafts'
-// import { usePolling } from '@/composables/usePolling'
-import Label from '@/components/ui/label/Label.vue'
+import { useDrafts } from '@/composables/useDrafts'
 import Input from '@/components/ui/input/Input.vue'
 import { usePage, router } from '@inertiajs/vue3'
 
+const navOpen = ref(false)
 const page = usePage<{ flash: { success?: string } }>()
 const submitted = computed(() => !!page.props.flash?.success)
 
@@ -64,6 +63,8 @@ const form = useForm({
         : []
 })
 
+const { drafts, useDraft, deleteDraft, clearDrafts } = useDrafts(form, 'inventory')
+
 /**
  * Location selection state.
  */
@@ -102,29 +103,18 @@ function onSelect(field: LocationFields, payload: { id: string; name: string }) 
 }
 
 function getStatusOptions(quantity: number) {
-    const q = Number(quantity) || 1
-    const options: string[] = []
+    const q = Number(quantity) || 0
+    return Array.from({ length: q + 1 }, (_, i) => {
+        const servicable = q - i
+        const unservicable = i
 
-    for (let servicable = q; servicable >= 0; servicable--) {
-        const unservicable = q - servicable
-
-        if (servicable === 0) {
-            options.push(`Unservicable ${unservicable}`)
-        } else if (unservicable === 0) {
-            options.push(`Servicable ${servicable}`)
-        } else {
-            options.push(`Servicable ${servicable} | Unservicable ${unservicable}`)
+        return {
+            label: `Servicable ${servicable} | Unservicable ${unservicable}`,
+            value: servicable
         }
-    }
-
-    return options
-}
-
-watch(() => form.inventoryItem.map(item => item.quantity), () => {
-    form.inventoryItem.forEach(item => {
-        item.status = ""
     })
-})
+
+}
 
 const filteredProvinces = computed(() =>
     props.provinces.filter(p => String(p.region_code) === String(form.region_code))
@@ -153,7 +143,7 @@ function addEquipment() {
         location: '',
         value: 0,
         quantity: 0,
-        status: '',
+        status: 0,
         acquired_date: ''
     })
 }
@@ -166,7 +156,26 @@ function retakeForm() {
     router.visit('/inventory')
 }
 
-function submit() {
+function sanitizePhone(value: string) {
+    return value.replace(/[^0-9+]/g, '')
+}
+
+function isAcronym(text: string) {
+    return /^[A-Z0-9&.\-]{2,10}$/.test(text.trim())
+}
+
+async function confirmAcronym(field: string, value: string) {
+
+    if (!isAcronym(value)) return true
+
+    return confirm(
+        `This "${value}" in ${field} appears to be an acronym.\n\n` +
+        `We require the full name. Continue submitting?`
+    )
+
+}
+
+async function submit() {
     if (!form.name.trim()) {
         toast.error("Cooperative Name is required")
         return
@@ -189,15 +198,52 @@ function submit() {
             !item.guarantor_agency.trim() ||
             !item.location.trim() ||
             !item.value ||
-            !item.quantity
+            !item.quantity ||
+            item.status === null ||
+            !item.acquired_date
         ) {
-            toast.error(`Please fill all fields for Inventory Item #${index + 1}`)
+            toast.error(`Please fill all fields for Inventory Item #${index + 1}: ${item.name || 'Unnamed Item'}`)
+            return
+        }
+    }
+
+    if (form.inventoryItem.some(item => item.acquired_date > today)) {
+        toast.error("Acquired date cannot be in the future")
+        return
+    }
+
+    if (form.inventoryItem.some(item => item.value < 0)) {
+        toast.error("Value cannot be negative")
+        return
+    }
+
+    if (form.inventoryItem.some(item => item.quantity < 0)) {
+        toast.error("Quantity cannot be negative")
+        return
+    }
+
+    if (form.inventoryItem.some(item => item.status !== null && item.status < 0)) {
+        toast.error("Status cannot be negative")
+        return
+    }
+
+    if (form.inventoryItem.some(item => item.status !== null && item.status > item.quantity)) {
+        toast.error("Status cannot be greater than quantity")
+        return
+    }
+
+    if (!await confirmAcronym("Cooperative Name", form.name)) return
+
+    for (const item of form.inventoryItem) {
+        if (!await confirmAcronym("Guarantor Agency", item.guarantor_agency)) {
             return
         }
     }
 
     form.post('/inventory', {
-        onSuccess: () => toast.success('Inventory saved successfully')
+        onSuccess: () => {
+            toast.success('Inventory saved successfully')
+        }
     })
 }
 </script>
@@ -206,178 +252,239 @@ function submit() {
 
     <Head title="Inventory Form" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="max-w-7xl mx-auto p-6 space-y-6">
+        <div class="inventory-wrapper">
+<div class="gov-header">
+    <div class="gov-header-inner">
 
-            <!-- HEADER -->
-            <div>
-                <h1 class="text-2xl font-bold">Inventory Form</h1>
-                <p class="text-gray-500 text-sm">
+        <div class="logo-left">
+            <img src="/img/province_of_palawan_logo.png" alt="Palawan Logo">
+        </div>
+
+        <div class="gov-text">
+            <div><strong>Republic of the Philippines</strong></div>
+            <div>Provincial Government of Palawan</div>
+            <div><strong>PROVINCIAL COOPERATIVE DEVELOPMENT OFFICE</strong></div>
+            <div>Capitol Bldg., Puerto Princesa City</div>
+            <div style="color:#1a73e8;">pcdo.palawan@gmail.com</div>
+            <div>(048) 434-4173</div>
+        </div>
+
+        <div class="logo-right">
+            <img src="/img/pcdo_logo.png" alt="PCDO Logo">
+        </div>
+
+    </div>
+</div>
+            <div class="inventory-header">
+
+                <h1 class="inventory-title">INVENTORY FORM</h1>
+                <p class="inventory-subtitle">
                     Create or update cooperative inventory details
                 </p>
+
             </div>
-            <div class="max-w-7xl mx-auto p-6">
-
-                <div v-if="submitted" class="text-center space-y-6 py-20">
-
-                    <h1 class="text-3xl font-bold text-green-600">
-                        Form Submitted
-                    </h1>
-
-                    <p class="text-gray-500">
-                        Your inventory has been successfully recorded.
-                    </p>
-
-                    <button @click="retakeForm" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        Submit Another Response
+            <div v-if="drafts.length && !submitted" class="draft-card">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                        Saved Drafts
+                    </h2>
+                    <button @click="clearDrafts"
+                        class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                        Clear All
                     </button>
-
                 </div>
 
-                <div v-else>
-                    <form @submit.prevent="submit" class="space-y-8">
+                <ul class="space-y-2">
+                    <li v-for="draft in drafts" :key="draft.id"
+                        class="flex justify-between items-center bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-750 transition">
 
-                        <!-- COOPERATIVE INFO -->
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <div>
-                                <Label>Cooperative Name</Label>
-                                <span class="text-red-500 text-sm">Full Name Required</span>
-                                <Input v-model="form.name" type="text" />
-                            </div>
-                            <div>
-                                <Label>Email</Label>
-                                <Input v-model="form.email" type="email" />
-                            </div>
-                            <div>
-                                <Label>Contact Number</Label>
-                                <Input v-model="form.number" type="text" />
-                            </div>
+                        <button @click="useDraft(draft)"
+                            class="text-left flex-1 text-indigo-600 dark:text-indigo-400 hover:underline">
+                            <p class="font-medium">{{ draft.name }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Saved on {{ draft.savedAt }}
+                            </p>
+                        </button>
+
+                        <button @click="deleteDraft(draft.id)"
+                            class="ml-3 px-2 py-1 text-red-500 hover:text-red-700 rounded-md transition">
+                            ✕
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <!-- SUCCESS MESSAGE -->
+            <div v-if="submitted" class="form-card" style="text-align:center">
+                <h2 style="color:#188038">Form Submitted</h2>
+                <p>Your inventory has been successfully recorded.</p>
+                <button @click="retakeForm" class="add-btn">
+                    Submit Another Response
+                </button>
+            </div>
+            <!-- FORM -->
+            <form v-else @submit.prevent="submit">
+                <!-- COOPERATIVE INFO -->
+                <div class="form-card" id="coop-info">
+                    <div class="form-grid">
+                        <div>
+                            <label class="form-label">Cooperative Name</label>
+                            <Input class="form-input" v-model="form.name" />
                         </div>
-
-                        <!-- LOCATION -->
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <div>
-                                <Label>Region</Label>
-                                <SelectSearch :items="regions" itemLabelKey="name" itemKeyProp="code"
-                                    v-model:search="searchState.region_code" :modelValue="form.region_code"
-                                    :open="openState.region_code" @select="val => onSelect('region_code', val)"
-                                    @update:open="val => openState.region_code = val" />
-                            </div>
-
-                            <div>
-                                <Label>Province</Label>
-                                <SelectSearch :items="filteredProvinces" itemLabelKey="name" itemKeyProp="code"
-                                    v-model:search="searchState.province_code" :modelValue="form.province_code"
-                                    :open="openState.province_code" @select="val => onSelect('province_code', val)"
-                                    @update:open="val => openState.province_code = val" />
-                            </div>
-
-                            <div>
-                                <Label>City</Label>
-                                <SelectSearch :items="filteredCities" itemLabelKey="name" itemKeyProp="code"
-                                    v-model:search="searchState.city_code" :modelValue="form.city_code"
-                                    :open="openState.city_code" @select="val => onSelect('city_code', val)"
-                                    @update:open="val => openState.city_code = val" />
-                            </div>
-
-                            <div>
-                                <Label>Barangay</Label>
-                                <SelectSearch :items="filteredBarangays" itemLabelKey="name" itemKeyProp="code"
-                                    v-model:search="searchState.barangay_code" :modelValue="form.barangay_code"
-                                    :open="openState.barangay_code" @select="val => onSelect('barangay_code', val)"
-                                    @update:open="val => openState.barangay_code = val" />
-                            </div>
+                        <div>
+                            <label class="form-label">Email</label>
+                            <Input class="form-input" type="email" v-model="form.email" />
                         </div>
-
-                        <!-- EQUIPMENT -->
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center">
-                                <h2 class="text-xl font-semibold">Equipment</h2>
-                                <button type="button" @click="addEquipment"
-                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                                    + Add Equipment
-                                </button>
-                            </div>
-
-                            <div v-for="(equipment, index) in form.inventoryItem" :key="equipment.id"
-                                class="border rounded-xl p-6 space-y-6 bg-white shadow-sm">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-                                    <div class="space-y-1">
-                                        <Label>Category</Label>
-                                        <select v-model="equipment.category" class="border rounded px-3 py-2 w-full">
-                                            <option value="" disabled>Select Category</option>
-                                            <option v-for="option in categoryOptions" :key="option" :value="option">
-                                                {{ option }}
-                                            </option>
-                                        </select>
-                                    </div>
-
-                                    <div class="space-y-1">
-                                        <Label>Name</Label>
-                                        <Input v-model="equipment.name" />
-                                    </div>
-
-                                    <div class="space-y-1">
-                                        <Label>Guarantor Agency</Label>
-                                        <span class="text-red-500 text-sm">Full Name Required</span>
-                                        <Input v-model="equipment.guarantor_agency" />
-                                    </div>
-
-                                    <div class="space-y-1">
-                                        <Label>Location</Label>
-                                        <Input v-model="equipment.location" />
-                                    </div>
-
-                                    <div class="space-y-1">
-                                        <Label>Value</Label>
-                                        <Input v-model="equipment.value" type="number" min="1" />
-                                    </div>
-
-                                    <div class="space-y-1">
-                                        <Label>Quantity</Label>
-                                        <Input v-model="equipment.quantity" type="number" min="1" />
-                                    </div>
-
-                                    <div class="space-y-1">
-                                        <Label>Status</Label>
-                                        <p v-if="equipment.quantity === 0" class="text-gray-500 text-sm mt-1">
-                                            Set quantity first to choose status
-                                        </p>
-                                        <select v-model="equipment.status" :disabled="equipment.quantity === 0"
-                                            class="border rounded px-3 py-2 w-full">
-                                            <option value="" disabled>Select Status</option>
-                                            <option v-for="option in getStatusOptions(equipment.quantity)" :key="option"
-                                                :value="option">
-                                                {{ option }}
-                                            </option>
-                                        </select>
-                                    </div>
-
-                                    <div class="space-y-1">
-                                        <Label>Acquired Date</Label>
-                                        <Input v-model="equipment.acquired_date" type="date" :max="today" />
-                                    </div>
-
-                                </div>
-
-                                <div class="flex justify-end">
-                                    <button type="button" @click="removeEquipment(index)"
-                                        class="text-red-600 text-sm font-medium hover:underline">
-                                        Remove Equipment
-                                    </button>
-                                </div>
-                            </div>
+                        <div>
+                            <label class="form-label">Contact Number</label>
+                            <Input class="form-input" v-model="form.number"
+                                @input="form.number = sanitizePhone(form.number)" />
                         </div>
+                    </div>
+                </div>
 
-                        <!-- SUBMIT -->
-                        <div class="pt-6">
-                            <button type="submit"
-                                class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                                Save Inventory
+                <!-- LOCATION -->
+                <div class="form-card" id="location">
+                    <div class="form-grid">
+                        <div>
+                            <label class="form-label">Region</label>
+
+                            <SelectSearch :items="regions" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="searchState.region_code" :modelValue="form.region_code"
+                                v-model:open="openState.region_code" @select="val => onSelect('region_code', val)" />
+
+                        </div>
+                        <div>
+                            <label class="form-label">Province</label>
+                            <SelectSearch :items="filteredProvinces" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="searchState.province_code" :modelValue="form.province_code"
+                                v-model:open="openState.province_code"
+                                @select="val => onSelect('province_code', val)" />
+
+                        </div>
+                        <div>
+                            <label class="form-label">City</label>
+
+                            <SelectSearch :items="filteredCities" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="searchState.city_code" :modelValue="form.city_code"
+                                v-model:open="openState.city_code" @select="val => onSelect('city_code', val)" />
+
+                        </div>
+                        <div>
+                            <label class="form-label">Barangay</label>
+
+                            <SelectSearch :items="filteredBarangays" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="searchState.barangay_code" :modelValue="form.barangay_code"
+                                v-model:open="openState.barangay_code"
+                                @select="val => onSelect('barangay_code', val)" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EQUIPMENT -->
+                <div class="form-card" id="equipment">
+                    <div style="display:flex; justify-content:space-between; align-items:center">
+                        <h1 class="section-title">Equipment / Facilities / Machinery</h1>
+                        <button type="button" class="add-btn" @click="addEquipment">
+                            + Add Equipment
+                        </button>
+                    </div>
+
+                    <!-- EQUIPMENT LIST -->
+                    <div v-for="(equipment, index) in form.inventoryItem" :key="equipment.id">
+
+                        <hr v-if="index > 0" class="equipment-divider">
+
+                        <div class="equipment-card" :id="'equipment-' + index">
+                            <label class="equipment-title">
+                                Equipment #{{ index + 1 }}:
+                                <span v-if="equipment.name">{{ equipment.name }}</span>
+                                <span v-else class="equipment-unnamed">Unnamed Item</span>
+                            </label>
+
+                            <button type="button" class="remove-x-btn" @click="removeEquipment(index)">
+                                ✕
                             </button>
-                        </div>
 
-                    </form>
+                            <div class="form-grid">
+                                <div>
+                                    <label class="form-label">Category</label>
+
+                                    <select v-model="equipment.category" class="form-select">
+                                        <option value="">Select Category</option>
+                                        <option v-for="option in categoryOptions" :key="option">
+                                            {{ option }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label">Name</label>
+                                    <Input class="form-input" v-model="equipment.name" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Guarantor Agency</label>
+                                    <Input class="form-input" v-model="equipment.guarantor_agency" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Location</label>
+                                    <Input class="form-input" v-model="equipment.location" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Value</label>
+                                    <Input class="form-input" type="number" v-model="equipment.value" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Quantity</label>
+                                    <Input class="form-input" type="number" v-model="equipment.quantity"
+                                        @change="equipment.status = null" />
+                                </div>
+                                <div>
+                                    <label class="form-label">Status</label>
+                                    <select v-model.number="equipment.status" class="form-select"
+                                        :disabled="equipment.quantity === 0">
+
+                                        <option :value="null">Select Status</option>
+
+                                        <option v-for="option in getStatusOptions(equipment.quantity)"
+                                            :key="option.value" :value="option.value">
+                                            {{ option.label }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label">Acquired Date</label>
+
+                                    <Input class="form-input" type="date" v-model="equipment.acquired_date"
+                                        :max="today" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUBMIT -->
+
+                <div style="margin-top:25px">
+
+                    <button type="submit" class="submit-btn">
+                        Save Inventory
+                    </button>
+                </div>
+            </form>
+            <div class="side-nav">
+
+                <div class="side-nav-toggle" @click="navOpen = !navOpen">
+                    ☰ Sections
+                </div>
+
+                <div v-if="navOpen">
+
+                    <a href="#coop-info">Coop Info</a>
+                    <a href="#location">Location</a>
+
+                    <a v-for="(equipment, index) in form.inventoryItem" :key="index" :href="'#equipment-' + index">
+                        Equipment #{{ index + 1 }}
+                    </a>
+
                 </div>
 
             </div>

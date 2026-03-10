@@ -38,21 +38,21 @@ class InventoryFormController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'region_code' => 'required|exists:regions,code',
-            'province_code' => 'required|exists:provinces,code',
-            'city_code' => 'required|exists:cities,code',
+            'province_code' => 'required',
+            'city_code' => 'required',
             'barangay_code' => 'required|exists:barangays,code',
-            'email' => 'nullable|email|max:255',
-            'number' => 'nullable|string|max:20',
+            'email' => 'required|email|max:255',
+            'number' => 'required|string|max:20',
 
             'inventoryItem' => 'nullable|array',
-            'inventoryItem.*.category' => 'nullable|string|max:255',
-            'inventoryItem.*.name' => 'nullable|string|max:255',
-            'inventoryItem.*.guarantor_agency' => 'nullable|string|max:255',
-            'inventoryItem.*.location' => 'nullable|string|max:255',
-            'inventoryItem.*.value' => 'nullable|numeric',
-            'inventoryItem.*.quantity' => 'nullable|integer',
-            'inventoryItem.*.status' => 'nullable|string|max:100',
-            'inventoryItem.*.acquired_date' => 'nullable|date',
+            'inventoryItem.*.category' => 'required|string|max:255',
+            'inventoryItem.*.name' => 'required|string|max:255',
+            'inventoryItem.*.guarantor_agency' => 'required|string|max:255',
+            'inventoryItem.*.location' => 'required|string|max:255',
+            'inventoryItem.*.value' => 'required|numeric',
+            'inventoryItem.*.quantity' => 'required|integer',
+            'inventoryItem.*.status' => 'nullable|integer',
+            'inventoryItem.*.acquired_date' => 'required|date',
         ]);
 
         $reportingDate = ReportingDate::orderByDesc('reporting_year')

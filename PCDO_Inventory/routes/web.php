@@ -1,13 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Features;
 use App\Http\Controllers\CooperativeController;
 use App\Http\Controllers\InventoryFormController;
 use App\Http\Controllers\ReportingDateController;
+use App\Http\Controllers\QRCodeController;
 
 Route::get('/', function () {
-    return view('cooperatives.index');
+    return redirect()->route('cooperatives.index');
 })->name('home');
 
 // View Routes
@@ -20,6 +20,6 @@ Route::get('/inventory', [InventoryFormController::class, 'index'])->name('inven
 Route::post('/inventory', [InventoryFormController::class, 'store'])->name('inventory.store');
 
 // use Synclogger & Electron
-// QR verify device for online
+Route::get('/qr-code', [QRCodeController::class, 'index'])->name('qr-code.index');
 
 require __DIR__ . '/settings.php';

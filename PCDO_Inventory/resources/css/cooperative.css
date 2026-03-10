@@ -1,0 +1,694 @@
+/* PAGE WRAPPER */
+.app-content,
+.coop-page {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 40px 40px;
+}
+
+/* HEADER */
+.coop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background: linear-gradient(90deg, #F6ECD3 0%, #D56C10 100%);
+    border-radius: 12px;
+
+    padding: 24px 28px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.24);
+    margin-bottom: 20px;
+
+    color: #111827;
+}
+
+/* LEFT SIDE */
+.coop-header-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.coop-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.coop-description {
+    font-size: 14px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+/* RIGHT SIDE */
+.coop-header-right {
+    text-align: right;
+}
+
+/* LABEL */
+.report-label {
+    display: block;
+    font-size: 13px;
+    color: #ffffff;
+    margin-bottom: 6px;
+}
+
+/* DATE BADGE */
+.report-badge {
+    background: #fff7ed;
+    color: #d56c10;
+
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+
+    border: 1px solid #fed7aa;
+}
+
+/* CARD */
+.coop-card {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    padding: 5px;
+}
+
+/* CARD HEADER */
+.coop-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 2px solid #f6ecd3;
+    background: #ffffff;
+    border-radius: 14px 14px 0 0;
+    box-shadow: none;
+}
+
+.coop-filter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.coop-search,
+.coop-select {
+    height: 38px;
+    box-sizing: border-box;
+}
+
+.coop-select {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: #fdfbf7;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.coop-select:focus {
+    border-color: #D56C10;
+}
+
+.coop-search {
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: #fdfbf7;
+    font-size: 14px;
+    outline: none;
+}
+
+.coop-search:focus {
+    border-color: #D56C10;
+}
+
+.coop-btn-primary {
+    background: #D56C10;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(213, 108, 16, 0.2);
+}
+
+.coop-btn-primary:hover {
+    background: #b45a0d;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(213, 108, 16, 0.3);
+}
+
+/* TABLE */
+.coop-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 15px;
+    table-layout: fixed;
+}
+
+/* HEADER */
+.coop-table thead {
+    background: linear-gradient(90deg, #FAD6A5 0%, #D56C10 100%);
+}
+
+.coop-table thead th {
+    text-align: left;
+    padding: 16px 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+}
+
+.coop-table thead th:first-child {
+    color: #431407;
+    padding: 12px 20px;
+}
+
+.coop-table thead th:last-child {
+    color: #ffffff;
+    text-align: right;
+}
+
+
+/* COLUMN WIDTHS */
+.coop-table th:first-child,
+.coop-table td:first-child {
+    width: 70%;
+}
+
+.coop-table th:nth-child(2),
+.coop-table td:nth-child(2) {
+    width: 30%;
+    text-align: right;
+}
+
+/* ROWS */
+.coop-table tbody td {
+    padding: 16px 20px;
+    border-bottom: 1px solid #c8cacd;
+    color: #374151;
+}
+
+/* ALTERNATE ROW COLORS */
+.coop-table tbody tr:nth-child(odd),
+.coop-table tbody tr:nth-child(even) {
+    background-color: #ffffff;
+}
+
+/* ROW HOVER */
+.coop-table tbody tr.coop-row:hover {
+    background-color: #fffaf0;
+    transform: none;
+}
+
+.coop-table tbody tr.coop-row:hover {
+    background-color: #FFF8E1;
+    cursor: pointer;
+}
+
+/* FIRST COLUMN STYLE */
+.coop-table td:first-child {
+    font-weight: 500;
+    color: #111827;
+}
+
+/* SECOND COLUMN STYLE */
+.coop-table td:nth-child(2) {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+/* EMPTY ROW */
+.coop-empty {
+    text-align: center;
+    color: #6b7280;
+    padding: 20px 0;
+}
+
+/* LAST ROW BORDER FIX */
+.coop-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ACTION COLUMN */
+.coop-action {
+    text-align: right;
+}
+
+/* ACTION LINK (if still used) */
+.coop-view {
+    background: #eff6ff;
+    color: #2563eb;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid #dbeafe;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.coop-view:hover {
+    background: #2563eb;
+    color: white;
+}
+
+/* PAGINATION */
+.coop-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-top: 1px solid #f1f5f9;
+    background: #fafafa;
+}
+
+/* LEFT INFO */
+.pagination-info {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* RIGHT BUTTON GROUP */
+.pagination-controls {
+    display: flex;
+    gap: 6px;
+}
+
+/* BUTTON */
+.pagination-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover {
+    background: #f3f4f6;
+}
+
+/* ACTIVE PAGE */
+.pagination-btn.active {
+    background: #D56C10;
+    border-color: #D56C10;
+    color: white;
+}
+
+/* MODAL */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-box {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-title {
+    margin-top: 0;
+    font-size: 20px;
+    color: #111827;
+    margin-bottom: 20px;
+}
+
+
+.modal-input {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 24px;
+    outline: none;
+}
+
+.modal-input:focus {
+    border-color: #D56C10;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.modal-cancel {
+    background: #f3f4f6;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #4b5563;
+}
+
+.modal-save {
+    background: #D56C10;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.modal-save:hover {
+    background: #b45a0d;
+}
+
+/* -------------------- SHOW PAGE UI -------------------- */
+
+/* Wrapper for the show page content */
+.show-page-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 19px;
+    display: flex;
+    flex-direction: column;
+    gap: 19px;
+}
+
+/* Cooperative Title */
+.show-page-wrapper h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+}
+
+/* Reporting Period */
+.show-page-wrapper p {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* Detail Table Card */
+.show-page-wrapper table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    table-layout: fixed !important;
+}
+
+.show-page-wrapper table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    color: #374151;
+}
+
+.show-page-wrapper table td:first-child {
+    font-weight: 600;
+    color: #111827;
+    width: 30%;
+}
+
+.show-page-wrapper table td:last-child {
+    font-weight: 500;
+    color: #6b7280;
+}
+
+/* Alternate row background for clarity */
+.show-page-wrapper table tbody tr:nth-child(odd) {
+    background-color: #fdfbf7;
+}
+
+.show-page-wrapper table tbody tr:nth-child(even) {
+    background-color: #fff8e1;
+}
+
+/* Details block (for instances and categories) */
+.show-page-wrapper details {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.show-page-wrapper summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 12px 16px;
+    background-color: #F6ECD3;
+    color: #431407;
+    transition: background 0.2s ease;
+}
+
+.show-page-wrapper summary:hover {
+    background-color: #FFE0B2;
+}
+
+/* Table inside details */
+.show-page-wrapper details table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.show-page-wrapper details thead {
+    background: linear-gradient(90deg, #e4b26d 0%, #D56C10 100%);
+}
+
+.show-page-wrapper details thead th {
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    letter-spacing: 0.05em;
+}
+
+.show-page-wrapper details tbody td {
+    font-size: 14px;
+    color: #374151;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.show-page-wrapper details tbody tr:nth-child(odd) {
+    background-color: #fff8e1;
+}
+
+.show-page-wrapper details tbody tr:nth-child(even) {
+    background-color: #fdfbf7;
+}
+
+/* Hover effect on inventory rows */
+.show-page-wrapper details tbody tr:hover {
+    background-color: #FFF0C2;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+/* Back Button */
+.show-page-wrapper button {
+    background: none;
+    border: none;
+    color: #D56C10;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    padding: 6px 0;
+}
+
+.show-page-wrapper button:hover {
+    color: #b45a0d;
+    text-decoration: underline;
+}
+
+/* Card styling for each instance block */
+.show-page-wrapper .instance-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.inventory-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.category-total {
+    background: #fff3cd;
+    font-weight: 600;
+}
+
+.grand-total {
+    margin-top: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: right;
+    color: #D56C10;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+
+    .coop-page {
+        padding: 20px;
+    }
+
+    /* HEADER STACK */
+    .coop-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .coop-header-right {
+        text-align: left;
+    }
+
+    /* FILTER STACK */
+    .coop-card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .coop-filter {
+        width: 100%;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .coop-search,
+    .coop-select {
+        width: 100%;
+    }
+
+    .coop-btn-primary {
+        width: 100%;
+    }
+
+    /* TABLE SCROLL */
+    .coop-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    /* PAGINATION STACK */
+    .coop-pagination {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        text-align: center;
+    }
+
+    .pagination-controls {
+        justify-content: center;
+        width: 100%;
+    }
+
+}
+
+/* ================= MOBILE TABLE → CARD ================= */
+@media (max-width: 768px) {
+
+    .inventory-data-table thead {
+        display: none;
+    }
+
+    .inventory-data-table,
+    .inventory-data-table tbody,
+    .inventory-data-table tr,
+    .inventory-data-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .inventory-data-table tr {
+        background: white;
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 14px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    .inventory-data-table td {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border: none;
+        font-size: 14px;
+    }
+
+    .inventory-data-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #6b7280;
+    }
+
+    .category-total {
+        display: block;
+        text-align: right;
+        padding-top: 10px;
+        border-top: 1px solid #eee;
+    }
+
+    .inventory-data-table td:first-child {
+        width: auto !important;
+    }
+}
+
+/* ================= SMALL PHONES ================= */
+@media (max-width: 480px) {
+
+    .coop-title {
+        font-size: 22px;
+    }
+
+    .coop-description {
+        font-size: 13px;
+    }
+
+    .coop-header {
+        padding: 18px 20px;
+    }
+
+    .coop-card {
+        padding: 0;
+    }
+
+    .coop-table thead th,
+    .coop-table tbody td {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+}

@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import AppLayout from '@/layouts/InventoryLayout.vue'
+import type { BreadcrumbItem } from '@/types';
+import { computed, ref } from 'vue'
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Details', href: `` }
+]
 
 const props = defineProps<{
     cooperative: any
     reportingDate: any
     reportingDateId: number
 }>()
+
+const searchFilter = ref('')
+const statusFilter = ref('all')
 
 function groupByCategory(inventories: any[]) {
     const grouped: Record<string, any[]> = {}
@@ -20,106 +29,198 @@ function groupByCategory(inventories: any[]) {
 
     return grouped
 }
+
+function filterItems(items: any[]) {
+    return items.filter(item => {
+
+        const matchesSearch =
+            item.name.toLowerCase().includes(searchFilter.value.toLowerCase())
+
+        const servicable = item.status
+        const nonServicable = item.quantity - item.status
+
+        let matchesStatus = true
+
+        if (statusFilter.value === 'servicable')
+            matchesStatus = servicable > 0
+
+        if (statusFilter.value === 'non-servicable')
+            matchesStatus = nonServicable > 0
+
+        return matchesSearch && matchesStatus
+    })
+}
+
+function totalItem(item: any) {
+    return item.quantity * item.value
+}
+
+function rowTotal(item: any) {
+    if (statusFilter.value === 'servicable') return servicableTotal(item)
+    if (statusFilter.value === 'non-servicable') return nonServicableTotal(item)
+    return totalItem(item)
+}
+
+function servicableTotal(item: any) {
+    return item.status * item.value
+}
+
+function nonServicableTotal(item: any) {
+    return (item.quantity - item.status) * item.value
+}
+
+function categoryTotal(items: any[]) {
+
+    return items.reduce((sum, item) => {
+
+        if (statusFilter.value === 'servicable')
+            return sum + servicableTotal(item)
+
+        if (statusFilter.value === 'non-servicable')
+            return sum + nonServicableTotal(item)
+
+        return sum + totalItem(item)
+
+    }, 0)
+}
+
+const grandTotal = computed(() => {
+
+    let total = 0
+
+    props.cooperative.instances.forEach((instance: any) => {
+        instance.inventories.forEach((item: any) => {
+
+            if (statusFilter.value === 'servicable')
+                total += servicableTotal(item)
+
+            else if (statusFilter.value === 'non-servicable')
+                total += nonServicableTotal(item)
+
+            else
+                total += totalItem(item)
+
+        })
+    })
+
+    return total
+})
 </script>
 
 <template>
 
     <Head :title="cooperative.coop_name" />
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div class="show-page-wrapper">
+            <div class="coop-header">
 
-    <div class="max-w-7xl mx-auto p-6 space-y-6">
+                <!-- LEFT SIDE -->
+                <div class="coop-header-left">
+                    <h1 class="coop-title">
+                        {{ cooperative.name }}
+                    </h1>
 
-        <h1 class="text-2xl font-bold">
-            {{ cooperative.name }}
-        </h1>
+                    <p class="coop-description">
+                        Cooperative Inventory Details
+                    </p>
+                </div>
 
-        <p class="text-gray-500">
-            Reporting Period: {{ reportingDate.reporting_month }}/{{ reportingDate.reporting_year }}
-        </p>
-        <div>
-            <h2 class="text-xl font-semibold mb-4">
-                Details
-            </h2>
-            <table class="w-full bg-white shadow rounded-xl">
-                <tbody>
-                    <tr class="border-t">
-                        <td class="p-4 font-semibold text-gray-600">Address</td>
-                        <td class="p-4">{{ cooperative.barangay.name }}, {{ cooperative.city.name }}, {{ cooperative.province.name }}, {{ cooperative.region.name }}</td>
-                    </tr>
-                    <tr class="border-t">
-                        <td class="p-4 font-semibold text-gray-600">Email</td>
-                        <td class="p-4">{{ cooperative.email }}</td>
-                    </tr>
-                    <tr class="border-t">
-                        <td class="p-4 font-semibold text-gray-600">Contact Number</td>
-                        <td class="p-4">{{ cooperative.number }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+                <!-- RIGHT SIDE -->
+                <div class="coop-header-right">
+                    <span class="report-label">Reporting Period</span>
 
-        <div
-            v-for="instance in cooperative.instances"
-            :key="instance.id"
-            class="bg-white shadow rounded-xl p-6 space-y-4"
-        >
+                    <span class="report-badge">
+                        {{ reportingDate.reporting_month }}/{{ reportingDate.reporting_year }}
+                    </span>
+                </div>
 
-            <details
-                v-for="(items, category) in groupByCategory(instance.inventories)"
-                :key="category"
-                class="border rounded-lg"
-                open
-            >
+            </div>
 
-                <summary
-                    class="cursor-pointer bg-gray-100 px-4 py-3 font-semibold hover:bg-gray-200"
-                >
-                    {{ category }}
-                </summary>
-
-                <table class="w-full">
-
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="p-3 text-left">Name</th>
-                            <th class="p-3 text-left">Quantity</th>
-                            <th class="p-3 text-left">Value</th>
-                            <th class="p-3 text-left">Status</th>
-                            <th class="p-3 text-left">Guarantor Agency</th>
-                            <th class="p-3 text-left">Acquire Date</th>
-
-                        </tr>
-                    </thead>
-
+            <div class="instance-card">
+                <h2>Details</h2>
+                <table class="details-info-table">
                     <tbody>
-
-                        <tr
-                            v-for="item in items"
-                            :key="item.id"
-                            class="border-b"
-                        >
-                            <td class="p-3">{{ item.name }}</td>
-                            <td class="p-3">{{ item.quantity }}</td>
-                            <td class="p-3">{{ item.value }} ₱</td>
-                            <td class="p-3">{{ item.status }}</td>
-                            <td class="p-3">{{ item.guarantor_agency }}</td>
-                            <td class="p-3">{{ item.acquired_date }}</td>
+                        <tr>
+                            <td>Address</td>
+                            <td>{{ cooperative.barangay.name }}, {{ cooperative.city.name }}, {{
+                                cooperative.province.name }}, {{ cooperative.region.name }}</td>
                         </tr>
-
+                        <tr>
+                            <td>Email</td>
+                            <td>{{ cooperative.email }}</td>
+                        </tr>
+                        <tr>
+                            <td>Contact Number</td>
+                            <td>{{ cooperative.number }}</td>
+                        </tr>
                     </tbody>
-
                 </table>
+            </div>
+            <div class="inventory-filters">
 
-            </details>
+                <input v-model="searchFilter" placeholder="Search item..." class="coop-search" />
 
+                <select v-model="statusFilter" class="coop-select">
+                    <option value="all">All</option>
+                    <option value="servicable">Servicable</option>
+                    <option value="non-servicable">Non-Servicable</option>
+                </select>
+
+            </div>
+            <!-- Instances -->
+            <div v-for="instance in cooperative.instances" :key="instance.id" class="instance-card">
+                <details v-for="(items, category) in groupByCategory(filterItems(instance.inventories))" :key="category"
+                    open>
+                    <summary>{{ category }}</summary>
+                    <table class="inventory-data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Quantity</th>
+                                <th>Value</th>
+                                <th>Status</th>
+                                <th>Guarantor Agency</th>
+                                <th>Acquire Date</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in items" :key="item.id">
+                                <td data-label="Name">{{ item.name }}</td>
+                                <td data-label="Quantity">{{ item.quantity }}</td>
+                                <td data-label="Value">₱ {{ item.value }}</td>
+
+                                <td data-label="Status">
+                                    <span v-if="statusFilter === 'all'">
+                                        Servicable: {{ item.status }} out of {{ item.quantity }}
+                                    </span>
+                                    <span v-else-if="statusFilter === 'servicable'">
+                                        Servicable: {{ item.status }}
+                                    </span>
+                                    <span v-else-if="statusFilter === 'non-servicable'">
+                                        Non-Servicable: {{ item.quantity - item.status }}
+                                    </span>
+                                </td>
+
+                                <td data-label="Guarantor">{{ item.guarantor_agency }}</td>
+                                <td data-label="Acquire Date">{{ item.acquired_date }}</td>
+                                <td data-label="Total">₱ {{ rowTotal(item) }}</td>
+                            </tr>
+                        </tbody>
+                        <tr class="category-total">
+                            <td colspan="3"><strong>Total for {{ category }}</strong></td>
+                            <td colspan="4">₱ {{ categoryTotal(items) }}</td>
+                        </tr>
+                    </table>
+                </details>
+            </div>
+            <div class="grand-total">
+                Grand Total: ₱ {{ grandTotal }}
+            </div>
+            <!-- Back Button -->
+            <button @click="$inertia.visit(`/cooperatives?reporting_date_id=${reportingDateId}`)" class="back-btn">
+                Back to Cooperatives
+            </button>
         </div>
-
-        <button
-            @click="$inertia.visit(`/cooperatives?reporting_date_id=${reportingDateId}`)"
-            class="text-blue-600 hover:underline"
-        >
-            Back to Cooperatives
-        </button>
-
-    </div>
-
+    </AppLayout>
 </template>

@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3'
 import { ref } from 'vue'
+import AppLayout from '@/layouts/InventoryLayout.vue'
+import type { BreadcrumbItem } from '@/types';
+import { computed } from 'vue'
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Cooperatives', href: '/cooperatives' }
+]
 
 const props = defineProps<{
     cooperatives: any[]
@@ -55,102 +62,124 @@ function handleDateInput(event: Event) {
     form.value.reporting_month = String(date.getMonth() + 1)
     form.value.reporting_year = String(date.getFullYear())
 }
+
+const search = ref('')
+
+const filteredCooperatives = computed(() => {
+    if (!search.value) return props.cooperatives
+
+    return props.cooperatives.filter(coop =>
+        coop.name.toLowerCase().includes(search.value.toLowerCase())
+    )
+})
 </script>
 
 <template>
 
     <Head title="Cooperatives" />
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div class="coop-page">
+            <div class="coop-header">
 
-    <div class="max-w-7xl mx-auto p-6">
+                <div class="coop-header-left">
+                    <h1 class="coop-title">
+                        Cooperatives
+                    </h1>
 
-        <h1 class="text-2xl font-bold mb-2">
-            Cooperatives
-        </h1>
-
-        <p class="text-gray-500 mb-6">
-            Reporting Period:
-            {{ reportingDate?.reporting_month }}/{{ reportingDate?.reporting_year }}
-        </p>
-
-        <div class="bg-white shadow rounded-xl overflow-hidden">
-            <div class="flex items-center justify-between mb-6">
-
-                <div class="flex items-center gap-3">
-
-                    <select v-model="selectedDate" @change="filterDate" class="border rounded px-3 py-2">
-                        <option v-for="date in reportingDates" :key="date.id" :value="date.id">
-                            {{ date.reporting_month }}/{{ date.reporting_year }}
-                        </option>
-                    </select>
-
+                    <p class="coop-description">
+                        Manage cooperative inventory reports.
+                    </p>
                 </div>
 
-                <button @click="openModal" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                <div class="coop-header-right">
+                    <span class="report-label">Reporting Period</span>
+                    <span class="report-badge">
+                        {{ reportingDate?.reporting_month }}/{{ reportingDate?.reporting_year }}
+                    </span>
+                </div>
+
+            </div>
+
+            <div class="coop-card">
+                <!-- HEADER -->
+                <div class="coop-card-header">
+                    <div class="coop-filter">
+                        <input v-model="search" type="text" placeholder="Search cooperative..." class="coop-search" />
+                        <select v-model="selectedDate" @change="filterDate" class="coop-select">
+                            <option v-for="date in reportingDates" :key="date.id" :value="date.id">
+                                {{ date.reporting_month }}/{{ date.reporting_year }}
+                            </option>
+                        </select>
+                    </div>
+                    <button @click="openModal" class="coop-btn-primary">
+                        Add Reporting Date
+                    </button>
+                </div>
+
+
+                <!-- TABLE -->
+                <table class="coop-table">
+                    <thead>
+                        <tr>
+                            <th>Cooperative</th>
+                            <th>Inventory Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="cooperatives.length === 0">
+                            <td colspan="2" class="coop-empty">
+                                No Cooperative Registered on Form
+                            </td>
+                        </tr>
+                        <tr v-else-if="filteredCooperatives.length === 0">
+                            <td colspan="2" class="coop-empty">
+                                No cooperatives found for "{{ search }}"
+                            </td>
+                        </tr>
+                        <tr v-for="coop in filteredCooperatives" :key="coop.id" class="coop-row" @click="openCoop(coop.id)">
+                            <td>
+                                {{ coop.name }}
+                            </td>
+                            <td>
+                                {{ inventoryCounts[coop.id] ?? 0 }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- SIMPLE PAGINATION -->
+                <div class="coop-pagination">
+                    <div class="pagination-info">
+                        Showing 1–{{ cooperatives.length }} of {{ cooperatives.length }} cooperatives
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="pagination-btn">Previous</button>
+
+                        <button class="pagination-btn active">1</button>
+
+                        <button class="pagination-btn">Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL -->
+        <div v-if="showModal" class="modal-overlay">
+            <div class="modal-box">
+                <h2 class="modal-title">
                     Add Reporting Date
-                </button>
+                </h2>
+                <input type="month" @change="handleDateInput" class="modal-input" />
+                <div class="modal-actions">
+                    <button @click="closeModal" class="modal-cancel">
+                        Cancel
+                    </button>
 
-            </div>
-            <table class="w-full">
-
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="p-4 text-left">Cooperative</th>
-                        <th class="p-4 text-left">Inventory Count</th>
-                        <th class="p-4"></th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    <tr v-if="cooperatives.length === 0">
-                        <td colspan="3" class="p-6 text-center text-gray-500">
-                            No Cooperative Registered on Form
-                        </td>
-                    </tr>
-                    <tr v-for="coop in cooperatives" :key="coop.id" class="border-b">
-
-                        <td class="p-4">
-                            {{ coop.name }}
-                        </td>
-
-                        <td class="p-4">
-                            {{ inventoryCounts[coop.id] ?? 0 }}
-                        </td>
-
-                        <td class="p-4 text-right">
-                            <button @click="openCoop(coop.id)" class="text-blue-600 hover:underline">
-                                View
-                            </button>
-                        </td>
-
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
-    <div v-if="showModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-
-        <div class="bg-white rounded-xl shadow-lg w-96 p-6 space-y-4">
-
-            <h2 class="text-lg font-semibold">
-                Add Reporting Date
-            </h2>
-
-            <input type="month" @change="handleDateInput" class="w-full border rounded px-3 py-2" />
-
-            <div class="flex justify-end gap-3">
-
-                <button @click="closeModal" class="px-4 py-2 rounded border">
-                    Cancel
-                </button>
-
-                <button @click="submitReportingDate" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                    Save
-                </button>
+                    <button @click="submitReportingDate" class="modal-save">
+                        Save
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
+    </AppLayout>
 </template>

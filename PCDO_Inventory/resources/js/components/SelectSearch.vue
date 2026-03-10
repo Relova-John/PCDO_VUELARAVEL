@@ -1,24 +1,88 @@
 <!-- src/components/SelectSearch.vue -->
 
 <template>
-    <div class="relative w-full" v-click-outside="onOutside" ref="root">
-        <input v-bind="$attrs" :id="id" v-model="searchValue" :placeholder="placeholder" @focus="openLocal()"
-            @input="onInput" :disabled="disabled" class=""/>
-        <div v-if="open && filtered.length > 0"
-            class="">
+    <div class="relative w-full" ref="root">
+
+        <input
+            v-bind="$attrs"
+            :id="id"
+            v-model="searchValue"
+            :placeholder="placeholder"
+            @focus="openLocal()"
+            @input="onInput"
+            :disabled="disabled"
+            class="select-input"
+        />
+
+        <div
+            v-if="open && filtered.length > 0"
+            class="select-dropdown"
+        >
             <ul>
-                <li v-for="item in filtered" :key="itemKey(item)" @click="selectItem(item)"
-                    class="">
+                <li
+                    v-for="item in filtered"
+                    :key="itemKey(item)"
+                    @click="selectItem(item)"
+                    class="select-option"
+                >
                     {{ itemLabel(item) }}
                 </li>
             </ul>
         </div>
+
     </div>
 </template>
 
+<style scoped>
+
+.select-search {
+  position: relative;
+  width: 100%;
+}
+
+.select-input {
+  width: 100%;
+  border: 1px solid #989696;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  margin-top: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+.select-option {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.select-option:hover {
+  background: #f1f3f4;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: #673ab7;
+  box-shadow: 0 0 0 2px rgba(103,58,183,0.15);
+}
+
+</style>
+
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
 	id: { type: String, default: '' },
@@ -99,4 +163,22 @@ function onOutside() {
 	open.value = false
 	emits('update:open', false)
 }
+
+const root = ref<HTMLElement | null>(null)
+
+function handleClickOutside(event: MouseEvent) {
+    if (!root.value) return
+    if (!root.value.contains(event.target as Node)) {
+        open.value = false
+        emits('update:open', false)
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('mousedown', handleClickOutside)
+})
+
+onUnmounted(() => {
+    document.removeEventListener('mousedown', handleClickOutside)
+})
 </script>

@@ -22,6 +22,6 @@ export interface InventoryItem {
   location: string;
   value: number;
   quantity: number;
-  status: string;
+  status: number | null;
   acquired_date: string;
 }
