@@ -27,6 +27,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         return redirect()->route('home');
     })->name('dashboard');
+
+    Route::get('/cooperatives', function () {
+        $user = request()->user();
+
+        if ($user->role === 'superadmin' || $user->role === 'admin') {
+            return redirect()->route('admin.cooperatives.index');
+        }
+
+        if ($user->role === 'officer') {
+            return redirect()->route('officer.cooperatives.index');
+        }
+
+        return redirect()->route('home');
+    })->name('cooperatives');
+
+    Route::get('/access-control', function () {
+        $user = request()->user();
+
+        if ($user->role === 'superadmin' || $user->role === 'admin') {
+            return redirect()->route('admin.access-control.index');
+        }
+
+        if ($user->role === 'officer') {
+            return redirect()->route('officer.access-control.index');
+        }
+
+        return redirect()->route('home');
+    })->name('access-control');
+
     /*
     |--------------------------------------------------------------------------
     | Superadmin + Admin
@@ -56,4 +85,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';

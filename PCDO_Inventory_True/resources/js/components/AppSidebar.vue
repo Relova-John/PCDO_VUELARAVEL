@@ -20,17 +20,17 @@ import { Handshake } from 'lucide-vue-next';
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
-        href: '',
+        href: '/dashboard',
         icon: LayoutGrid,
     },
     {
         title: 'Cooperative',
-        href: '../cooperatives',
+        href: '/cooperatives',
         icon: Handshake,
     },
     {
         title: 'Access Control',
-        href: '../access-control',
+        href: '/access-control',
         icon: Handshake,
     }
 ];
