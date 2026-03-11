@@ -143,7 +143,7 @@ function addEquipment() {
         location: '',
         value: 0,
         quantity: 0,
-        status: 0,
+        status: null,
         acquired_date: ''
     })
 }
@@ -482,7 +482,7 @@ async function submit() {
                     <a href="#location">Location</a>
 
                     <a v-for="(equipment, index) in form.inventoryItem" :key="index" :href="'#equipment-' + index">
-                        Equipment #{{ index + 1 }}
+                        Equipment #{{ index + 1 }}: {{ equipment.name || 'Unnamed Item' }}
                     </a>
 
                 </div>
