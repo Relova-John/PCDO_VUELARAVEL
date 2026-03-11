@@ -6,10 +6,9 @@ use App\Http\Controllers\InventoryFormController;
 use App\Http\Controllers\ReportingDateController;
 use App\Http\Controllers\QRCodeController;
 use App\Http\Middleware\PasswordCheck;
+use Laravel\Fortify\Features;
 
-Route::get('/', function () {
-    return redirect()->route('inventory.index');
-})->name('home');
+Route::inertia('/', 'auth/Login')->name('home');
 
 // View Routes
 Route::middleware([PasswordCheck::class])->group(function () {
