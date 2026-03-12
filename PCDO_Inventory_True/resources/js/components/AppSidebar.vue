@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-vue-next';
+import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -17,35 +18,34 @@ import {
 import type { NavItem } from '@/types';
 import { Handshake } from 'lucide-vue-next';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Cooperative',
-        href: '/cooperatives',
-        icon: Handshake,
-    },
-    {
-        title: 'Access Control',
-        href: '/access-control',
-        icon: Handshake,
+const page = usePage<{
+    auth?: {
+        user?: {
+            role?: string
+        }
     }
-];
+}>()
+const userRole = computed(() => page.props.auth?.user?.role ?? '')
+const mainNavItems = computed<NavItem[]>(() => {
+    const items: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: '/dashboard',
+            icon: LayoutGrid,
+        },
+    ]
 
+    if (['admin', 'superadmin'].includes(userRole.value)) {
+        items.push({
+            title: 'Access Control',
+            href: '/access-control',
+            icon: Handshake,
+        })
+    }
+
+    return items
+})
 const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
 ];
 </script>
 

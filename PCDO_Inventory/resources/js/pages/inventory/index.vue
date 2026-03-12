@@ -347,7 +347,6 @@ async function submit() {
                     <div class="form-grid">
                         <div>
                             <label class="form-label">Region</label>
-
                             <SelectSearch :items="regions" itemLabelKey="name" itemKeyProp="code"
                                 v-model:search="searchState.region_code" :modelValue="form.region_code"
                                 v-model:open="openState.region_code" @select="val => onSelect('region_code', val)" />
@@ -371,11 +370,11 @@ async function submit() {
                         </div>
                         <div>
                             <label class="form-label">Barangay</label>
-
                             <SelectSearch :items="filteredBarangays" itemLabelKey="name" itemKeyProp="code"
                                 v-model:search="searchState.barangay_code" :modelValue="form.barangay_code"
                                 v-model:open="openState.barangay_code"
                                 @select="val => onSelect('barangay_code', val)" />
+                                
                         </div>
                     </div>
                 </div>
