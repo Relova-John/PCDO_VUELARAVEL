@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
+import type { Regions, Provinces, Cities, Barangays } from '@/types/locations'
 import AppLayout from '@/layouts/AppLayout.vue'
 import type { BreadcrumbItem } from '@/types';
-import { computed } from 'vue'
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Cooperatives', href: '/cooperatives' }
@@ -12,9 +12,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 const props = defineProps<{
     cooperatives: any[]
     inventoryCounts: Record<number, number>
+    inventoryStatus: Record<number, any>
     reportingDate: any
     reportingDates: any[]
     selectedReportingDate: number
+    categories: { value: string, label: string }[]
+    categoryCounts: Record<string, Record<string, number>>
+    regions: Regions[]
+    provinces: Provinces[]
+    cities: Cities[]
+    barangays: Barangays[]
 }>()
 
 const showModal = ref(false)
@@ -65,12 +72,76 @@ function handleDateInput(event: Event) {
 
 const search = ref('')
 
-const filteredCooperatives = computed(() => {
-    if (!search.value) return props.cooperatives
+const inventoryFilter = ref('with-inventory')
 
-    return props.cooperatives.filter(coop =>
-        coop.name.toLowerCase().includes(search.value.toLowerCase())
-    )
+const filteredCooperatives = computed(() => {
+    let result = props.cooperatives
+    if (inventoryFilter.value === 'with-inventory') {
+        result = result.filter(coop => (props.inventoryCounts[coop.id] ?? 0) > 0)
+    }
+
+    if (search.value) {
+        result = result.filter(coop =>
+            coop.name.toLowerCase().includes(search.value.toLowerCase())
+        )
+    }
+
+    result = [...result].sort((a, b) => {
+        const aCount = props.inventoryCounts[a.id] ?? 0
+        const bCount = props.inventoryCounts[b.id] ?? 0
+        return bCount - aCount
+    })
+    return result
+})
+
+const perPage = 10
+const currentPage = ref(1)
+
+const totalItems = computed(() => filteredCooperatives.value.length)
+
+const totalPages = computed(() => {
+    return Math.max(1, Math.ceil(totalItems.value / perPage))
+})
+
+const paginatedCooperatives = computed(() => {
+    const start = (currentPage.value - 1) * perPage
+    const end = start + perPage
+    return filteredCooperatives.value.slice(start, end)
+})
+
+const startItem = computed(() => {
+    if (totalItems.value === 0) return 0
+    return (currentPage.value - 1) * perPage + 1
+})
+
+const endItem = computed(() => {
+    if (totalItems.value === 0) return 0
+    return Math.min(currentPage.value * perPage, totalItems.value)
+})
+
+const isFirstPage = computed(() => currentPage.value === 1)
+const isLastPage = computed(() => currentPage.value === totalPages.value)
+
+function goToPreviousPage() {
+    if (!isFirstPage.value) {
+        currentPage.value--
+    }
+}
+
+function goToNextPage() {
+    if (!isLastPage.value) {
+        currentPage.value++
+    }
+}
+
+watch(search, () => {
+    currentPage.value = 1
+})
+
+watch(filteredCooperatives, () => {
+    if (currentPage.value > totalPages.value) {
+        currentPage.value = totalPages.value
+    }
 })
 </script>
 
@@ -80,7 +151,6 @@ const filteredCooperatives = computed(() => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="coop-page">
             <div class="coop-header">
-
                 <div class="coop-header-left">
                     <h1 class="coop-title">
                         Cooperatives
@@ -93,31 +163,29 @@ const filteredCooperatives = computed(() => {
 
                 <div class="coop-header-right">
                     <span class="report-label">Reporting Period</span>
-                    <span class="report-badge">
-                        {{ reportingDate?.reporting_month }}/{{ reportingDate?.reporting_year }}
-                    </span>
+                    <select class="report-badge" v-model="selectedDate" @change="filterDate">
+                        <option v-for="date in reportingDates" :key="date.id" :value="date.id">
+                            {{ date.reporting_month }}/{{ date.reporting_year }}
+                        </option>
+                    </select>
                 </div>
-
             </div>
 
             <div class="coop-card">
-                <!-- HEADER -->
                 <div class="coop-card-header">
                     <div class="coop-filter">
                         <input v-model="search" type="text" placeholder="Search cooperative..." class="coop-search" />
-                        <select v-model="selectedDate" @change="filterDate" class="coop-select">
-                            <option v-for="date in reportingDates" :key="date.id" :value="date.id">
-                                {{ date.reporting_month }}/{{ date.reporting_year }}
-                            </option>
+                        <select v-model="inventoryFilter" class="coop-select">
+                            <option value="all">All Cooperatives</option>
+                            <option value="with-inventory">With Inventory Only</option>
                         </select>
                     </div>
+
                     <button @click="openModal" class="coop-btn-primary">
                         Add Reporting Date
                     </button>
                 </div>
 
-
-                <!-- TABLE -->
                 <table class="coop-table">
                     <thead>
                         <tr>
@@ -131,45 +199,59 @@ const filteredCooperatives = computed(() => {
                                 No Cooperative Registered on Form
                             </td>
                         </tr>
+
                         <tr v-else-if="filteredCooperatives.length === 0">
                             <td colspan="2" class="coop-empty">
                                 No cooperatives found for "{{ search }}"
                             </td>
                         </tr>
-                        <tr v-for="coop in filteredCooperatives" :key="coop.id" class="coop-row" @click="openCoop(coop.id)">
-                            <td>
-                                {{ coop.name }}
-                            </td>
-                            <td>
-                                {{ inventoryCounts[coop.id] ?? 0 }}
-                            </td>
+
+                        <tr v-for="coop in paginatedCooperatives" :key="coop.id" class="coop-row"
+                            @click="openCoop(coop.id)">
+                            <td>{{ coop.name }}</td>
+                            <td>{{ inventoryCounts[coop.id] ?? 0 }}</td>
                         </tr>
                     </tbody>
                 </table>
 
-                <!-- SIMPLE PAGINATION -->
                 <div class="coop-pagination">
-                    <div class="pagination-info">
-                        Showing 1–{{ cooperatives.length }} of {{ cooperatives.length }} cooperatives
+                    <div v-if="filteredCooperatives.length === 0" class="pagination-info">
+                        No cooperatives found for "{{ search }}"
                     </div>
+
+                    <div v-else-if="startItem === endItem" class="pagination-info">
+                        Showing {{ startItem }} of {{ filteredCooperatives.length }} cooperatives
+                    </div>
+
+                    <div v-else class="pagination-info">
+                        Showing {{ startItem }} - {{ endItem }} of {{ filteredCooperatives.length }} cooperatives
+                    </div>
+
                     <div class="pagination-controls">
-                        <button class="pagination-btn">Previous</button>
+                        <button v-if="!isFirstPage" class="pagination-btn" @click="goToPreviousPage">
+                            Previous
+                        </button>
 
-                        <button class="pagination-btn active">1</button>
+                        <button class="pagination-btn active">
+                            {{ currentPage }}
+                        </button>
 
-                        <button class="pagination-btn">Next</button>
+                        <button v-if="!isLastPage" class="pagination-btn" @click="goToNextPage">
+                            Next
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- MODAL -->
         <div v-if="showModal" class="modal-overlay">
             <div class="modal-box">
                 <h2 class="modal-title">
                     Add Reporting Date
                 </h2>
+
                 <input type="month" @change="handleDateInput" class="modal-input" />
+
                 <div class="modal-actions">
                     <button @click="closeModal" class="modal-cancel">
                         Cancel

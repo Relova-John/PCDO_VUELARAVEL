@@ -192,7 +192,7 @@ const dashboardBasePath = computed(() => {
                                 <th>Quantity</th>
                                 <th>Value</th>
                                 <th>Status</th>
-                                <th>Guarantor Agency</th>
+                                <th>Granting Agency</th>
                                 <th>Acquire Date</th>
                                 <th>Total</th>
                             </tr>
@@ -215,7 +215,7 @@ const dashboardBasePath = computed(() => {
                                     </span>
                                 </td>
 
-                                <td data-label="Guarantor">{{ item.guarantor_agency }}</td>
+                                <td data-label="Granting Agency">{{ item.granting_agency }}</td>
                                 <td data-label="Acquire Date">{{ item.acquired_date }}</td>
                                 <td data-label="Total">₱ {{ rowTotal(item) }}</td>
                             </tr>

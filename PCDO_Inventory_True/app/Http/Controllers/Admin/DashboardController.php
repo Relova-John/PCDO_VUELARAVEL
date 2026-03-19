@@ -37,6 +37,11 @@ class DashboardController extends Controller
 
         $cooperatives = Cooperative::select('id', 'name')->get();
 
+        $regions = Region::select('code', 'name')->orderBy('name')->get();
+        $provinces = Province::select('code', 'name', 'region_code')->orderBy('name')->get();
+        $cities = City::select('code', 'name', 'province_code')->orderBy('name')->get();
+        $barangays = Barangay::select('code', 'name', 'city_code')->orderBy('name')->get();
+
         $inventoryCounts = DB::table('inventory_instances')
             ->join('inventories', 'inventory_instances.id', '=', 'inventories.inventory_instance_id')
             ->where('inventory_instances.reporting_date_id', $reportingDateId)
@@ -53,6 +58,10 @@ class DashboardController extends Controller
             'reportingDate' => $reportingDate,
             'reportingDates' => $reportingDates,
             'selectedReportingDate' => $reportingDateId,
+            'regions' => $regions,
+            'provinces' => $provinces,
+            'cities' => $cities,
+            'barangays' => $barangays,
             'breadcrumbs' => [
                 ['title' => 'Cooperatives', 'href' => route('admin.dashboard')]
             ]
@@ -124,7 +133,7 @@ class DashboardController extends Controller
                 $inventories[] = [
                     'category' => $inv->category,
                     'name' => $inv->name,
-                    'guarantor_agency' => $inv->guarantor_agency,
+                    'granting_agency' => $inv->granting_agency,
                     'location' => $inv->location,
                     'value' => $inv->value,
                     'quantity' => $inv->quantity,
@@ -162,7 +171,7 @@ class DashboardController extends Controller
             'inventoryItem' => 'nullable|array',
             'inventoryItem.*.category' => 'required|string',
             'inventoryItem.*.name' => 'required|string',
-            'inventoryItem.*.guarantor_agency' => 'required|string',
+            'inventoryItem.*.granting_agency' => 'required|string',
             'inventoryItem.*.location' => 'required|string',
             'inventoryItem.*.value' => 'required|numeric',
             'inventoryItem.*.quantity' => 'required|integer',
@@ -200,7 +209,7 @@ class DashboardController extends Controller
                     'inventory_instance_id' => $instance->id,
                     'category' => $item['category'],
                     'name' => $item['name'],
-                    'guarantor_agency' => $item['guarantor_agency'],
+                    'granting_agency' => $item['granting_agency'],
                     'location' => $item['location'],
                     'value' => $item['value'],
                     'quantity' => $item['quantity'],
@@ -210,6 +219,6 @@ class DashboardController extends Controller
             }
         });
 
-        return redirect()->route('dashboard.show', $id);
+        return redirect()->route('admin.dashboard.show', $id);
     }
 }

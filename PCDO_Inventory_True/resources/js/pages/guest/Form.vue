@@ -140,7 +140,7 @@ function addEquipment() {
         id: Date.now(),
         category: '',
         name: '',
-        guarantor_agency: '',
+        granting_agency: '',
         location: '',
         value: 0,
         quantity: 0,
@@ -202,7 +202,7 @@ async function submit() {
         if (
             !item.category ||
             !item.name.trim() ||
-            !item.guarantor_agency.trim() ||
+            !item.granting_agency.trim() ||
             !item.location.trim() ||
             !item.value ||
             !item.quantity ||
@@ -242,7 +242,7 @@ async function submit() {
     if (!await confirmAcronym("Cooperative Name", form.name)) return
 
     for (const item of form.inventoryItem) {
-        if (!await confirmAcronym("Guarantor Agency", item.guarantor_agency)) {
+        if (!await confirmAcronym("Granting Agency", item.granting_agency)) {
             return
         }
     }
@@ -427,8 +427,8 @@ async function submit() {
                                     <Input class="form-input" v-model="equipment.name" />
                                 </div>
                                 <div>
-                                    <label class="form-label">Guarantor Agency</label>
-                                    <Input class="form-input" v-model="equipment.guarantor_agency" />
+                                    <label class="form-label">Granting Agency</label>
+                                    <Input class="form-input" v-model="equipment.granting_agency" />
                                 </div>
                                 <div>
                                     <label class="form-label">Location</label>

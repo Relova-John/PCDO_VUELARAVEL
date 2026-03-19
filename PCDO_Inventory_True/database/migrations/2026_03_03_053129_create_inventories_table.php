@@ -23,7 +23,7 @@ return new class extends Migration
             $table->integer('quantity');
             $table->integer('status');
             $table->date('acquired_date');
-            $table->string('guarantor_agency');
+            $table->string('granting_agency');
             $table->timestamps();
         });
     }

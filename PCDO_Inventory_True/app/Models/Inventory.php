@@ -15,7 +15,7 @@ class Inventory extends Model
         'quantity',
         'status',
         'acquired_date',
-        'guarantor_agency',
+        'granting_agency',
     ];
 
     public function instance()

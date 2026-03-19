@@ -14,7 +14,7 @@ export interface InventoryItem {
   id: number;
   name: string;
   category: string;
-  guarantor_agency: string;
+  granting_agency: string;
   location: string;
   value: number;
   quantity: number;

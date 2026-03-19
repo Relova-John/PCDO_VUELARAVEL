@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PSGCSeeder::class,
             UserRoleSeeder::class,
-            
+            CooperativeSeeder::class,
         ]);
     }
 }

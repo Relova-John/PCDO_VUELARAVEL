@@ -628,6 +628,11 @@
         width: 100%;
     }
 
+    .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 }
 
 /* ================= MOBILE TABLE → CARD ================= */

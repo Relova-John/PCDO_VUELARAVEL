@@ -216,7 +216,7 @@ function submit() {
                             </div>
                             <div>
                                 <label class="form-label">Guaranteeing Agency</label>
-                                <Input class="form-input" v-model="item.guarantor_agency" />
+                                <Input class="form-input" v-model="item.granting_agency" />
                             </div>
                             <div>
                                 <label class="form-label">Location</label>
