@@ -111,7 +111,7 @@ function getStatusOptions(quantity: number) {
     return options
 }
 
-function removeEquipment(id: number) {
+function removeItem(id: number) {
     const index = form.inventoryItem.findIndex(item => item.id === id)
     if (index !== -1) form.inventoryItem.splice(index, 1)
 }
@@ -201,8 +201,8 @@ function submit() {
                     </div>
 
                     <div v-for="(item, index) in getItemsByCategory(category.value)" :key="item.id"
-                        class="equipment-card">
-                        <button type="button" class="remove-x-btn" @click="removeEquipment(item.id)">✕</button>
+                        class="item-card">
+                        <button type="button" class="remove-x-btn" @click="removeItem(item.id)">✕</button>
                         <div class="form-grid">
                             <label class="form-label" style="grid-column: 1 / -1;">{{ category.label }} #{{ index + 1
                                 }}</label>

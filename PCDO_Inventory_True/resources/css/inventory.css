@@ -176,7 +176,7 @@ body {
     margin-top: 10px;
 }
 
-/* EQUIPMENT TITLE */
+/* ITEM TITLE */
 
 .section-title {
     font-size: 20px;
@@ -201,8 +201,8 @@ body {
     transform: scale(1.2);
 }
 
-/* EQUIPMENT ITEM CARD */
-.equipment-card {
+/* ITEM CARD */
+.item-card {
     background: white;
     border-radius: 10px;
     padding: 24px;
@@ -212,20 +212,20 @@ body {
     position: relative;
 }
 
-.equipment-divider {
+.item-divider {
     border: none;
     border-top: 2px solid #8c8c90a2;
     margin: 30px 0;
 }
 
-.equipment-title {
+.item-title {
     font-size: 20px;
     font-weight: 700;
     margin-bottom: 10px;
     text-align: center;
 }
 
-.equipment-unnamed {
+.item-unnamed {
     color: #777;
     font-weight: 500;
 }

@@ -35,7 +35,7 @@ class DashboardController extends Controller
 
         $reportingDate = ReportingDate::find($reportingDateId);
 
-        $cooperatives = Cooperative::select('id', 'name')->get();
+        $cooperatives = Cooperative::select('id', 'name', 'region_code', 'province_code', 'city_code', 'barangay_code')->get();
 
         $regions = Region::select('code', 'name')->orderBy('name')->get();
         $provinces = Province::select('code', 'name', 'region_code')->orderBy('name')->get();
@@ -219,6 +219,6 @@ class DashboardController extends Controller
             }
         });
 
-        return redirect()->route('admin.dashboard.show', $id);
+        return redirect()->route('admin.dashboard.showdetails', $id);
     }
 }

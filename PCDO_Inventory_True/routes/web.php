@@ -15,11 +15,28 @@ Route::inertia('/', 'auth/Login', [
 
 Route::get('/qr/{token}', [QRCodeController::class, 'resolve'])->name('qr.resolve');
 
-Route::get('/Form', [FormController::class, 'index'])->name('form');
-Route::post('/Form', [FormController::class, 'store'])->name('form.store');
+Route::get('/Form', function () {
+    $user = request()->user();
+
+    if (! $user) {
+        return redirect()->route('form.guest');
+    }
+
+    if ($user->role === 'officer') {
+        return redirect()->route('officer.create');
+    }
+
+    if (in_array($user->role, ['admin', 'superadmin'])) {
+        return redirect()->route('admin.create');
+    }
+
+    return redirect()->route('form.guest');
+})->name('form');
+
+Route::get('/guest/form', [FormController::class, 'index'])->name('form.guest');
+Route::post('/guest/form', [FormController::class, 'store'])->name('form.store');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-
     Route::get('/dashboard', function () {
         $user = request()->user();
 
@@ -41,9 +58,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return redirect()->route('admin.access-control.index');
         }
 
-        if ($user->role === 'officer') {
-            return redirect()->route('officer.access-control.index');
-        }
+        // if ($user->role === 'officer') {
+        //     return redirect()->route('officer.access-control.index');
+        // }
 
         return redirect()->route('home');
     })->name('access-control');
@@ -53,6 +70,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('admin.')
         ->group(function () {
             Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/create', [AdminDashboardController::class, 'create'])->name('create');
+            Route::post('/create', [AdminDashboardController::class, 'store'])->name('store');
             Route::get('/dashboard/{id}', [AdminDashboardController::class, 'showDetails'])->name('dashboard.showdetails');
             Route::post('/reporting-dates', [AdminDashboardController::class, 'updateReportingDates'])->name('reporting-dates.update');
             Route::get('/dashboard/{id}/edit', [AdminDashboardController::class, 'edit'])
@@ -85,6 +104,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->group(function () {
             Route::get('/dashboard', [OfficerDashboardController::class, 'index'])
                 ->name('dashboard');
+
+            Route::get('/create', [OfficerDashboardController::class, 'create'])->name('create');
+            Route::post('/create', [OfficerDashboardController::class, 'store'])->name('store');
 
             Route::get('/dashboard/{id}', [OfficerDashboardController::class, 'showDetails'])
                 ->name('dashboard.showdetails');

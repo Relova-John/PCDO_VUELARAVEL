@@ -751,7 +751,7 @@
     align-items: end;
 }
 
-.edit-inventory-wrapper .equipment-card {
+.edit-inventory-wrapper .item-card {
     background: white;
     border-radius: 10px;
     padding: 24px;

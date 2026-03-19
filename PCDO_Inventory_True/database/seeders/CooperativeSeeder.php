@@ -18,9 +18,9 @@ class CooperativeSeeder extends Seeder
                 'number' => '091234567' . $i,
 
                 // ⚠️ REQUIRED FIELDS — use valid PSGC codes from your DB
-                'region_code' => '040000000',     // example: Region IV-A
-                'province_code' => '043400000',   // example: Laguna
-                'city_code' => '043405000',       // example: Calamba (adjust if needed)
+                'region_code' => '1700000000',     // example: Region IV-A
+                'province_code' => '1705300000',   // example: Laguna
+                'city_code' => '603008000',       // example: Calamba (adjust if needed)
                 'barangay_code' => null,          // optional
 
                 'created_by' => null,

@@ -343,6 +343,6 @@ class DashboardController extends Controller
             }
         });
 
-        return redirect()->route('dashboard.show', $id);
+        return redirect()->route('officer.dashboard.showdetails', $id);
     }
 }

@@ -3,16 +3,29 @@
 <template>
     <div class="relative w-full" ref="root">
 
-        <input
-            v-bind="$attrs"
-            :id="id"
-            v-model="searchValue"
-            :placeholder="placeholder"
-            @focus="openLocal()"
-            @input="onInput"
-            :disabled="disabled"
-            class="select-input"
-        />
+        <div class="input-wrap">
+            <input
+                v-bind="$attrs"
+                :id="id"
+                v-model="searchValue"
+                :placeholder="placeholder"
+                @focus="openLocal()"
+                @input="onInput"
+                :disabled="disabled"
+                class="select-input"
+            />
+
+            <!-- CLEAR BUTTON -->
+            <button
+                v-if="!disabled && searchValue"
+                type="button"
+                class="clear-btn"
+                @click.stop="clearSelection"
+                aria-label="Clear selection"
+            >
+                ×
+            </button>
+        </div>
 
         <div
             v-if="open && filtered.length > 0"
@@ -35,7 +48,7 @@
 
 <style scoped>
 
-.select-search {
+.input-wrap {
   position: relative;
   width: 100%;
 }
@@ -45,6 +58,7 @@
   border: 1px solid #989696;
   border-radius: 6px;
   padding: 10px;
+  padding-right: 36px;
   font-size: 14px;
 }
 
@@ -78,8 +92,25 @@
   box-shadow: 0 0 0 2px rgba(103,58,183,0.15);
 }
 
-</style>
+.clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  color: #666;
+  padding: 0;
+}
 
+.clear-btn:hover {
+  color: #000;
+}
+
+</style>
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
@@ -96,27 +127,47 @@ const props = defineProps({
 })
 
 const emits = defineEmits(['update:modelValue', 'select', 'update:open', 'update:search'])
-const searchValue = ref(props.modelValue ?? '')
-const open = ref(props.open)
 
-watch(() => props.open, v => open.value = v)
+const searchValue = ref<string>(String(props.modelValue ?? ''))
+const open = ref(props.open)
+const root = ref<HTMLElement | null>(null)
+
+/**
+ * Store previous selected value (safe restore)
+ */
+const previousLabel = ref<string>('')
+const previousValue = ref<string | number | ''>('')
+
+watch(() => props.open, v => {
+	open.value = v
+})
+
 watch(
 	() => props.modelValue,
 	(val) => {
-		if (!val) {
+		if (val === '' || val === null || val === undefined) {
 			searchValue.value = ''
+			previousLabel.value = ''
+			previousValue.value = ''
 			return
 		}
+
 		const match = props.items.find(i => itemKey(i) === val)
-		searchValue.value = match ? itemLabel(match) : ''
+		const label = match ? itemLabel(match) : ''
+
+		searchValue.value = label
+		previousLabel.value = label
+		previousValue.value = val
 	},
 	{ immediate: true }
 )
+
 const filtered = computed(() => {
 	if (!searchValue.value) return props.items
-	const q = searchValue.value.toString().toLowerCase()
+
+	const q = searchValue.value.toLowerCase()
 	return props.items.filter(it => {
-		const text = itemLabel(it).toString().toLowerCase()
+		const text = itemLabel(it).toLowerCase()
 		return text.includes(q)
 	})
 })
@@ -132,17 +183,26 @@ function itemKey(it: any) {
 function selectItem(it: any) {
 	const label = itemLabel(it)
 	const id = itemKey(it)
+
 	emits('update:modelValue', id)
 	emits('select', { name: label, id })
+
 	searchValue.value = label
+	previousLabel.value = label
+	previousValue.value = id
+
 	open.value = false
 	emits('update:open', false)
 	emits('update:search', label)
 }
 
 function onInput() {
-	const q = searchValue.value.toString().toLowerCase()
-	const match = props.items.find(it => itemLabel(it).toString().toLowerCase() === q)
+	const q = searchValue.value.toLowerCase()
+
+	const match = props.items.find(
+		it => itemLabel(it).toLowerCase() === q
+	)
+
 	if (match) {
 		selectItem(match)
 	} else {
@@ -152,33 +212,52 @@ function onInput() {
 		emits('update:open', true)
 	}
 }
+
 function openLocal() {
 	if (!props.disabled) {
+		previousLabel.value = searchValue.value
+		previousValue.value = props.modelValue
+
 		searchValue.value = ''
 		open.value = true
 		emits('update:open', true)
 	}
 }
-function onOutside() {
+
+function restorePreviousIfNeeded() {
+	if (!searchValue.value) {
+		searchValue.value = previousLabel.value
+		emits('update:modelValue', previousValue.value)
+	}
+
 	open.value = false
 	emits('update:open', false)
 }
 
-const root = ref<HTMLElement | null>(null)
+function clearSelection() {
+	searchValue.value = ''
+	previousLabel.value = ''
+	previousValue.value = ''
+
+	emits('update:modelValue', '')
+	emits('update:search', '')
+	open.value = false
+	emits('update:open', false)
+}
 
 function handleClickOutside(event: MouseEvent) {
-    if (!root.value) return
-    if (!root.value.contains(event.target as Node)) {
-        open.value = false
-        emits('update:open', false)
-    }
+	if (!root.value) return
+
+	if (!root.value.contains(event.target as Node)) {
+		restorePreviousIfNeeded()
+	}
 }
 
 onMounted(() => {
-    document.addEventListener('mousedown', handleClickOutside)
+	document.addEventListener('mousedown', handleClickOutside)
 })
 
 onUnmounted(() => {
-    document.removeEventListener('mousedown', handleClickOutside)
+	document.removeEventListener('mousedown', handleClickOutside)
 })
 </script>
