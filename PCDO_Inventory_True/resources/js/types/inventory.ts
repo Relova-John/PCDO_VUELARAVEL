@@ -13,6 +13,7 @@ export interface CoopDetails {
 export interface InventoryItem {
 	id: number;
 	name: string;
+	name_search: string;
 	category: string;
 	granting_agency: string;
 	location: string;

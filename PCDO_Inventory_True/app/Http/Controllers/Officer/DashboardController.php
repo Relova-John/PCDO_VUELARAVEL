@@ -14,6 +14,10 @@ use App\Models\City;
 use App\Models\Barangay;
 use App\Models\Inventory;
 use App\Models\InventoryInstance;
+use App\Models\MoaFile;
+use Illuminate\Support\Facades\Storage;
+use App\Models\ItemPicturesFiles;
+use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
@@ -94,6 +98,11 @@ class DashboardController extends Controller
 
         $coopIds = $cooperatives->pluck('id');
 
+        $regions = Region::select('code', 'name')->orderBy('name')->get();
+        $provinces = Province::select('code', 'name', 'region_code')->orderBy('name')->get();
+        $cities = City::select('code', 'name', 'province_code')->orderBy('name')->get();
+        $barangays = Barangay::select('code', 'name', 'city_code')->orderBy('name')->get();
+
         $inventoryCounts = DB::table('inventory_instances')
             ->join('inventories', 'inventory_instances.id', '=', 'inventories.inventory_instance_id')
             ->where('inventory_instances.reporting_date_id', $reportingDateId)
@@ -114,6 +123,13 @@ class DashboardController extends Controller
             'selectedReportingDate' => (int) $reportingDateId,
             'locationScope' => $this->buildLocationScope($user),
             'locationName' => $this->buildLocationName($user),
+            'regions' => $regions,
+            'provinces' => $provinces,
+            'cities' => $cities,
+            'barangays' => $barangays,
+            'breadcrumbs' => [
+                ['title' => 'Cooperatives', 'href' => route('officer.dashboard')]
+            ]
         ]);
     }
 
@@ -142,6 +158,156 @@ class DashboardController extends Controller
             ->route('officer.dashboard')
             ->with('success', 'Access code activated successfully.');
     }
+
+    public function create()
+    {
+        $regions = Region::select('code', 'name')->orderBy('name')->get();
+        $provinces = Province::select('code', 'name', 'region_code')->orderBy('name')->get();
+        $cities = City::select('code', 'name', 'province_code')->orderBy('name')->get();
+        $barangays = Barangay::select('code', 'name', 'city_code')->orderBy('name')->get();
+
+        return inertia('officer/Form', [
+            'regions' => $regions,
+            'provinces' => $provinces,
+            'cities' => $cities,
+            'barangays' => $barangays,
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'region_code' => 'required|exists:regions,code',
+            'province_code' => 'required',
+            'city_code' => 'required',
+            'barangay_code' => 'required|exists:barangays,code',
+            'email' => 'required|email|max:255',
+            'number' => 'required|string|max:20',
+
+            'inventoryItem' => 'nullable|array',
+            'inventoryItem.*.category' => 'required|string|max:255',
+            'inventoryItem.*.name' => 'required|string|max:255',
+            'inventoryItem.*.granting_agency' => 'required|string|max:255',
+            'inventoryItem.*.location' => 'required|string|max:255',
+            'inventoryItem.*.value' => 'required|numeric',
+            'inventoryItem.*.quantity' => 'required|integer',
+            'inventoryItem.*.status' => 'nullable|integer',
+            'inventoryItem.*.acquired_date' => 'required|date',
+
+            'inventoryItem.*.item_picture' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'inventoryItem.*.moa_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ]);
+
+        $reportingDate = ReportingDate::orderByDesc('reporting_year')
+            ->orderByDesc('reporting_month')
+            ->first();
+
+        if (! $reportingDate) {
+            $reportingDate = ReportingDate::create([
+                'reporting_year' => now()->year,
+                'reporting_month' => now()->month,
+            ]);
+        }
+
+        DB::transaction(function () use ($validated, $request, $reportingDate) {
+            $coop = Cooperative::updateOrCreate(
+                ['name' => $validated['name']],
+                [
+                    'region_code' => $validated['region_code'],
+                    'province_code' => $validated['province_code'],
+                    'city_code' => $validated['city_code'],
+                    'barangay_code' => $validated['barangay_code'],
+                    'email' => $validated['email'] ?? null,
+                    'number' => $validated['number'] ?? null,
+                ]
+            );
+
+            $inventoryInstance = InventoryInstance::firstOrCreate([
+                'coop_id' => $coop->id,
+                'reporting_date_id' => $reportingDate->id,
+            ]);
+
+            if (! empty($validated['inventoryItem'])) {
+                foreach ($validated['inventoryItem'] as $index => $item) {
+                    $inventory = Inventory::updateOrCreate(
+                        [
+                            'inventory_instance_id' => $inventoryInstance->id,
+                            'category' => $item['category'],
+                            'name' => $item['name'],
+                        ],
+                        [
+                            'granting_agency' => $item['granting_agency'] ?? null,
+                            'location' => $item['location'] ?? null,
+                            'value' => $item['value'] ?? null,
+                            'quantity' => $item['quantity'] ?? null,
+                            'status' => $item['status'] ?? null,
+                            'acquired_date' => $item['acquired_date'] ?? null,
+                        ]
+                    );
+
+                    $date = now()->format('m-d-Y');
+                    $coopName = Str::slug($coop->name);
+                    $itemCategory = Str::slug($inventory->category);
+                    $itemName = Str::slug($inventory->name);
+
+                    if ($request->hasFile("inventoryItem.$index.item_picture")) {
+                        $oldItemPicture = ItemPicturesFiles::where('inventory_id', $inventory->id)->first();
+
+                        if ($oldItemPicture && $oldItemPicture->file_path) {
+                            Storage::disk('public')->delete($oldItemPicture->file_path);
+                            $oldItemPicture->delete();
+                        }
+
+                        $file = $request->file("inventoryItem.$index.item_picture");
+                        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                        $originalName = Str::slug($originalName);
+                        $extension = $file->getClientOriginalExtension();
+
+                        $fileName = "{$coopName}-{$inventory->id}-{$itemCategory}-{$itemName}-{$originalName}-{$date}.{$extension}";
+                        $path = $file->storeAs('item_pictures', $fileName, 'public');
+
+                        ItemPicturesFiles::updateOrCreate(
+                            ['inventory_id' => $inventory->id],
+                            [
+                                'file_name' => $fileName,
+                                'file_path' => $path,
+                                'file_type' => $file->getClientMimeType(),
+                            ]
+                        );
+                    }
+
+                    if ($request->hasFile("inventoryItem.$index.moa_file")) {
+                        $oldMoaFile = MoaFile::where('inventory_id', $inventory->id)->first();
+
+                        if ($oldMoaFile && $oldMoaFile->file_path) {
+                            Storage::disk('public')->delete($oldMoaFile->file_path);
+                            $oldMoaFile->delete();
+                        }
+
+                        $file = $request->file("inventoryItem.$index.moa_file");
+                        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                        $originalName = Str::slug($originalName);
+                        $extension = $file->getClientOriginalExtension();
+
+                        $fileName = "{$coopName}-{$inventory->id}-{$itemCategory}-{$itemName}-{$originalName}-{$date}.{$extension}";
+                        $path = $file->storeAs('moa_files', $fileName, 'public');
+
+                        MoaFile::updateOrCreate(
+                            ['inventory_id' => $inventory->id],
+                            [
+                                'file_name' => $fileName,
+                                'file_path' => $path,
+                                'file_type' => $file->getClientMimeType(),
+                            ]
+                        );
+                    }
+                }
+            }
+        });
+
+        return redirect()->route('officer.create')->with('success', 'Inventory saved successfully');
+    }
     public function showDetails(Request $request, $id)
     {
         $user = $request->user();
@@ -169,7 +335,10 @@ class DashboardController extends Controller
                 'barangay',
                 'instances' => function ($q) use ($reportingDateId) {
                     $q->where('reporting_date_id', $reportingDateId)
-                        ->with('inventories');
+                        ->with([
+                            'inventories.itemPictures',
+                            'inventories.moaFiles',
+                        ]);
                 }
             ]);
 
@@ -242,7 +411,8 @@ class DashboardController extends Controller
     public function edit($id)
     {
         $cooperative = Cooperative::with([
-            'instances.inventories',
+            'instances.inventories.itemPictures',
+            'instances.inventories.moaFiles',
         ])->findOrFail($id);
 
         $regions = Region::select('code', 'name')->orderBy('name')->get();
@@ -254,7 +424,11 @@ class DashboardController extends Controller
 
         if ($cooperative->instances->isNotEmpty()) {
             foreach ($cooperative->instances->first()->inventories as $inv) {
+                $itemPicture = $inv->itemPictures->first();
+                $moaFile = $inv->moaFiles->first();
+
                 $inventories[] = [
+                    'id' => $inv->id,
                     'category' => $inv->category,
                     'name' => $inv->name,
                     'granting_agency' => $inv->granting_agency,
@@ -263,11 +437,33 @@ class DashboardController extends Controller
                     'quantity' => $inv->quantity,
                     'status' => $inv->status,
                     'acquired_date' => $inv->acquired_date,
+
+                    'item_picture_meta' => $itemPicture ? [
+                        'id' => $itemPicture->id,
+                        'file_name' => $itemPicture->file_name,
+                        'file_path' => $itemPicture->file_path,
+                        'file_type' => $itemPicture->file_type,
+                    ] : null,
+
+                    'moa_file_meta' => $moaFile ? [
+                        'id' => $moaFile->id,
+                        'file_name' => $moaFile->file_name,
+                        'file_path' => $moaFile->file_path,
+                        'file_type' => $moaFile->file_type,
+                    ] : null,
+
+                    'item_picture' => null,
+                    'moa_file' => null,
+                    'name_search' => $inv->name,
                 ];
             }
         }
+
         $inventoryNames = DB::table('inventories')
-            ->select('id', 'name', 'category')
+            ->selectRaw('MIN(id) as id, MIN(name) as name, category')
+            ->groupBy('category', DB::raw('LOWER(TRIM(name))'))
+            ->orderBy('category')
+            ->orderBy('name')
             ->get();
 
         return inertia('officer/Edit', [
@@ -293,6 +489,7 @@ class DashboardController extends Controller
             'number' => 'required',
 
             'inventoryItem' => 'nullable|array',
+            'inventoryItem.*.id' => 'nullable|integer|exists:inventories,id',
             'inventoryItem.*.category' => 'required|string',
             'inventoryItem.*.name' => 'required|string',
             'inventoryItem.*.granting_agency' => 'required|string',
@@ -301,9 +498,12 @@ class DashboardController extends Controller
             'inventoryItem.*.quantity' => 'required|integer',
             'inventoryItem.*.status' => 'nullable|integer',
             'inventoryItem.*.acquired_date' => 'required|date',
+
+            'inventoryItem.*.item_picture' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'inventoryItem.*.moa_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
-        DB::transaction(function () use ($validated, $id) {
+        DB::transaction(function () use ($validated, $request, $id) {
             $coop = Cooperative::findOrFail($id);
 
             $coop->update([
@@ -316,7 +516,6 @@ class DashboardController extends Controller
                 'number' => $validated['number'],
             ]);
 
-            // FIX: Find the correct reporting date using year/month instead of created_at
             $reportingDate = ReportingDate::orderByDesc('reporting_year')
                 ->orderByDesc('reporting_month')
                 ->first();
@@ -326,23 +525,132 @@ class DashboardController extends Controller
                 'reporting_date_id' => $reportingDate ? $reportingDate->id : null,
             ]);
 
-            $instance->inventories()->delete();
+            $submittedIds = [];
 
-            foreach ($validated['inventoryItem'] as $item) {
-                Inventory::create([
-                    'inventory_instance_id' => $instance->id,
-                    'category' => $item['category'],
-                    'name' => $item['name'],
-                    'granting_agency' => $item['granting_agency'],
-                    'location' => $item['location'],
-                    'value' => $item['value'],
-                    'quantity' => $item['quantity'],
-                    'status' => $item['status'],
-                    'acquired_date' => $item['acquired_date'],
-                ]);
+            foreach ($validated['inventoryItem'] ?? [] as $index => $item) {
+                $inventory = null;
+
+                if (!empty($item['id'])) {
+                    $inventory = Inventory::where('inventory_instance_id', $instance->id)
+                        ->where('id', $item['id'])
+                        ->first();
+                }
+                $normalizedItemName = $this->normalizeItemName($item['name']);
+                if ($inventory) {
+                    $inventory->update([
+                        'category' => $item['category'],
+                        'name' => $normalizedItemName,
+                        'granting_agency' => $item['granting_agency'],
+                        'location' => $item['location'],
+                        'value' => $item['value'],
+                        'quantity' => $item['quantity'],
+                        'status' => $item['status'],
+                        'acquired_date' => $item['acquired_date'],
+                    ]);
+                } else {
+                    $inventory = Inventory::create([
+                        'inventory_instance_id' => $instance->id,
+                        'category' => $item['category'],
+                        'name' => $normalizedItemName,
+                        'granting_agency' => $item['granting_agency'],
+                        'location' => $item['location'],
+                        'value' => $item['value'],
+                        'quantity' => $item['quantity'],
+                        'status' => $item['status'],
+                        'acquired_date' => $item['acquired_date'],
+                    ]);
+                }
+
+                $submittedIds[] = $inventory->id;
+
+                $date = now()->format('m-d-Y');
+                $coopName = Str::slug($coop->name);
+                $itemCategory = Str::slug($inventory->category);
+                $itemName = Str::slug($inventory->name);
+
+                // Replace item picture if new file uploaded
+                if ($request->hasFile("inventoryItem.$index.item_picture")) {
+                    $oldItemPicture = ItemPicturesFiles::where('inventory_id', $inventory->id)->first();
+
+                    if ($oldItemPicture && $oldItemPicture->file_path) {
+                        Storage::disk('public')->delete($oldItemPicture->file_path);
+                        $oldItemPicture->delete();
+                    }
+
+                    $file = $request->file("inventoryItem.$index.item_picture");
+                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    $originalName = Str::slug($originalName);
+                    $extension = $file->getClientOriginalExtension();
+
+                    $fileName = "{$coopName}-{$inventory->id}-{$itemCategory}-{$itemName}-{$originalName}-{$date}.{$extension}";
+                    $path = $file->storeAs('item_pictures', $fileName, 'public');
+
+                    ItemPicturesFiles::updateOrCreate(
+                        ['inventory_id' => $inventory->id],
+                        [
+                            'file_name' => $fileName,
+                            'file_path' => $path,
+                            'file_type' => $file->getClientMimeType(),
+                        ]
+                    );
+                }
+
+                // Replace MOA file if new file uploaded
+                if ($request->hasFile("inventoryItem.$index.moa_file")) {
+                    $oldMoaFile = MoaFile::where('inventory_id', $inventory->id)->first();
+
+                    if ($oldMoaFile && $oldMoaFile->file_path) {
+                        Storage::disk('public')->delete($oldMoaFile->file_path);
+                        $oldMoaFile->delete();
+                    }
+
+                    $file = $request->file("inventoryItem.$index.moa_file");
+                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    $originalName = Str::slug($originalName);
+                    $extension = $file->getClientOriginalExtension();
+
+                    $fileName = "{$coopName}-{$inventory->id}-{$itemCategory}-{$itemName}-{$originalName}-{$date}.{$extension}";
+                    $path = $file->storeAs('moa_files', $fileName, 'public');
+
+                    MoaFile::updateOrCreate(
+                        ['inventory_id' => $inventory->id],
+                        [
+                            'file_name' => $fileName,
+                            'file_path' => $path,
+                            'file_type' => $file->getClientMimeType(),
+                        ]
+                    );
+                }
+            }
+
+            // delete inventories removed from form
+            $toDelete = $instance->inventories()->whereNotIn('id', $submittedIds)->get();
+
+            foreach ($toDelete as $inventory) {
+                $oldItemPicture = ItemPicturesFiles::where('inventory_id', $inventory->id)->first();
+                if ($oldItemPicture && $oldItemPicture->file_path) {
+                    Storage::disk('public')->delete($oldItemPicture->file_path);
+                    $oldItemPicture->delete();
+                }
+
+                $oldMoaFile = MoaFile::where('inventory_id', $inventory->id)->first();
+                if ($oldMoaFile && $oldMoaFile->file_path) {
+                    Storage::disk('public')->delete($oldMoaFile->file_path);
+                    $oldMoaFile->delete();
+                }
+
+                $inventory->delete();
             }
         });
 
         return redirect()->route('officer.dashboard.showdetails', $id);
+    }
+
+    private function normalizeItemName(string $name): string
+    {
+        $name = trim($name);
+        $name = preg_replace('/\s+/', ' ', $name);
+
+        return Str::title(Str::lower($name));
     }
 }

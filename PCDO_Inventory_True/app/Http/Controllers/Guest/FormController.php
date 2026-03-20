@@ -26,12 +26,19 @@ class FormController extends Controller
         $provinces = Province::select('code', 'name', 'region_code')->orderBy('name')->get();
         $cities = City::select('code', 'name', 'province_code')->orderBy('name')->get();
         $barangays = Barangay::select('code', 'name', 'city_code')->orderBy('name')->get();
+        $inventoryNames = DB::table('inventories')
+            ->selectRaw('MIN(id) as id, MIN(name) as name, category')
+            ->groupBy('category', DB::raw('LOWER(TRIM(name))'))
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
 
         return inertia('guest/Form', [
             'regions' => $regions,
             'provinces' => $provinces,
             'cities' => $cities,
             'barangays' => $barangays,
+            'inventoryNames' => $inventoryNames,
         ]);
     }
 
@@ -91,11 +98,12 @@ class FormController extends Controller
 
             if (! empty($validated['inventoryItem'])) {
                 foreach ($validated['inventoryItem'] as $index => $item) {
+                    $normalizedItemName = $this->normalizeItemName($item['name']);
                     $inventory = Inventory::updateOrCreate(
                         [
                             'inventory_instance_id' => $inventoryInstance->id,
                             'category' => $item['category'],
-                            'name' => $item['name'],
+                            'name' => $normalizedItemName
                         ],
                         [
                             'granting_agency' => $item['granting_agency'] ?? null,
@@ -168,5 +176,13 @@ class FormController extends Controller
         });
 
         return redirect()->route('guest.create')->with('success', 'Inventory saved successfully');
+    }
+
+    private function normalizeItemName(string $name): string
+    {
+        $name = trim($name);
+        $name = preg_replace('/\s+/', ' ', $name);
+
+        return Str::title(Str::lower($name));
     }
 }

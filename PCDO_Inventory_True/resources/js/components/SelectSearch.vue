@@ -2,20 +2,18 @@
 
 <template>
     <div class="relative w-full" ref="root">
-
         <div class="input-wrap">
             <input
                 v-bind="$attrs"
                 :id="id"
                 v-model="searchValue"
                 :placeholder="placeholder"
-                @focus="openLocal()"
+                @focus="openLocal"
                 @input="onInput"
                 :disabled="disabled"
                 class="select-input"
             />
 
-            <!-- CLEAR BUTTON -->
             <button
                 v-if="!disabled && searchValue"
                 type="button"
@@ -27,27 +25,22 @@
             </button>
         </div>
 
-        <div
-            v-if="open && filtered.length > 0"
-            class="select-dropdown"
-        >
+        <div v-if="open && filtered.length > 0" class="select-dropdown">
             <ul>
                 <li
                     v-for="item in filtered"
                     :key="itemKey(item)"
-                    @click="selectItem(item)"
+                    @mousedown.prevent="selectItem(item)"
                     class="select-option"
                 >
                     {{ itemLabel(item) }}
                 </li>
             </ul>
         </div>
-
     </div>
 </template>
 
 <style scoped>
-
 .input-wrap {
   position: relative;
   width: 100%;
@@ -109,155 +102,169 @@
 .clear-btn:hover {
   color: #000;
 }
-
 </style>
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
-	id: { type: String, default: '' },
-	items: { type: Array as () => any[], default: () => [] },
-	placeholder: { type: String, default: 'Search' },
-	disabled: { type: Boolean, default: false },
-	modelValue: { type: [String, Number], default: '' },
-	open: { type: Boolean, default: false },
-	itemLabelKey: { type: String, default: 'name' },
-	itemKeyProp: { type: String, default: 'id' },
+    id: { type: String, default: '' },
+    items: { type: Array as () => any[], default: () => [] },
+    placeholder: { type: String, default: 'Search' },
+    disabled: { type: Boolean, default: false },
+    modelValue: { type: [String, Number], default: '' },
+    open: { type: Boolean, default: false },
+    itemLabelKey: { type: String, default: 'name' },
+    itemKeyProp: { type: String, default: 'id' },
 })
 
-const emits = defineEmits(['update:modelValue', 'select', 'update:open', 'update:search'])
+const emits = defineEmits([
+    'update:modelValue',
+    'select',
+    'update:open',
+    'update:search',
+])
 
-const searchValue = ref<string>(String(props.modelValue ?? ''))
+const searchValue = ref<string>('')
 const open = ref(props.open)
 const root = ref<HTMLElement | null>(null)
-
-/**
- * Store previous selected value (safe restore)
- */
-const previousLabel = ref<string>('')
-const previousValue = ref<string | number | ''>('')
+const isTyping = ref(false)
 
 watch(() => props.open, v => {
-	open.value = v
-})
-
-watch(
-	() => props.modelValue,
-	(val) => {
-		if (val === '' || val === null || val === undefined) {
-			searchValue.value = ''
-			previousLabel.value = ''
-			previousValue.value = ''
-			return
-		}
-
-		const match = props.items.find(i => itemKey(i) === val)
-		const label = match ? itemLabel(match) : ''
-
-		searchValue.value = label
-		previousLabel.value = label
-		previousValue.value = val
-	},
-	{ immediate: true }
-)
-
-const filtered = computed(() => {
-	if (!searchValue.value) return props.items
-
-	const q = searchValue.value.toLowerCase()
-	return props.items.filter(it => {
-		const text = itemLabel(it).toLowerCase()
-		return text.includes(q)
-	})
+    open.value = v
 })
 
 function itemLabel(it: any) {
-	return typeof it === 'string' ? it : it[props.itemLabelKey]
+    return typeof it === 'string' ? it : it?.[props.itemLabelKey] ?? ''
 }
 
 function itemKey(it: any) {
-	return typeof it === 'string' ? it : it[props.itemKeyProp] ?? itemLabel(it)
+    return typeof it === 'string' ? it : it?.[props.itemKeyProp] ?? itemLabel(it)
 }
 
+/**
+ * Sync external selected value into input text,
+ * but do not overwrite while user is typing.
+ */
+watch(
+    () => [props.modelValue, props.items],
+    ([val]) => {
+        if (isTyping.value) return
+
+        if (val === '' || val === null || val === undefined) {
+            searchValue.value = ''
+            return
+        }
+
+        const match = props.items.find(i => String(itemKey(i)) === String(val))
+        searchValue.value = match ? String(itemLabel(match)) : String(val)
+    },
+    { immediate: true, deep: true }
+)
+
+const filtered = computed(() => {
+    if (!searchValue.value) return props.items
+
+    const q = searchValue.value.toLowerCase()
+    return props.items.filter(it =>
+        String(itemLabel(it)).toLowerCase().includes(q)
+    )
+})
+
 function selectItem(it: any) {
-	const label = itemLabel(it)
-	const id = itemKey(it)
+    const label = String(itemLabel(it))
+    const id = itemKey(it)
 
-	emits('update:modelValue', id)
-	emits('select', { name: label, id })
+    isTyping.value = false
+    searchValue.value = label
 
-	searchValue.value = label
-	previousLabel.value = label
-	previousValue.value = id
+    emits('update:modelValue', id)
+    emits('update:search', label)
+    emits('select', { name: label, id })
 
-	open.value = false
-	emits('update:open', false)
-	emits('update:search', label)
+    open.value = false
+    emits('update:open', false)
 }
 
 function onInput() {
-	const q = searchValue.value.toLowerCase()
+    isTyping.value = true
 
-	const match = props.items.find(
-		it => itemLabel(it).toLowerCase() === q
-	)
+    const raw = searchValue.value
+    const q = raw.toLowerCase()
 
-	if (match) {
-		selectItem(match)
-	} else {
-		emits('update:modelValue', '')
-		emits('update:search', searchValue.value)
-		open.value = true
-		emits('update:open', true)
-	}
+    const exactMatch = props.items.find(
+        it => String(itemLabel(it)).toLowerCase() === q
+    )
+
+    if (exactMatch) {
+        const label = String(itemLabel(exactMatch))
+        const id = itemKey(exactMatch)
+
+        emits('update:modelValue', id)
+        emits('update:search', label)
+    } else {
+        emits('update:modelValue', '')
+        emits('update:search', raw)
+    }
+
+    open.value = true
+    emits('update:open', true)
 }
 
 function openLocal() {
-	if (!props.disabled) {
-		previousLabel.value = searchValue.value
-		previousValue.value = props.modelValue
+    if (props.disabled) return
 
-		searchValue.value = ''
-		open.value = true
-		emits('update:open', true)
-	}
+    isTyping.value = true
+    open.value = true
+    emits('update:open', true)
+
+    /**
+     * Do NOT clear searchValue here.
+     * Clearing here is what causes the first typed key issue.
+     */
 }
 
 function restorePreviousIfNeeded() {
-	if (!searchValue.value) {
-		searchValue.value = previousLabel.value
-		emits('update:modelValue', previousValue.value)
-	}
+    isTyping.value = false
 
-	open.value = false
-	emits('update:open', false)
+    /**
+     * When leaving the field:
+     * - if there is an actual selected modelValue, show its label again
+     * - otherwise keep custom typed text as-is
+     */
+    if (props.modelValue !== '' && props.modelValue !== null && props.modelValue !== undefined) {
+        const match = props.items.find(i => String(itemKey(i)) === String(props.modelValue))
+        searchValue.value = match ? String(itemLabel(match)) : String(props.modelValue)
+    }
+
+    open.value = false
+    emits('update:open', false)
 }
 
 function clearSelection() {
-	searchValue.value = ''
-	previousLabel.value = ''
-	previousValue.value = ''
+    isTyping.value = false
+    searchValue.value = ''
 
-	emits('update:modelValue', '')
-	emits('update:search', '')
-	open.value = false
-	emits('update:open', false)
+    emits('update:modelValue', '')
+    emits('update:search', '')
+
+    open.value = false
+    emits('update:open', false)
 }
 
 function handleClickOutside(event: MouseEvent) {
-	if (!root.value) return
+    if (!root.value) return
 
-	if (!root.value.contains(event.target as Node)) {
-		restorePreviousIfNeeded()
-	}
+    if (!root.value.contains(event.target as Node)) {
+        restorePreviousIfNeeded()
+    }
 }
 
 onMounted(() => {
-	document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handleClickOutside)
 })
 
 onUnmounted(() => {
-	document.removeEventListener('mousedown', handleClickOutside)
+    document.removeEventListener('mousedown', handleClickOutside)
 })
 </script>

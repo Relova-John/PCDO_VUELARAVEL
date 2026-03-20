@@ -1,10 +1,12 @@
 <script setup lang="ts">
     import { ref, computed, reactive, nextTick } from 'vue'
     import { useForm, Head, usePage, router } from '@inertiajs/vue3'
+    import AppLayout from '@/layouts/AppLayout.vue'
     import SelectSearch from '@/components/SelectSearch.vue'
     import type { Regions, Provinces, Cities, Barangays } from '@/types/locations'
     import type { CoopDetails } from '@/types/inventory'
-    import { toast, Toaster } from 'vue-sonner'
+    import { BreadcrumbItem } from '@/types'
+    import { toast } from 'vue-sonner'
     import { useDrafts } from '@/composables/useDrafts'
     import Input from '@/components/ui/input/Input.vue'
 
@@ -12,6 +14,10 @@
     const page = usePage<{ flash: { success?: string } }>()
     const submitted = computed(() => !!page.props.flash?.success)
     const today = new Date().toISOString().split('T')[0]
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Inventory Form', href: '/officer/create' }
+    ]
 
     const props = defineProps<{
         regions: Regions[]
@@ -354,7 +360,7 @@
     }
 
     function retakeForm() {
-        router.visit(`/guest/form`, {
+        router.visit(`/office/create`, {
             preserveState: true,
             preserveScroll: true,
             onSuccess: () => {
@@ -616,7 +622,7 @@
             }
         }
 
-        form.post('/guest/form', {
+        form.post('/officer/create', {
             forceFormData: true,
             onSuccess: () => {
                 validationErrors.value = []
@@ -627,10 +633,11 @@
     }
 </script>
 
-    <template>
-        <Toaster />
+<template>
 
-        <Head title="Inventory Form" />
+    <Head title="Inventory Form" />
+
+    <AppLayout :breadcrumbs="breadcrumbs">
         <div class="inventory-wrapper">
             <div class="gov-header">
                 <div class="gov-header-inner">
@@ -1070,7 +1077,8 @@
                 </div>
             </div>
         </div>
-    </template>
+    </AppLayout>
+</template>
 
 <style scoped>
 .error-star {

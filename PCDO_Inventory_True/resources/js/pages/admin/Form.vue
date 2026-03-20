@@ -1,4 +1,4 @@
-    <script setup lang="ts">
+<script setup lang="ts">
     import { ref, computed, reactive, nextTick } from 'vue'
     import { useForm, Head, usePage, router } from '@inertiajs/vue3'
     import AppLayout from '@/layouts/AppLayout.vue'
@@ -25,6 +25,7 @@
         cities: Cities[]
         barangays: Barangays[]
         inventory?: CoopDetails | null
+        inventoryNames: { id: number, name: string, category: string }[]
     }>()
 
     const normalized = computed(() => ({
@@ -37,6 +38,7 @@
         number: props.inventory?.number ?? '',
         inventoryItem: (props.inventory?.inventoryItem ?? []).map(item => ({
             ...item,
+            name_search: item.name_search ?? item.name ?? '',
             granting_agency_type:
                 item.granting_agency && item.granting_agency.toLowerCase() === 'self'
                     ? 'self'
@@ -149,6 +151,19 @@
             openState[dep] = false
             clearFieldError(dep)
         })
+    }
+
+    const nameOpenState = reactive<Record<string | number, boolean>>({})
+
+    function getNameOptions(category: string) {
+        if (!props.inventoryNames) return []
+        return props.inventoryNames.filter(item => item.category === category)
+    }
+
+    function onItemNameInput(item: any, value: string | number | null | undefined) {
+        const text = String(value ?? '').trimStart()
+        item.name_search = text
+        item.name = text
     }
 
     function getStatusOptions(quantity: number) {
@@ -293,6 +308,7 @@
             id: Date.now() + Math.floor(Math.random() * 1000),
             category,
             name: '',
+            name_search: '',
             granting_agency_type: 'self',
             granting_agency_other: '',
             granting_agency: 'Self',
@@ -468,25 +484,29 @@
             markError('number', 'input[name="number"]')
         }
 
-        if (!form.region_code) {
-            errors.push('Region is required')
-            markError('region_code', '[name="region"]')
-        }
+        function validateLocationRequiredOrInvalid(
+            field: LocationFields,
+            label: string,
+            selector: string
+        ) {
+            const typed = searchState[field]?.trim()
+            const selected = String(form[field] ?? '').trim()
 
-        if (!form.province_code) {
-            errors.push('Province is required')
-            markError('province_code', '[name="province"]')
-        }
+            if (!selected) {
+                if (typed) {
+                    errors.push(`${label} does not exist`)
+                } else {
+                    errors.push(`${label} is required`)
+                }
 
-        if (!form.city_code) {
-            errors.push('City is required')
-            markError('city_code', '[name="city"]')
+                markError(field, selector)
+            }
         }
-
-        if (!form.barangay_code) {
-            errors.push('Barangay is required')
-            markError('barangay_code', '[name="barangay"]')
-        }
+        
+        validateLocationRequiredOrInvalid('region_code', 'Region', '[name="region"]')
+        validateLocationRequiredOrInvalid('province_code', 'Province', '[name="province"]')
+        validateLocationRequiredOrInvalid('city_code', 'City', '[name="city"]')
+        validateLocationRequiredOrInvalid('barangay_code', 'Barangay', '[name="barangay"]')
 
         if (!form.inventoryItem.length) {
             errors.push('At least one inventory item is required')
@@ -504,8 +524,9 @@
 
             if (!item.name.trim()) {
                 errors.push(`Item #${itemNo}: Name is required`)
-                markError(`item-${index}-name`, `${base} input[name="item_name"]`)
+                markError(`item-${index}-name`, `${base} [name="item_name"]`)
             }
+
             if (!item.granting_agency_type) {
                 errors.push(`Item #${itemNo}: Granting Agency selection is required`)
                 markError(`item-${index}-granting_agency_type`, `${base} select[name="item_granting_agency_type"]`)
@@ -520,18 +541,9 @@
 
             syncGrantingAgency(item)
 
-            if (item.granting_agency_type === 'self') {
-                if (!item.item_picture) {
-                    errors.push(`Item #${itemNo}: ${item.category} Picture is required`)
-                    markError(`item-${index}-item_picture`, `${base} input[name="item_picture"]`)
-                }
-            }
-
-            if (item.granting_agency_type === 'others') {
-                if (!item.item_picture) {
-                    errors.push(`Item #${itemNo}: ${item.category} Picture is required`)
-                    markError(`item-${index}-item_picture`, `${base} input[name="item_picture"]`)
-                }
+            if (!item.item_picture) {
+                errors.push(`Item #${itemNo}: ${item.category} Picture is required`)
+                markError(`item-${index}-item_picture`, `${base} input[name="item_picture"]`)
             }
 
             if (!item.location.trim()) {
@@ -622,7 +634,9 @@
 </script>
 
 <template>
+
     <Head title="Inventory Form" />
+
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="inventory-wrapper">
             <div class="gov-header">
@@ -699,8 +713,8 @@
                                 Cooperative Name
                                 <span v-if="fieldErrors.name" class="error-star">*</span>
                             </label>
-                            <Input class="form-input" :class="{ 'error-border': fieldErrors.name }"
-                                v-model="form.name" name="name" @input="clearFieldError('name')" />
+                            <Input class="form-input" :class="{ 'error-border': fieldErrors.name }" v-model="form.name"
+                                name="name" @input="clearFieldError('name')" />
                         </div>
 
                         <div>
@@ -822,14 +836,17 @@
                                         <div>
                                             <label class="form-label">
                                                 Category
-                                                <span
-                                                    v-if="fieldErrors[`item-${getItemIndexById(item.id)}-category`]"
+                                                <span v-if="fieldErrors[`item-${getItemIndexById(item.id)}-category`]"
                                                     class="error-star">*</span>
                                             </label>
                                             <select v-model="item.category" class="form-select"
                                                 :class="{ 'error-border': fieldErrors[`item-${getItemIndexById(item.id)}-category`] }"
-                                                name="category"
-                                                @change="clearFieldError(`item-${getItemIndexById(item.id)}-category`)">
+                                                name="category" @change="() => {
+                                                    item.name = ''
+                                                    item.name_search = ''
+                                                    clearFieldError(`item-${getItemIndexById(item.id)}-category`)
+                                                    clearFieldError(`item-${getItemIndexById(item.id)}-name`)
+                                                }">
                                                 <option value="" disabled>Select Category</option>
                                                 <option v-for="option in categoryOptions" :key="option.value"
                                                     :value="option.value">
@@ -844,10 +861,25 @@
                                                 <span v-if="fieldErrors[`item-${getItemIndexById(item.id)}-name`]"
                                                     class="error-star">*</span>
                                             </label>
-                                            <Input class="form-input"
-                                                :class="{ 'error-border': fieldErrors[`item-${getItemIndexById(item.id)}-name`] }"
-                                                v-model="item.name" name="item_name"
-                                                @input="clearFieldError(`item-${getItemIndexById(item.id)}-name`)" />
+
+                                            <div :class="{ 'error-border': fieldErrors[`item-${getItemIndexById(item.id)}-name`] }"
+                                                @click="clearFieldError(`item-${getItemIndexById(item.id)}-name`)">
+                                                <SelectSearch :items="getNameOptions(item.category)" itemLabelKey="name"
+                                                    itemKeyProp="name" :search="item.name_search"
+                                                    :modelValue="item.name" v-model:open="nameOpenState[item.id]"
+                                                    @update:search="val => {
+                                                        onItemNameInput(item, val)
+                                                        clearFieldError(`item-${getItemIndexById(item.id)}-name`)
+                                                    }" @update:modelValue="val => {
+                                                        onItemNameInput(item, val)
+                                                        clearFieldError(`item-${getItemIndexById(item.id)}-name`)
+                                                    }" @select="val => {
+                                                        const picked = String(val?.name ?? '').trim()
+                                                        item.name = picked
+                                                        item.name_search = picked
+                                                        clearFieldError(`item-${getItemIndexById(item.id)}-name`)
+                                                    }" name="item_name" />
+                                            </div>
                                         </div>
 
                                         <div>
@@ -875,8 +907,7 @@
                                             </label>
                                             <Input class="form-input"
                                                 :class="{ 'error-border': fieldErrors[`item-${getItemIndexById(item.id)}-granting_agency_other`] }"
-                                                v-model="item.granting_agency_other"
-                                                name="item_granting_agency_other"
+                                                v-model="item.granting_agency_other" name="item_granting_agency_other"
                                                 @input="onGrantingAgencyOtherInput(item); clearFieldError(`item-${getItemIndexById(item.id)}-granting_agency_other`)" />
                                         </div>
 
@@ -946,8 +977,7 @@
                                         <div>
                                             <label class="form-label">
                                                 Location
-                                                <span
-                                                    v-if="fieldErrors[`item-${getItemIndexById(item.id)}-location`]"
+                                                <span v-if="fieldErrors[`item-${getItemIndexById(item.id)}-location`]"
                                                     class="error-star">*</span>
                                             </label>
                                             <Input class="form-input"
@@ -972,8 +1002,7 @@
                                         <div>
                                             <label class="form-label">
                                                 Quantity
-                                                <span
-                                                    v-if="fieldErrors[`item-${getItemIndexById(item.id)}-quantity`]"
+                                                <span v-if="fieldErrors[`item-${getItemIndexById(item.id)}-quantity`]"
                                                     class="error-star">*</span>
                                             </label>
                                             <Input class="form-input"
