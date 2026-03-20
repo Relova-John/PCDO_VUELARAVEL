@@ -12,7 +12,11 @@ use App\Models\InventoryInstance;
 use App\Models\ReportingDate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
+use App\Models\ItemPicturesFiles;
+use App\Models\MoaFile;
+use Illuminate\Support\Str;
 
 class FormController extends Controller
 {
@@ -28,9 +32,6 @@ class FormController extends Controller
             'provinces' => $provinces,
             'cities' => $cities,
             'barangays' => $barangays,
-            'breadcrumbs' => [
-                ['title' => 'Inventory', 'href' => route('form')],
-            ],
         ]);
     }
 
@@ -54,24 +55,25 @@ class FormController extends Controller
             'inventoryItem.*.quantity' => 'required|integer',
             'inventoryItem.*.status' => 'nullable|integer',
             'inventoryItem.*.acquired_date' => 'required|date',
+
+            'inventoryItem.*.item_picture' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'inventoryItem.*.moa_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
         $reportingDate = ReportingDate::orderByDesc('reporting_year')
             ->orderByDesc('reporting_month')
             ->first();
 
-        if (!$reportingDate) {
+        if (! $reportingDate) {
             $reportingDate = ReportingDate::create([
                 'reporting_year' => now()->year,
                 'reporting_month' => now()->month,
             ]);
         }
 
-        DB::transaction(function () use ($validated, $reportingDate) {
+        DB::transaction(function () use ($validated, $request, $reportingDate) {
             $coop = Cooperative::updateOrCreate(
-                [
-                    'name' => $validated['name'],
-                ],
+                ['name' => $validated['name']],
                 [
                     'region_code' => $validated['region_code'],
                     'province_code' => $validated['province_code'],
@@ -82,32 +84,89 @@ class FormController extends Controller
                 ]
             );
 
-            $inventoryInstance = InventoryInstance::firstOrCreate(
-                [
-                    'coop_id' => $coop->id,
-                    'reporting_date_id' => $reportingDate->id
-                ]
-            );
+            $inventoryInstance = InventoryInstance::firstOrCreate([
+                'coop_id' => $coop->id,
+                'reporting_date_id' => $reportingDate->id,
+            ]);
 
-            $inventoryInstance->inventories()->delete();
+            if (! empty($validated['inventoryItem'])) {
+                foreach ($validated['inventoryItem'] as $index => $item) {
+                    $inventory = Inventory::updateOrCreate(
+                        [
+                            'inventory_instance_id' => $inventoryInstance->id,
+                            'category' => $item['category'],
+                            'name' => $item['name'],
+                        ],
+                        [
+                            'granting_agency' => $item['granting_agency'] ?? null,
+                            'location' => $item['location'] ?? null,
+                            'value' => $item['value'] ?? null,
+                            'quantity' => $item['quantity'] ?? null,
+                            'status' => $item['status'] ?? null,
+                            'acquired_date' => $item['acquired_date'] ?? null,
+                        ]
+                    );
 
-            if (!empty($validated['inventoryItem'])) {
-                foreach ($validated['inventoryItem'] as $item) {
-                    Inventory::create([
-                        'inventory_instance_id' => $inventoryInstance->id,
-                        'category' => $item['category'] ?? null,
-                        'name' => $item['name'] ?? null,
-                        'granting_agency' => $item['granting_agency'] ?? null,
-                        'location' => $item['location'] ?? null,
-                        'value' => $item['value'] ?? null,
-                        'quantity' => $item['quantity'] ?? null,
-                        'status' => $item['status'] ?? null,
-                        'acquired_date' => $item['acquired_date'] ?? null,
-                    ]);
+                    $date = now()->format('m-d-Y');
+                    $coopName = Str::slug($coop->name);
+                    $itemCategory = Str::slug($inventory->category);
+                    $itemName = Str::slug($inventory->name);
+
+                    if ($request->hasFile("inventoryItem.$index.item_picture")) {
+                        $oldItemPicture = ItemPicturesFiles::where('inventory_id', $inventory->id)->first();
+
+                        if ($oldItemPicture && $oldItemPicture->file_path) {
+                            Storage::disk('public')->delete($oldItemPicture->file_path);
+                            $oldItemPicture->delete();
+                        }
+
+                        $file = $request->file("inventoryItem.$index.item_picture");
+                        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                        $originalName = Str::slug($originalName);
+                        $extension = $file->getClientOriginalExtension();
+
+                        $fileName = "{$coopName}-{$inventory->id}-{$itemCategory}-{$itemName}-{$originalName}-{$date}.{$extension}";
+                        $path = $file->storeAs('item_pictures', $fileName, 'public');
+
+                        ItemPicturesFiles::updateOrCreate(
+                            ['inventory_id' => $inventory->id],
+                            [
+                                'file_name' => $fileName,
+                                'file_path' => $path,
+                                'file_type' => $file->getClientMimeType(),
+                            ]
+                        );
+                    }
+
+                    if ($request->hasFile("inventoryItem.$index.moa_file")) {
+                        $oldMoaFile = MoaFile::where('inventory_id', $inventory->id)->first();
+
+                        if ($oldMoaFile && $oldMoaFile->file_path) {
+                            Storage::disk('public')->delete($oldMoaFile->file_path);
+                            $oldMoaFile->delete();
+                        }
+
+                        $file = $request->file("inventoryItem.$index.moa_file");
+                        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                        $originalName = Str::slug($originalName);
+                        $extension = $file->getClientOriginalExtension();
+
+                        $fileName = "{$coopName}-{$inventory->id}-{$itemCategory}-{$itemName}-{$originalName}-{$date}.{$extension}";
+                        $path = $file->storeAs('moa_files', $fileName, 'public');
+
+                        MoaFile::updateOrCreate(
+                            ['inventory_id' => $inventory->id],
+                            [
+                                'file_name' => $fileName,
+                                'file_path' => $path,
+                                'file_type' => $file->getClientMimeType(),
+                            ]
+                        );
+                    }
                 }
             }
         });
 
-        return redirect()->route('form')->with('success', 'Inventory saved successfully');
+        return redirect()->route('guest.create')->with('success', 'Inventory saved successfully');
     }
 }

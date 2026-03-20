@@ -22,4 +22,14 @@ class Inventory extends Model
     {
         return $this->belongsTo(InventoryInstance::class, 'inventory_instance_id');
     }
+
+    public function itemPictures()
+    {
+        return $this->hasMany(ItemPicturesFiles::class, 'inventory_id');
+    }
+
+    public function moaFiles()
+    {
+        return $this->hasMany(MoaFile::class, 'inventory_id');
+    }
 }

@@ -15,11 +15,11 @@ Route::inertia('/', 'auth/Login', [
 
 Route::get('/qr/{token}', [QRCodeController::class, 'resolve'])->name('qr.resolve');
 
-Route::get('/Form', function () {
+Route::get('/form', function () {
     $user = request()->user();
 
     if (! $user) {
-        return redirect()->route('form.guest');
+        return redirect()->route('guest.create');
     }
 
     if ($user->role === 'officer') {
@@ -30,11 +30,13 @@ Route::get('/Form', function () {
         return redirect()->route('admin.create');
     }
 
-    return redirect()->route('form.guest');
+    return redirect()->route('guest.create');
 })->name('form');
 
-Route::get('/guest/form', [FormController::class, 'index'])->name('form.guest');
-Route::post('/guest/form', [FormController::class, 'store'])->name('form.store');
+Route::middleware('guest')->name('guest.')->group(function () {
+    Route::get('/guest/form', [FormController::class, 'index'])->name('create');
+    Route::post('/guest/form', [FormController::class, 'store'])->name('store');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
@@ -58,10 +60,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return redirect()->route('admin.access-control.index');
         }
 
-        // if ($user->role === 'officer') {
-        //     return redirect()->route('officer.access-control.index');
-        // }
-
         return redirect()->route('home');
     })->name('access-control');
 
@@ -74,50 +72,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/create', [AdminDashboardController::class, 'store'])->name('store');
             Route::get('/dashboard/{id}', [AdminDashboardController::class, 'showDetails'])->name('dashboard.showdetails');
             Route::post('/reporting-dates', [AdminDashboardController::class, 'updateReportingDates'])->name('reporting-dates.update');
-            Route::get('/dashboard/{id}/edit', [AdminDashboardController::class, 'edit'])
-                ->name('dashboard.edit');
-            Route::put('/dashboard/{id}', [AdminDashboardController::class, 'update'])
-                ->name('dashboard.update');
+            Route::get('/dashboard/{id}/edit', [AdminDashboardController::class, 'edit'])->name('dashboard.edit');
+            Route::put('/dashboard/{id}', [AdminDashboardController::class, 'update'])->name('dashboard.update');
 
-            Route::get('/access-control', [AdminAccessControlController::class, 'index'])
-                ->name('access-control.index');
-
-            Route::post('/access-control', [AdminAccessControlController::class, 'store'])
-                ->name('access-control.store');
-
-            Route::patch('/access-control/{accessControl}/close', [AdminAccessControlController::class, 'close'])
-                ->name('access-control.close');
-
-            Route::patch('/access-control/{accessControl}/reopen', [AdminAccessControlController::class, 'reopen'])
-                ->name('access-control.reopen');
-
-            Route::get('/access-control/{accessControl}/qr', [AdminAccessControlController::class, 'downloadQr'])
-                ->name('access-control.qr');
-
-            Route::get('/access-control/static-form-qr', [AdminAccessControlController::class, 'downloadStaticFormQr'])
-                ->name('access-control.static-form-qr');
+            Route::get('/access-control', [AdminAccessControlController::class, 'index'])->name('access-control.index');
+            Route::post('/access-control', [AdminAccessControlController::class, 'store'])->name('access-control.store');
+            Route::patch('/access-control/{accessControl}/close', [AdminAccessControlController::class, 'close'])->name('access-control.close');
+            Route::patch('/access-control/{accessControl}/reopen', [AdminAccessControlController::class, 'reopen'])->name('access-control.reopen');
+            Route::get('/access-control/{accessControl}/qr', [AdminAccessControlController::class, 'downloadQr'])->name('access-control.qr');
+            Route::get('/access-control/static-form-qr', [AdminAccessControlController::class, 'downloadStaticFormQr'])->name('access-control.static-form-qr');
         });
 
     Route::middleware('role:officer')
         ->prefix('officer')
         ->name('officer.')
         ->group(function () {
-            Route::get('/dashboard', [OfficerDashboardController::class, 'index'])
-                ->name('dashboard');
-
+            Route::get('/dashboard', [OfficerDashboardController::class, 'index'])->name('dashboard');
             Route::get('/create', [OfficerDashboardController::class, 'create'])->name('create');
             Route::post('/create', [OfficerDashboardController::class, 'store'])->name('store');
-
-            Route::get('/dashboard/{id}', [OfficerDashboardController::class, 'showDetails'])
-                ->name('dashboard.showdetails');
-
-            Route::get('/dashboard/{id}/edit', [OfficerDashboardController::class, 'edit'])
-                ->name('dashboard.edit');
-            Route::put('/dashboard/{id}', [OfficerDashboardController::class, 'update'])
-                ->name('dashboard.update');
-
-            Route::post('/dashboard/access-control/activate', [OfficerDashboardController::class, 'activate'])
-                ->name('dashboard.access-control.activate');
+            Route::get('/dashboard/{id}', [OfficerDashboardController::class, 'showDetails'])->name('dashboard.showdetails');
+            Route::get('/dashboard/{id}/edit', [OfficerDashboardController::class, 'edit'])->name('dashboard.edit');
+            Route::put('/dashboard/{id}', [OfficerDashboardController::class, 'update'])->name('dashboard.update');
+            Route::post('/dashboard/access-control/activate', [OfficerDashboardController::class, 'activate'])->name('dashboard.access-control.activate');
         });
 });
 

@@ -244,7 +244,7 @@
     }
 
     function goToCreatePage() {
-        router.visit('/admin/cooperatives/create')
+        router.visit('/admin/create')
     }
 
     watch(search, () => {

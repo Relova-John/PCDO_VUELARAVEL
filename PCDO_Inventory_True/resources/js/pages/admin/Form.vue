@@ -1,10 +1,12 @@
     <script setup lang="ts">
     import { ref, computed, reactive, nextTick } from 'vue'
     import { useForm, Head, usePage, router } from '@inertiajs/vue3'
+    import AppLayout from '@/layouts/AppLayout.vue'
     import SelectSearch from '@/components/SelectSearch.vue'
     import type { Regions, Provinces, Cities, Barangays } from '@/types/locations'
     import type { CoopDetails } from '@/types/inventory'
-    import { toast, Toaster } from 'vue-sonner'
+    import { BreadcrumbItem } from '@/types'
+    import { toast } from 'vue-sonner'
     import { useDrafts } from '@/composables/useDrafts'
     import Input from '@/components/ui/input/Input.vue'
 
@@ -12,6 +14,10 @@
     const page = usePage<{ flash: { success?: string } }>()
     const submitted = computed(() => !!page.props.flash?.success)
     const today = new Date().toISOString().split('T')[0]
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        { title: 'Inventory Form', href: '/admin/create' }
+    ]
 
     const props = defineProps<{
         regions: Regions[]
@@ -338,7 +344,7 @@
     }
 
     function retakeForm() {
-        router.visit(`/guest/form`, {
+        router.visit(`/admin/create`, {
             preserveState: true,
             preserveScroll: true,
             onSuccess: () => {
@@ -604,7 +610,7 @@
             }
         }
 
-        form.post('/guest/form', {
+        form.post('/admin/create', {
             forceFormData: true,
             onSuccess: () => {
                 validationErrors.value = []
@@ -615,10 +621,9 @@
     }
 </script>
 
-    <template>
-        <Toaster />
-
-        <Head title="Inventory Form" />
+<template>
+    <Head title="Inventory Form" />
+    <AppLayout :breadcrumbs="breadcrumbs">
         <div class="inventory-wrapper">
             <div class="gov-header">
                 <div class="gov-header-inner">
@@ -694,8 +699,8 @@
                                 Cooperative Name
                                 <span v-if="fieldErrors.name" class="error-star">*</span>
                             </label>
-                            <Input class="form-input" :class="{ 'error-border': fieldErrors.name }" v-model="form.name"
-                                name="name" @input="clearFieldError('name')" />
+                            <Input class="form-input" :class="{ 'error-border': fieldErrors.name }"
+                                v-model="form.name" name="name" @input="clearFieldError('name')" />
                         </div>
 
                         <div>
@@ -817,7 +822,8 @@
                                         <div>
                                             <label class="form-label">
                                                 Category
-                                                <span v-if="fieldErrors[`item-${getItemIndexById(item.id)}-category`]"
+                                                <span
+                                                    v-if="fieldErrors[`item-${getItemIndexById(item.id)}-category`]"
                                                     class="error-star">*</span>
                                             </label>
                                             <select v-model="item.category" class="form-select"
@@ -869,7 +875,8 @@
                                             </label>
                                             <Input class="form-input"
                                                 :class="{ 'error-border': fieldErrors[`item-${getItemIndexById(item.id)}-granting_agency_other`] }"
-                                                v-model="item.granting_agency_other" name="item_granting_agency_other"
+                                                v-model="item.granting_agency_other"
+                                                name="item_granting_agency_other"
                                                 @input="onGrantingAgencyOtherInput(item); clearFieldError(`item-${getItemIndexById(item.id)}-granting_agency_other`)" />
                                         </div>
 
@@ -939,7 +946,8 @@
                                         <div>
                                             <label class="form-label">
                                                 Location
-                                                <span v-if="fieldErrors[`item-${getItemIndexById(item.id)}-location`]"
+                                                <span
+                                                    v-if="fieldErrors[`item-${getItemIndexById(item.id)}-location`]"
                                                     class="error-star">*</span>
                                             </label>
                                             <Input class="form-input"
@@ -964,7 +972,8 @@
                                         <div>
                                             <label class="form-label">
                                                 Quantity
-                                                <span v-if="fieldErrors[`item-${getItemIndexById(item.id)}-quantity`]"
+                                                <span
+                                                    v-if="fieldErrors[`item-${getItemIndexById(item.id)}-quantity`]"
                                                     class="error-star">*</span>
                                             </label>
                                             <Input class="form-input"
@@ -1039,7 +1048,8 @@
                 </div>
             </div>
         </div>
-    </template>
+    </AppLayout>
+</template>
 
 <style scoped>
 .error-star {

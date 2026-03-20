@@ -2,18 +2,56 @@ import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import debounce from 'lodash/debounce'
 
 export function useDrafts(form: any, key: string) {
-
     const STORAGE_KEY = `drafts_${key}`
     const drafts = ref<any[]>([])
     const currentDraftId = ref<string | null>(null)
+
+    function serializeDraftData(data: any) {
+        return {
+            ...data,
+            inventoryItem: (data.inventoryItem || []).map((item: any) => ({
+                ...item,
+
+                item_picture_meta: item.item_picture
+                    ? {
+                          name: item.item_picture.name,
+                          size: item.item_picture.size,
+                          type: item.item_picture.type
+                      }
+                    : null,
+
+                moa_file_meta: item.moa_file
+                    ? {
+                          name: item.moa_file.name,
+                          size: item.moa_file.size,
+                          type: item.moa_file.type
+                      }
+                    : null,
+
+                item_picture: null,
+                moa_file: null
+            }))
+        }
+    }
+
+    function deserializeDraftData(data: any) {
+        return {
+            ...data,
+            inventoryItem: (data.inventoryItem || []).map((item: any) => ({
+                ...item,
+                item_picture: null,
+                moa_file: null
+            }))
+        }
+    }
 
     function loadDrafts() {
         drafts.value = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
     }
 
     function saveDraftNow() {
-
-        const data = JSON.parse(JSON.stringify(form.data()))
+        const raw = form.data()
+        const data = serializeDraftData(raw)
 
         if (!data.name && (!data.inventoryItem || data.inventoryItem.length === 0)) return
 
@@ -55,20 +93,20 @@ export function useDrafts(form: any, key: string) {
     )
 
     function useDraft(draft: any) {
-
         currentDraftId.value = draft.id
+
+        const restored = deserializeDraftData(JSON.parse(JSON.stringify(draft.data)))
 
         if (typeof form.reset === 'function') form.reset()
 
         if (typeof form.setData === 'function') {
-            form.setData(JSON.parse(JSON.stringify(draft.data)))
+            form.setData(restored)
         } else {
-            Object.assign(form, JSON.parse(JSON.stringify(draft.data)))
+            Object.assign(form, restored)
         }
     }
 
     function deleteDraft(id: string) {
-
         const allDrafts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
         const updated = allDrafts.filter((d: any) => d.id !== id)
 

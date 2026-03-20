@@ -1,25 +1,37 @@
 export interface CoopDetails {
-  id: number;
-  name: string;
-  region_code: string;
-  province_code: string;
-  city_code: string;
-  barangay_code: string;
-  email: string;
-  number: string;
-  inventoryItem: InventoryItem[];
+	id: number;
+	name: string;
+	region_code: string;
+	province_code: string;
+	city_code: string;
+	barangay_code: string;
+	email: string;
+	number: string;
+	inventoryItem: InventoryItem[];
 }
 
 export interface InventoryItem {
-  id: number;
-  name: string;
-  category: string;
-  granting_agency: string;
-  location: string;
-  value: number;
-  quantity: number;
-  status: number | null;
-  acquired_date: string;
+	id: number;
+	name: string;
+	category: string;
+	granting_agency: string;
+	location: string;
+	value: number;
+	quantity: number;
+	status: number | null;
+	acquired_date: string;
+
+	item_picture?: File | null;
+	moa_file?: File | null;
+
+	item_picture_meta: DraftFileMeta | null
+	moa_file_meta: DraftFileMeta | null
+}
+
+export interface DraftFileMeta {
+	name: string
+	size: number
+	type: string
 }
 
 export interface Regions { code: string; name: string }
