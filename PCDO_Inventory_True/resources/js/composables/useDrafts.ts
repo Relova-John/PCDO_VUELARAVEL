@@ -18,7 +18,7 @@ export function useDrafts(form: any, key: string) {
                           size: item.item_picture.size,
                           type: item.item_picture.type
                       }
-                    : null,
+                    : item.item_picture_meta ?? null,
 
                 moa_file_meta: item.moa_file
                     ? {
@@ -26,7 +26,7 @@ export function useDrafts(form: any, key: string) {
                           size: item.moa_file.size,
                           type: item.moa_file.type
                       }
-                    : null,
+                    : item.moa_file_meta ?? null,
 
                 item_picture: null,
                 moa_file: null
@@ -39,6 +39,8 @@ export function useDrafts(form: any, key: string) {
             ...data,
             inventoryItem: (data.inventoryItem || []).map((item: any) => ({
                 ...item,
+                item_picture_meta: item.item_picture_meta ?? null,
+                moa_file_meta: item.moa_file_meta ?? null,
                 item_picture: null,
                 moa_file: null
             }))

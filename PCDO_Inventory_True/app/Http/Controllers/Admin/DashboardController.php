@@ -85,12 +85,24 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
 
+        $grantingAgencyNames = DB::table('inventories') // self should be constant option, not from db
+            ->selectRaw('MIN(id) as id, MIN(granting_agency) as name')
+            ->whereNotNull('granting_agency')
+            ->whereRaw('TRIM(granting_agency) != ""')
+            ->whereRaw('LOWER(TRIM(granting_agency)) != "self"')
+            ->groupBy(DB::raw('LOWER(TRIM(granting_agency))'))
+            ->orderBy('name')
+            ->get();
+
+        $grantingAgencyNames->prepend((object) ['id' => null, 'name' => 'Self']);
+
         return inertia('admin/Form', [
             'regions' => $regions,
             'provinces' => $provinces,
             'cities' => $cities,
             'barangays' => $barangays,
             'inventoryNames' => $inventoryNames,
+            'grantingAgencyNames' => $grantingAgencyNames,
         ]);
     }
 
@@ -115,7 +127,7 @@ class DashboardController extends Controller
             'inventoryItem.*.status' => 'nullable|integer',
             'inventoryItem.*.acquired_date' => 'required|date',
 
-            'inventoryItem.*.item_picture' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'inventoryItem.*.item_picture' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'inventoryItem.*.moa_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
@@ -338,6 +350,17 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
 
+        $grantingAgencyNames = DB::table('inventories') // self should be constant option, not from db
+            ->selectRaw('MIN(id) as id, MIN(granting_agency) as name')
+            ->whereNotNull('granting_agency')
+            ->whereRaw('TRIM(granting_agency) != ""')
+            ->whereRaw('LOWER(TRIM(granting_agency)) != "self"')
+            ->groupBy(DB::raw('LOWER(TRIM(granting_agency))'))
+            ->orderBy('name')
+            ->get();
+
+        $grantingAgencyNames->prepend((object) ['id' => null, 'name' => 'Self']);
+        
         return inertia('admin/Edit', [
             'cooperative' => $cooperative,
             'inventoryItem' => $inventories,
@@ -346,6 +369,12 @@ class DashboardController extends Controller
             'inventoryNames' => $inventoryNames,
             'cities' => $cities,
             'barangays' => $barangays,
+            'grantingAgencyNames' => $grantingAgencyNames,
+            'breadcrumbs' => [
+                ['title' => 'Dashboard', 'href' => route('admin.dashboard')],
+                ['title' => 'Cooperative Details', 'href' => route('admin.dashboard.showdetails', $id)],
+                ['title' => 'Edit', 'href' => route('admin.dashboard.edit', $id)],
+            ]
         ]);
     }
 

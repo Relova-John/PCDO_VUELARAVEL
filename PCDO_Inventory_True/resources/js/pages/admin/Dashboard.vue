@@ -231,6 +231,31 @@
     const isFirstPage = computed(() => currentPage.value === 1)
     const isLastPage = computed(() => currentPage.value === totalPages.value)
 
+    const hasActiveLocationFilter = computed(() => {
+        return !!(
+            locationFilter.region_code ||
+            locationFilter.province_code ||
+            locationFilter.city_code ||
+            locationFilter.barangay_code
+        )
+    })
+
+    const emptyStateMessage = computed(() => {
+        if (search.value.trim()) {
+            return `No cooperatives found for "${search.value}"`
+        }
+
+        if (hasActiveLocationFilter.value) {
+            return 'No cooperatives found for the selected location filter.'
+        }
+
+        if (inventoryFilter.value === 'with-inventory') {
+            return 'No cooperatives with inventory found.'
+        }
+
+        return 'No cooperatives found.'
+    })
+
     function goToPreviousPage() {
         if (!isFirstPage.value) {
             currentPage.value--
@@ -364,7 +389,7 @@
 
                             <tr v-else-if="filteredCooperatives.length === 0">
                                 <td colspan="2" class="coop-empty">
-                                    No cooperatives found for "{{ search }}"
+                                    {{ emptyStateMessage }}
                                 </td>
                             </tr>
 
@@ -373,7 +398,7 @@
                                 <td>{{ coop.name }}</td>
                                 <td>{{ inventoryCounts[coop.id] ?? 0 }}</td>
                             </tr>
-                            
+
                             <tr class="coop-row create-row" @click="goToCreatePage">
                                 <td colspan="2" style="text-align: center; font-weight: 600; cursor: pointer;">
                                     + Add New Cooperative
@@ -384,7 +409,7 @@
 
                     <div class="coop-pagination">
                         <div v-if="filteredCooperatives.length === 0" class="pagination-info">
-                            No cooperatives found for "{{ search }}"
+                            {{ emptyStateMessage }}
                         </div>
 
                         <div v-else-if="startItem === endItem" class="pagination-info">

@@ -63,7 +63,7 @@ class FormController extends Controller
             'inventoryItem.*.status' => 'nullable|integer',
             'inventoryItem.*.acquired_date' => 'required|date',
 
-            'inventoryItem.*.item_picture' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'inventoryItem.*.item_picture' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'inventoryItem.*.moa_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 

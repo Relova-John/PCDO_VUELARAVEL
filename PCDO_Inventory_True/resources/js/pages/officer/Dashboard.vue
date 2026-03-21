@@ -327,6 +327,30 @@ const endItem = computed(() => {
 
 const isFirstPage = computed(() => currentPage.value === 1)
 const isLastPage = computed(() => currentPage.value === totalPages.value)
+const hasActiveLocationFilter = computed(() => {
+    return !!(
+        locationFilter.region_code ||
+        locationFilter.province_code ||
+        locationFilter.city_code ||
+        locationFilter.barangay_code
+    )
+})
+
+const emptyStateMessage = computed(() => {
+    if (search.value.trim()) {
+        return `No cooperatives found for "${search.value}"`
+    }
+
+    if (hasActiveLocationFilter.value) {
+        return 'No cooperatives found for the selected location filter.'
+    }
+
+    if (inventoryFilter.value === 'with-inventory') {
+        return 'No cooperatives with inventory found.'
+    }
+
+    return 'No cooperatives found.'
+})
 
 function goToPreviousPage() {
     if (!isFirstPage.value) currentPage.value--
@@ -361,6 +385,7 @@ watch(filteredCooperatives, () => {
 </script>
 
 <template>
+
     <Head title="Officer Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
@@ -392,12 +417,8 @@ watch(filteredCooperatives, () => {
                     </p>
 
                     <form @submit.prevent="activateCode" class="space-y-4">
-                        <input
-                            v-model="accessForm.code"
-                            type="text"
-                            placeholder="Enter access code"
-                            class="coop-search w-full"
-                        />
+                        <input v-model="accessForm.code" type="text" placeholder="Enter access code"
+                            class="coop-search w-full" />
 
                         <div v-if="page.props.errors.code" class="text-red-500 text-sm">
                             {{ page.props.errors.code }}
@@ -413,12 +434,7 @@ watch(filteredCooperatives, () => {
             <div v-else class="coop-card">
                 <div class="coop-card-header">
                     <div class="coop-filter">
-                        <input
-                            v-model="search"
-                            type="text"
-                            placeholder="Search cooperative..."
-                            class="coop-search"
-                        />
+                        <input v-model="search" type="text" placeholder="Search cooperative..." class="coop-search" />
 
                         <select v-model="inventoryFilter" class="coop-select">
                             <option value="all">All Cooperatives</option>
@@ -443,97 +459,53 @@ watch(filteredCooperatives, () => {
                         <div>
                             <label class="form-label">Region</label>
 
-                            <input
-                                v-if="isRegionLocked"
-                                :value="locationSearch.region_code"
-                                type="text"
-                                class="coop-search"
-                                readonly
-                            />
+                            <input v-if="isRegionLocked" :value="locationSearch.region_code" type="text"
+                                class="coop-search" readonly />
 
-                            <SelectSearch
-                                v-else
-                                :items="filteredRegions"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.region_code"
-                                :modelValue="locationFilter.region_code"
+                            <SelectSearch v-else :items="filteredRegions" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.region_code" :modelValue="locationFilter.region_code"
                                 v-model:open="openState.region_code"
                                 @update:model-value="val => onLocationModelUpdate('region_code', val)"
-                                @select="val => onSelectLocation('region_code', val)"
-                            />
+                                @select="val => onSelectLocation('region_code', val)" />
                         </div>
 
                         <div>
                             <label class="form-label">Province</label>
 
-                            <input
-                                v-if="isProvinceLocked"
-                                :value="locationSearch.province_code"
-                                type="text"
-                                class="coop-search"
-                                readonly
-                            />
+                            <input v-if="isProvinceLocked" :value="locationSearch.province_code" type="text"
+                                class="coop-search" readonly />
 
-                            <SelectSearch
-                                v-else
-                                :items="filteredProvinces"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.province_code"
-                                :modelValue="locationFilter.province_code"
+                            <SelectSearch v-else :items="filteredProvinces" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.province_code" :modelValue="locationFilter.province_code"
                                 v-model:open="openState.province_code"
                                 @update:model-value="val => onLocationModelUpdate('province_code', val)"
-                                @select="val => onSelectLocation('province_code', val)"
-                            />
+                                @select="val => onSelectLocation('province_code', val)" />
                         </div>
 
                         <div>
                             <label class="form-label">City</label>
 
-                            <input
-                                v-if="isCityLocked"
-                                :value="locationSearch.city_code"
-                                type="text"
-                                class="coop-search"
-                                readonly
-                            />
+                            <input v-if="isCityLocked" :value="locationSearch.city_code" type="text" class="coop-search"
+                                readonly />
 
-                            <SelectSearch
-                                v-else
-                                :items="filteredCities"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.city_code"
-                                :modelValue="locationFilter.city_code"
+                            <SelectSearch v-else :items="filteredCities" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.city_code" :modelValue="locationFilter.city_code"
                                 v-model:open="openState.city_code"
                                 @update:model-value="val => onLocationModelUpdate('city_code', val)"
-                                @select="val => onSelectLocation('city_code', val)"
-                            />
+                                @select="val => onSelectLocation('city_code', val)" />
                         </div>
 
                         <div>
                             <label class="form-label">Barangay</label>
 
-                            <input
-                                v-if="isBarangayLocked"
-                                :value="locationSearch.barangay_code"
-                                type="text"
-                                class="coop-search"
-                                readonly
-                            />
+                            <input v-if="isBarangayLocked" :value="locationSearch.barangay_code" type="text"
+                                class="coop-search" readonly />
 
-                            <SelectSearch
-                                v-else
-                                :items="filteredBarangays"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.barangay_code"
-                                :modelValue="locationFilter.barangay_code"
+                            <SelectSearch v-else :items="filteredBarangays" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.barangay_code" :modelValue="locationFilter.barangay_code"
                                 v-model:open="openState.barangay_code"
                                 @update:model-value="val => onLocationModelUpdate('barangay_code', val)"
-                                @select="val => onSelectLocation('barangay_code', val)"
-                            />
+                                @select="val => onSelectLocation('barangay_code', val)" />
                         </div>
                     </div>
                 </div>
@@ -554,16 +526,12 @@ watch(filteredCooperatives, () => {
 
                         <tr v-else-if="filteredCooperatives.length === 0">
                             <td colspan="2" class="coop-empty">
-                                No cooperatives found for "{{ search }}"
+                                {{ emptyStateMessage }}
                             </td>
                         </tr>
 
-                        <tr
-                            v-for="coop in paginatedCooperatives"
-                            :key="coop.id"
-                            class="coop-row"
-                            @click="openCoop(coop.id)"
-                        >
+                        <tr v-for="coop in paginatedCooperatives" :key="coop.id" class="coop-row"
+                            @click="openCoop(coop.id)">
                             <td>{{ coop.name }}</td>
                             <td>{{ inventoryCounts[coop.id] ?? 0 }}</td>
                         </tr>
@@ -578,7 +546,7 @@ watch(filteredCooperatives, () => {
 
                 <div class="coop-pagination">
                     <div v-if="filteredCooperatives.length === 0" class="pagination-info">
-                        No cooperatives found for "{{ search }}"
+                        {{ emptyStateMessage }}
                     </div>
 
                     <div v-else-if="startItem === endItem" class="pagination-info">
@@ -590,11 +558,7 @@ watch(filteredCooperatives, () => {
                     </div>
 
                     <div class="pagination-controls">
-                        <button
-                            v-if="!isFirstPage"
-                            class="pagination-btn"
-                            @click="goToPreviousPage"
-                        >
+                        <button v-if="!isFirstPage" class="pagination-btn" @click="goToPreviousPage">
                             Previous
                         </button>
 
@@ -602,11 +566,7 @@ watch(filteredCooperatives, () => {
                             {{ currentPage }}
                         </button>
 
-                        <button
-                            v-if="!isLastPage"
-                            class="pagination-btn"
-                            @click="goToNextPage"
-                        >
+                        <button v-if="!isLastPage" class="pagination-btn" @click="goToNextPage">
                             Next
                         </button>
                     </div>

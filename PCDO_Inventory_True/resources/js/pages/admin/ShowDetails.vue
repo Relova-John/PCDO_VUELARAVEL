@@ -64,6 +64,11 @@ function groupByCategory(inventories: any[] = []) {
     return grouped
 }
 
+function requiresMoa(item: any) {
+    const agency = String(item?.granting_agency ?? '').trim().toLowerCase()
+    return agency !== 'self'
+}
+
 function filterItems(items: any[] = []) {
     return items.filter(item => {
         const name = String(item?.name ?? '')
@@ -429,12 +434,22 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                     <div class="file-preview-section">
                         <h3>MOA File:</h3>
 
-                        <template v-if="selectedMoaFile">
+                        <template v-if="!requiresMoa(selectedItem)">
+                            <p>MOA not required for self-funded items.</p>
+                        </template>
+
+                        <template v-else-if="selectedMoaFile">
                             <img v-if="isImageFile(selectedMoaFile)" :src="getFileUrl(selectedMoaFile)" alt="MOA File"
                                 class="file-preview-image" />
 
-                            <iframe v-else-if="isPdfFile(selectedMoaFile)" :src="getFileUrl(selectedMoaFile)"
-                                class="file-preview-frame"></iframe>
+                            <template v-else-if="isPdfFile(selectedMoaFile)">
+                                <iframe v-if="!isMobile" :src="getFileUrl(selectedMoaFile)"
+                                    class="file-preview-frame"></iframe>
+
+                                <a v-else :href="getFileUrl(selectedMoaFile)" target="_blank" class="file-preview-link">
+                                    Open PDF
+                                </a>
+                            </template>
 
                             <div v-else class="file-preview-fallback">
                                 Preview not available for this file type.

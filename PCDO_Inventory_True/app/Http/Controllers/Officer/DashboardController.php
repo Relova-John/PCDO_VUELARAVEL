@@ -159,28 +159,75 @@ class DashboardController extends Controller
             ->with('success', 'Access code activated successfully.');
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        $user = $request->user();
+
+        if (! $user->access_control_id) {
+            return redirect()
+                ->route('officer.dashboard')
+                ->withErrors([
+                    'code' => 'You must activate an access code first.',
+                ]);
+        }
+
         $regions = Region::select('code', 'name')->orderBy('name')->get();
         $provinces = Province::select('code', 'name', 'region_code')->orderBy('name')->get();
         $cities = City::select('code', 'name', 'province_code')->orderBy('name')->get();
         $barangays = Barangay::select('code', 'name', 'city_code')->orderBy('name')->get();
+
+        $inventoryNames = DB::table('inventories')
+            ->selectRaw('MIN(id) as id, MIN(name) as name, category')
+            ->groupBy('category', DB::raw('LOWER(TRIM(name))'))
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+
+        $grantingAgencyNames = DB::table('inventories')
+            ->selectRaw('MIN(id) as id, MIN(granting_agency) as name')
+            ->whereNotNull('granting_agency')
+            ->whereRaw('TRIM(granting_agency) != ""')
+            ->whereRaw('LOWER(TRIM(granting_agency)) != "self"')
+            ->groupBy(DB::raw('LOWER(TRIM(granting_agency))'))
+            ->orderBy('name')
+            ->get();
+
+        $grantingAgencyNames->prepend((object) ['id' => null, 'name' => 'Self']);
 
         return inertia('officer/Form', [
             'regions' => $regions,
             'provinces' => $provinces,
             'cities' => $cities,
             'barangays' => $barangays,
+            'inventoryNames' => $inventoryNames,
+            'grantingAgencyNames' => $grantingAgencyNames,
+
+            'locationLock' => [
+                'region_code' => $user->region_code,
+                'province_code' => $user->province_code,
+                'city_code' => $user->city_code,
+                'barangay_code' => $user->barangay_code,
+            ],
         ]);
     }
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
+        if (! $user->access_control_id) {
+            return redirect()
+                ->route('officer.dashboard')
+                ->withErrors([
+                    'code' => 'You must activate an access code first.',
+                ]);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'region_code' => 'required|exists:regions,code',
-            'province_code' => 'required',
-            'city_code' => 'required',
+            'province_code' => 'required|exists:provinces,code',
+            'city_code' => 'required|exists:cities,code',
             'barangay_code' => 'required|exists:barangays,code',
             'email' => 'required|email|max:255',
             'number' => 'required|string|max:20',
@@ -195,9 +242,12 @@ class DashboardController extends Controller
             'inventoryItem.*.status' => 'nullable|integer',
             'inventoryItem.*.acquired_date' => 'required|date',
 
-            'inventoryItem.*.item_picture' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'inventoryItem.*.item_picture' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'inventoryItem.*.moa_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
+
+        $validated = $this->applyLockedLocationValues($validated, $user);
+        $this->assertLocationMatchesScope($validated, $user);
 
         $reportingDate = ReportingDate::orderByDesc('reporting_year')
             ->orderByDesc('reporting_month')
@@ -308,6 +358,7 @@ class DashboardController extends Controller
 
         return redirect()->route('officer.create')->with('success', 'Inventory saved successfully');
     }
+
     public function showDetails(Request $request, $id)
     {
         $user = $request->user();
@@ -322,8 +373,8 @@ class DashboardController extends Controller
 
         $reportingDateId = $request->reporting_date_id
             ?? ReportingDate::orderByDesc('reporting_year')
-            ->orderByDesc('reporting_month')
-            ->value('id');
+                ->orderByDesc('reporting_month')
+                ->value('id');
 
         $reportingDate = ReportingDate::find($reportingDateId);
 
@@ -408,12 +459,26 @@ class DashboardController extends Controller
         return null;
     }
 
-    public function edit($id)
+    public function edit(Request $request, $id)
     {
-        $cooperative = Cooperative::with([
+        $user = $request->user();
+
+        if (! $user->access_control_id) {
+            return redirect()
+                ->route('officer.dashboard')
+                ->withErrors([
+                    'code' => 'You must activate an access code first.',
+                ]);
+        }
+
+        $cooperativeQuery = Cooperative::with([
             'instances.inventories.itemPictures',
             'instances.inventories.moaFiles',
-        ])->findOrFail($id);
+        ]);
+
+        $this->applyLocationScope($cooperativeQuery, $user);
+
+        $cooperative = $cooperativeQuery->findOrFail($id);
 
         $regions = Region::select('code', 'name')->orderBy('name')->get();
         $provinces = Province::select('code', 'name', 'region_code')->orderBy('name')->get();
@@ -466,19 +531,56 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
 
+        $grantingAgencyNames = DB::table('inventories')
+            ->selectRaw('MIN(id) as id, MIN(granting_agency) as name')
+            ->whereNotNull('granting_agency')
+            ->whereRaw('TRIM(granting_agency) != ""')
+            ->whereRaw('LOWER(TRIM(granting_agency)) != "self"')
+            ->groupBy(DB::raw('LOWER(TRIM(granting_agency))'))
+            ->orderBy('name')
+            ->get();
+
+        $grantingAgencyNames->prepend((object) ['id' => null, 'name' => 'Self']);
+
         return inertia('officer/Edit', [
             'cooperative' => $cooperative,
             'inventoryItem' => $inventories,
             'regions' => $regions,
             'provinces' => $provinces,
-            'inventoryNames' => $inventoryNames,
             'cities' => $cities,
             'barangays' => $barangays,
+            'inventoryNames' => $inventoryNames,
+            'grantingAgencyNames' => $grantingAgencyNames,
+            'locationLock' => [
+                'region_code' => $user->region_code,
+                'province_code' => $user->province_code,
+                'city_code' => $user->city_code,
+                'barangay_code' => $user->barangay_code,
+            ],
+            'breadcrumbs' => [
+                ['title' => 'Cooperatives', 'href' => route('officer.dashboard')],
+                ['title' => $cooperative->name, 'href' => route('officer.dashboard.showdetails', $cooperative->id)],
+                ['title' => 'Edit', 'href' => ''],
+            ],
         ]);
     }
 
     public function update(Request $request, $id)
     {
+        $user = $request->user();
+
+        if (! $user->access_control_id) {
+            return redirect()
+                ->route('officer.dashboard')
+                ->withErrors([
+                    'code' => 'You must activate an access code first.',
+                ]);
+        }
+
+        $cooperativeScopeQuery = Cooperative::query();
+        $this->applyLocationScope($cooperativeScopeQuery, $user);
+        $cooperativeScopeQuery->where('id', $id)->firstOrFail();
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'region_code' => 'required',
@@ -502,6 +604,9 @@ class DashboardController extends Controller
             'inventoryItem.*.item_picture' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'inventoryItem.*.moa_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
+
+        $validated = $this->applyLockedLocationValues($validated, $user);
+        $this->assertLocationMatchesScope($validated, $user);
 
         DB::transaction(function () use ($validated, $request, $id) {
             $coop = Cooperative::findOrFail($id);
@@ -535,7 +640,9 @@ class DashboardController extends Controller
                         ->where('id', $item['id'])
                         ->first();
                 }
+
                 $normalizedItemName = $this->normalizeItemName($item['name']);
+
                 if ($inventory) {
                     $inventory->update([
                         'category' => $item['category'],
@@ -568,7 +675,6 @@ class DashboardController extends Controller
                 $itemCategory = Str::slug($inventory->category);
                 $itemName = Str::slug($inventory->name);
 
-                // Replace item picture if new file uploaded
                 if ($request->hasFile("inventoryItem.$index.item_picture")) {
                     $oldItemPicture = ItemPicturesFiles::where('inventory_id', $inventory->id)->first();
 
@@ -595,7 +701,6 @@ class DashboardController extends Controller
                     );
                 }
 
-                // Replace MOA file if new file uploaded
                 if ($request->hasFile("inventoryItem.$index.moa_file")) {
                     $oldMoaFile = MoaFile::where('inventory_id', $inventory->id)->first();
 
@@ -623,7 +728,6 @@ class DashboardController extends Controller
                 }
             }
 
-            // delete inventories removed from form
             $toDelete = $instance->inventories()->whereNotIn('id', $submittedIds)->get();
 
             foreach ($toDelete as $inventory) {
@@ -652,5 +756,45 @@ class DashboardController extends Controller
         $name = preg_replace('/\s+/', ' ', $name);
 
         return Str::title(Str::lower($name));
+    }
+
+    private function applyLockedLocationValues(array $validated, $user): array
+    {
+        if ($user->region_code) {
+            $validated['region_code'] = $user->region_code;
+        }
+
+        if ($user->province_code) {
+            $validated['province_code'] = $user->province_code;
+        }
+
+        if ($user->city_code) {
+            $validated['city_code'] = $user->city_code;
+        }
+
+        if ($user->barangay_code) {
+            $validated['barangay_code'] = $user->barangay_code;
+        }
+
+        return $validated;
+    }
+
+    private function assertLocationMatchesScope(array $validated, $user): void
+    {
+        if ($user->region_code && $validated['region_code'] !== $user->region_code) {
+            abort(403, 'You cannot create inventory outside your assigned region.');
+        }
+
+        if ($user->province_code && $validated['province_code'] !== $user->province_code) {
+            abort(403, 'You cannot create inventory outside your assigned province.');
+        }
+
+        if ($user->city_code && $validated['city_code'] !== $user->city_code) {
+            abort(403, 'You cannot create inventory outside your assigned city.');
+        }
+
+        if ($user->barangay_code && $validated['barangay_code'] !== $user->barangay_code) {
+            abort(403, 'You cannot create inventory outside your assigned barangay.');
+        }
     }
 }
