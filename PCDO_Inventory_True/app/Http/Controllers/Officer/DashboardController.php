@@ -114,6 +114,88 @@ class DashboardController extends Controller
             ->groupBy('inventory_instances.coop_id')
             ->pluck('count', 'coop_id');
 
+        $inventorySummaryRows = DB::table('inventory_instances')
+            ->join('inventories', 'inventory_instances.id', '=', 'inventories.inventory_instance_id')
+            ->join('cooperatives', 'inventory_instances.coop_id', '=', 'cooperatives.id')
+            ->leftJoin('regions', 'cooperatives.region_code', '=', 'regions.code')
+            ->leftJoin('provinces', 'cooperatives.province_code', '=', 'provinces.code')
+            ->leftJoin('cities', 'cooperatives.city_code', '=', 'cities.code')
+            ->leftJoin('barangays', 'cooperatives.barangay_code', '=', 'barangays.code')
+            ->where('inventory_instances.reporting_date_id', $reportingDateId)
+            ->select(
+                'inventories.id',
+                'inventories.name',
+                'inventories.category',
+                'inventories.location as item_location',
+                'inventories.value',
+                'inventories.quantity',
+                'inventories.status',
+                'cooperatives.id as coop_id',
+                'cooperatives.name as coop_name',
+                'cooperatives.region_code',
+                'cooperatives.province_code',
+                'cooperatives.city_code',
+                'cooperatives.barangay_code',
+                'regions.name as region_name',
+                'provinces.name as province_name',
+                'cities.name as city_name',
+                'barangays.name as barangay_name'
+            )
+            ->orderBy('inventories.category')
+            ->orderBy('inventories.name')
+            ->orderBy('cooperatives.name')
+            ->get()
+            ->map(function ($row) {
+                $quantity = (int) ($row->quantity ?? 0);
+                $serviceable = max(0, (int) ($row->status ?? 0));
+                $unserviceable = max(0, $quantity - $serviceable);
+                $amount = (float) ($row->value ?? 0);
+                $total = $amount * $quantity;
+
+                return [
+                    'id' => $row->id,
+                    'name' => $row->name,
+                    'category' => $row->category,
+                    'item_location' => $row->item_location,
+                    'value' => $amount,
+                    'quantity' => $quantity,
+                    'serviceable' => $serviceable,
+                    'unserviceable' => $unserviceable,
+                    'status_raw' => $row->status,
+                    'coop_id' => $row->coop_id,
+                    'coop_name' => $row->coop_name,
+                    'region_code' => $row->region_code,
+                    'province_code' => $row->province_code,
+                    'city_code' => $row->city_code,
+                    'barangay_code' => $row->barangay_code,
+                    'region_name' => $row->region_name,
+                    'province_name' => $row->province_name,
+                    'city_name' => $row->city_name,
+                    'barangay_name' => $row->barangay_name,
+                    'coop_location' => collect([
+                        $row->barangay_name,
+                        $row->city_name,
+                        $row->province_name,
+                        $row->region_name,
+                    ])->filter()->implode(', '),
+                    'total' => $total,
+                ];
+            })
+            ->values();
+
+        $categories = $inventorySummaryRows
+            ->pluck('category')
+            ->filter(fn($category) => filled($category))
+            ->map(fn($category) => trim((string) $category))
+            ->unique()
+            ->sort()
+            ->values()
+            ->map(fn(string $category) => [
+                'value' => $category,
+                'label' => ucfirst($category),
+            ])
+            ->values();
+
         return inertia('officer/Dashboard', [
             'locked' => false,
             'cooperatives' => $cooperatives,
@@ -127,6 +209,8 @@ class DashboardController extends Controller
             'provinces' => $provinces,
             'cities' => $cities,
             'barangays' => $barangays,
+            'inventorySummaryRows' => $inventorySummaryRows,
+            'categories' => $categories,
             'breadcrumbs' => [
                 ['title' => 'Cooperatives', 'href' => route('officer.dashboard')]
             ]
@@ -373,8 +457,8 @@ class DashboardController extends Controller
 
         $reportingDateId = $request->reporting_date_id
             ?? ReportingDate::orderByDesc('reporting_year')
-                ->orderByDesc('reporting_month')
-                ->value('id');
+            ->orderByDesc('reporting_month')
+            ->value('id');
 
         $reportingDate = ReportingDate::find($reportingDateId);
 
