@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-vue-next';
+import { UserCog, LayoutGrid } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
@@ -39,7 +39,7 @@ const mainNavItems = computed<NavItem[]>(() => {
         items.push({
             title: 'Access Control',
             href: '/access-control',
-            icon: Handshake,
+            icon: UserCog,
         })
     }
 

@@ -2,6 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue'
 import { Head, useForm } from '@inertiajs/vue3'
 import SelectSearch from '@/components/SelectSearch.vue'
+import type { BreadcrumbItem } from '@/types'
 import { reactive, computed, watch } from 'vue'
 import type { Regions, Provinces, Cities } from '@/types/locations'
 
@@ -30,6 +31,10 @@ interface ExistingAccessControl {
     one_time: boolean
     max_uses: number | null
 }
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Access Control', href: '#' }
+]
 
 const props = defineProps<{
     regions: Regions[]
@@ -238,85 +243,88 @@ function getFormQrCode() {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout :breadcrumbs="breadcrumbs">
 
         <Head title="Access Control" />
-
-        <div class="p-6 max-w-6xl space-y-6">
-            <div class="space-y-3 flex items-center justify-between">
-                <h1 class="text-2xl font-bold">Access Control</h1>
-
-                <button type="button" @click="getFormQrCode"
-                    class="px-4 py-2 rounded bg-black text-white hover:bg-gray-800">
-                    Download Form QR
-                </button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block mb-1 font-medium">Region</label>
-                    <SelectSearch :items="regions" itemLabelKey="name" itemKeyProp="code"
-                        v-model:search="searchState.region_code" :modelValue="filters.region_code"
-                        v-model:open="openState.region_code"
-                        @select="(val: { id: string; name: string }) => onSelect('region_code', val)" />
+        <div class="p-6 max-w-7xl space-y-6">
+            <div class="coop-header-banner">
+                <div class="header-content-left">
+                    <h1 class="header-title">Access Control</h1>
+                    <p class="header-subtitle">Manage municipality access codes and QR generation.</p>
                 </div>
 
-                <div>
-                    <label class="block mb-1 font-medium">Province</label>
-                    <SelectSearch :items="filteredProvinces" itemLabelKey="name" itemKeyProp="code"
-                        v-model:search="searchState.province_code" :modelValue="filters.province_code"
-                        v-model:open="openState.province_code"
-                        @select="(val: { id: string; name: string }) => onSelect('province_code', val)" />
+                <div class="header-content-right">
+                    <button type="button" @click="getFormQrCode" class="btn-download-white">
+                        Download Form QR
+                    </button>
                 </div>
             </div>
 
-            <div class="space-y-4">
-                <div class="rounded-lg border p-4 bg-gray-50">
-                    <p class="text-sm text-gray-700">
-                        Officer Unlock mode: expiry is automatically set to <strong>1 week</strong> and QR is always
-                        <strong>one-time use</strong>.
-                    </p>
-                </div>
-
-                <div class="rounded-xl border overflow-hidden">
-                    <div class="grid grid-cols-12 bg-gray-100 px-4 py-3 font-semibold text-sm">
-                        <div class="col-span-5">Municipality</div>
-                        <div class="col-span-3">Generated Code</div>
-                        <div class="col-span-4 text-right">Actions</div>
+            <div class="coop-card-header" style="border-radius: 14px; border: 1.5px solid #e5e7eb;">
+                <div class="coop-filter">
+                    <div class="flex-1">
+                        <label class="block mb-1 text-xs font-bold uppercase text-gray-500">Region</label>
+                        <SelectSearch :items="regions" itemLabelKey="name" itemKeyProp="code"
+                            v-model:search="searchState.region_code" :modelValue="filters.region_code"
+                            v-model:open="openState.region_code" @select="(val) => onSelect('region_code', val)" />
                     </div>
 
-                    <div v-for="city in filteredMunicipalities" :key="city.code"
-                        class="grid grid-cols-12 px-4 py-3 border-t items-center gap-2">
-                        <div class="col-span-5">
-                            {{ city.name }}
-                        </div>
-
-                        <div class="col-span-3 text-sm break-all">
-                            {{ generatedEntries[`access-municipality-${city.code}`]?.code || '—' }}
-                        </div>
-
-                        <div class="col-span-4 flex justify-end gap-2 flex-wrap">
-                            <button type="button" @click="regenerateOfficerMunicipality(city)"
-                                class="px-3 py-2 rounded border bg-white hover:bg-gray-50">
-                                Regenerate & Save
-                            </button>
-
-                            <button type="button" @click="copyCode('access', 'municipality', city.code)"
-                                class="px-3 py-2 rounded border bg-white hover:bg-gray-50">
-                                Copy
-                            </button>
-
-                            <button type="button" @click="generateQrCode('access', 'municipality', city.code)"
-                                class="px-3 py-2 rounded bg-black text-white"
-                                :disabled="!(generatedEntries[`access-municipality-${city.code}`]?.code)">
-                                Generate QR
-                            </button>
-                        </div>
-                    </div>
-
-                    <div v-if="filteredMunicipalities.length === 0" class="px-4 py-6 text-sm text-gray-500">
-                        No municipalities found for the selected province.
+                    <div class="flex-1">
+                        <label class="block mb-1 text-xs font-bold uppercase text-gray-500">Province</label>
+                        <SelectSearch :items="filteredProvinces" itemLabelKey="name" itemKeyProp="code"
+                            v-model:search="searchState.province_code" :modelValue="filters.province_code"
+                            v-model:open="openState.province_code" @select="(val) => onSelect('province_code', val)" />
                     </div>
                 </div>
+            </div>
+
+            <div class="rounded-lg p-4" style="background: #FFF8E1; border: 1px solid #FAD6A5;">
+                <p class="text-sm text-gray-700">
+                    <strong style="color: #D56C10;">Officer Unlock mode:</strong> expiry is automatically set to 1 week
+                    and QR is always one-time use.
+                </p>
+            </div>
+
+            <div class="rounded-xl overflow-hidden border border-gray-200">
+                <table class="coop-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Municipality</th>
+                            <th style="width: 25%;">Generated Code</th>
+                            <th style="width: 35%; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="city in filteredMunicipalities" :key="city.code" class="coop-row">
+                            <td class="font-semibold">{{ city.name }}</td>
+                            <td style="font-family: monospace; color: #6b7280;">
+                                {{ generatedEntries[`access-municipality-${city.code}`]?.code || '—' }}
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="flex justify-end gap-2">
+                                    <button @click="regenerateOfficerMunicipality(city)" class="btn-past-white text-xs">
+                                        Regenerate
+                                    </button>
+                                    <button @click="copyCode('access', 'municipality', city.code)"
+                                        class="btn-past-white text-xs">
+                                        Copy
+                                    </button>
+                                    <button @click="generateQrCode('access', 'municipality', city.code)"
+                                        class="btn-past-black text-xs"
+                                        :disabled="!(generatedEntries[`access-municipality-${city.code}`]?.code)">
+                                        QR
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr v-if="filteredMunicipalities.length === 0">
+                            <td colspan="3" class="coop-empty">
+                                No municipalities found for the selected province.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </AppLayout>

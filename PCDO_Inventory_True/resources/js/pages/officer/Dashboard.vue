@@ -700,34 +700,44 @@ const cooperativeGroupedRows = computed(() => {
 </script>
 
 <template>
+
     <Head title="Officer Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="coop-page">
-            <div class="coop-header">
-                <div class="coop-header-left">
-                    <h1 class="coop-title">Officer Dashboard</h1>
-                    <p class="coop-description">
+        <div class="officer-page">
+            <div class="officer-header">
+                <div class="officer-header-left">
+                    <h1 class="officer-title">Officer Dashboard</h1>
+                    <p class="officer-description">
                         View inventory reports based on your assigned location access.
                     </p>
+
+                    <div v-if="!locked" class="officer-location-badge">
+                        <span class="badge-label">{{ locationScope }}</span>
+                        <span v-if="locationName" class="badge-value">{{ locationName }}</span>
+                    </div>
                 </div>
 
-                <div class="coop-header-right">
-                    <span class="report-label">Reporting Period</span>
+                <div class="officer-header-right">
+                    <div class="officer-controls-group">
+                        <div class="officer-inputs-row">
+                            <span class="officer-label-white">Reporting Period:</span>
 
-                    <select class="report-badge" v-model="selectedDate" @change="filterDate">
-                        <option v-for="date in reportingDates" :key="date.id" :value="date.id">
-                            {{ date.reporting_month }}/{{ date.reporting_year }}
-                        </option>
-                    </select>
+                            <select class="officer-report-badge" v-model="selectedDate" @change="filterDate">
+                                <option v-for="date in reportingDates" :key="date.id" :value="date.id">
+                                    {{ date.reporting_month }}/{{ date.reporting_year }}
+                                </option>
+                            </select>
+                        </div>
 
-                    <button v-if="!locked" @click="openSummaryModal" class="coop-btn-secondary">
-                        Summary
-                    </button>
+                        <button v-if="!locked" @click="openSummaryModal" class="officer-btn-summary">
+                            Summary Report
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div v-if="locked" class="coop-card">
+            <div v-if="locked" class="officer-card">
                 <div class="p-6 max-w-md mx-auto">
                     <h2 class="text-xl font-semibold mb-2">Enter Access Code</h2>
                     <p class="text-sm text-gray-500 mb-4">
@@ -735,142 +745,84 @@ const cooperativeGroupedRows = computed(() => {
                     </p>
 
                     <form @submit.prevent="activateCode" class="space-y-4">
-                        <input
-                            v-model="accessForm.code"
-                            type="text"
-                            placeholder="Enter access code"
-                            class="coop-search w-full"
-                        />
+                        <input v-model="accessForm.code" type="text" placeholder="Enter access code"
+                            class="officer-search w-full" />
 
                         <div v-if="page.props.errors.code" class="text-red-500 text-sm">
                             {{ page.props.errors.code }}
                         </div>
 
-                        <button type="submit" class="coop-btn-primary w-full">
+                        <button type="submit" class="officer-btn-primary w-full">
                             Activate Access
                         </button>
                     </form>
                 </div>
             </div>
 
-            <div v-else class="coop-card">
-                <div class="coop-card-header">
-                    <div class="coop-filter">
-                        <input v-model="search" type="text" placeholder="Search cooperative..." class="coop-search" />
 
-                        <select v-model="inventoryFilter" class="coop-select">
+            <div class="officer-card">
+                <div class="officer-card-header">
+                    <!-- TOP ROW: Search and Inventory Filter -->
+                    <div class="officer-filter-row-top">
+                        <input v-model="search" type="text" placeholder="Search cooperative..."
+                            class="officer-search" />
+
+                        <select v-model="inventoryFilter" class="officer-select">
                             <option value="all">All Cooperatives</option>
                             <option value="with-inventory">With Inventory Only</option>
                         </select>
                     </div>
 
-                    <div class="text-sm font-medium text-gray-600">
-                        {{ locationScope }}
-                        <span v-if="locationName" class="text-blue-600"> - {{ locationName }}</span>
-                    </div>
-                </div>
+                    <div class="officer-divider"></div>
 
-                <div class="coop-card-header">
-                    <div class="coop-filter location-grid">
+                    <div class="officer-location-grid">
                         <div>
-                            <label class="form-label">Region</label>
-
-                            <input
-                                v-if="isRegionLocked"
-                                :value="locationSearch.region_code"
-                                type="text"
-                                class="coop-search locked-input"
-                                readonly
-                            />
-
-                            <SelectSearch
-                                v-else
-                                :items="filteredRegions"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.region_code"
-                                :modelValue="locationFilter.region_code"
+                            <label class="officer-form-label">Region</label>
+                            <input v-if="isRegionLocked" :value="locationSearch.region_code" type="text"
+                                class="officer-search officer-locked-input" readonly />
+                            <SelectSearch v-else :items="filteredRegions" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.region_code" :modelValue="locationFilter.region_code"
                                 v-model:open="openState.region_code"
                                 @update:model-value="val => onLocationModelUpdate('region_code', val)"
-                                @select="val => onSelectLocation('region_code', val)"
-                            />
+                                @select="val => onSelectLocation('region_code', val)" />
                         </div>
 
                         <div>
-                            <label class="form-label">Province</label>
-
-                            <input
-                                v-if="isProvinceLocked"
-                                :value="locationSearch.province_code"
-                                type="text"
-                                class="coop-search locked-input"
-                                readonly
-                            />
-
-                            <SelectSearch
-                                v-else
-                                :items="filteredProvinces"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.province_code"
-                                :modelValue="locationFilter.province_code"
+                            <label class="officer-form-label">Province</label>
+                            <input v-if="isProvinceLocked" :value="locationSearch.province_code" type="text"
+                                class="officer-search officer-locked-input" readonly />
+                            <SelectSearch v-else :items="filteredProvinces" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.province_code" :modelValue="locationFilter.province_code"
                                 v-model:open="openState.province_code"
                                 @update:model-value="val => onLocationModelUpdate('province_code', val)"
-                                @select="val => onSelectLocation('province_code', val)"
-                            />
+                                @select="val => onSelectLocation('province_code', val)" />
                         </div>
 
                         <div>
-                            <label class="form-label">City</label>
-
-                            <input
-                                v-if="isCityLocked"
-                                :value="locationSearch.city_code"
-                                type="text"
-                                class="coop-search locked-input"
-                                readonly
-                            />
-
-                            <SelectSearch
-                                v-else
-                                :items="filteredCities"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.city_code"
-                                :modelValue="locationFilter.city_code"
+                            <label class="officer-form-label">City</label>
+                            <input v-if="isCityLocked" :value="locationSearch.city_code" type="text"
+                                class="officer-search officer-locked-input" readonly />
+                            <SelectSearch v-else :items="filteredCities" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.city_code" :modelValue="locationFilter.city_code"
                                 v-model:open="openState.city_code"
                                 @update:model-value="val => onLocationModelUpdate('city_code', val)"
-                                @select="val => onSelectLocation('city_code', val)"
-                            />
+                                @select="val => onSelectLocation('city_code', val)" />
                         </div>
 
                         <div>
-                            <label class="form-label">Barangay</label>
-
-                            <input
-                                v-if="isBarangayLocked"
-                                :value="locationSearch.barangay_code"
-                                type="text"
-                                class="coop-search locked-input"
-                                readonly
-                            />
-
-                            <SelectSearch
-                                v-else
-                                :items="filteredBarangays"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.barangay_code"
-                                :modelValue="locationFilter.barangay_code"
+                            <label class="officer-form-label">Barangay</label>
+                            <input v-if="isBarangayLocked" :value="locationSearch.barangay_code" type="text"
+                                class="officer-search officer-locked-input" readonly />
+                            <SelectSearch v-else :items="filteredBarangays" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.barangay_code" :modelValue="locationFilter.barangay_code"
                                 v-model:open="openState.barangay_code"
                                 @update:model-value="val => onLocationModelUpdate('barangay_code', val)"
-                                @select="val => onSelectLocation('barangay_code', val)"
-                            />
+                                @select="val => onSelectLocation('barangay_code', val)" />
                         </div>
                     </div>
                 </div>
 
-                <table class="coop-table">
+                <table class="officer-table">
                     <thead>
                         <tr>
                             <th>Cooperative</th>
@@ -879,36 +831,32 @@ const cooperativeGroupedRows = computed(() => {
                     </thead>
                     <tbody>
                         <tr v-if="cooperatives.length === 0">
-                            <td colspan="2" class="coop-empty">
+                            <td colspan="2" class="officer-empty">
                                 No cooperatives available for your assigned location
                             </td>
                         </tr>
 
                         <tr v-else-if="filteredCooperatives.length === 0">
-                            <td colspan="2" class="coop-empty">
+                            <td colspan="2" class="officer-empty">
                                 {{ emptyStateMessage }}
                             </td>
                         </tr>
 
-                        <tr
-                            v-for="coop in paginatedCooperatives"
-                            :key="coop.id"
-                            class="coop-row"
-                            @click="openCoop(coop.id)"
-                        >
+                        <tr v-for="coop in paginatedCooperatives" :key="coop.id" class="officer-row"
+                            @click="openCoop(coop.id)">
                             <td>{{ coop.name }}</td>
                             <td>{{ inventoryCounts[coop.id] ?? 0 }}</td>
                         </tr>
 
-                        <tr class="coop-row create-row" @click="goToCreatePage">
+                        <tr class="officer-row create-row" @click="goToCreatePage">
                             <td colspan="2" style="text-align: center; font-weight: 600; cursor: pointer;">
-                                + Add New Cooperative
+                                + Submit New Cooperative
                             </td>
                         </tr>
                     </tbody>
                 </table>
 
-                <div class="coop-pagination">
+                <div class="officer-pagination">
                     <div v-if="filteredCooperatives.length === 0" class="pagination-info">
                         {{ emptyStateMessage }}
                     </div>
@@ -937,32 +885,27 @@ const cooperativeGroupedRows = computed(() => {
                 </div>
             </div>
         </div>
+                
 
         <!-- summary modal -->
-        <div v-if="showSummaryModal" class="modal-overlay">
-            <div class="modal-box summary-modal">
+        <div v-if="showSummaryModal" class="officer-modal-overlay">
+            <div class="officer-modal-box summary-modal">
                 <div class="summary-header">
-                    <h2 class="modal-title">Inventory Summary</h2>
+                    <h2 class="officer-modal-title">Inventory Summary</h2>
 
-                    <button class="modal-cancel icon-close" @click="closeSummaryModal">
+                    <button class="officer-modal-btn-cancel icon-close" @click="closeSummaryModal">
                         ✕
                     </button>
                 </div>
 
                 <div class="summary-switch">
-                    <button
-                        class="summary-tab"
-                        :class="{ active: summaryView === 'cooperative' }"
-                        @click="summaryView = 'cooperative'"
-                    >
+                    <button class="summary-tab" :class="{ active: summaryView === 'cooperative' }"
+                        @click="summaryView = 'cooperative'">
                         Cooperatives
                     </button>
 
-                    <button
-                        class="summary-tab"
-                        :class="{ active: summaryView === 'inventory' }"
-                        @click="summaryView = 'inventory'"
-                    >
+                    <button class="summary-tab" :class="{ active: summaryView === 'inventory' }"
+                        @click="summaryView = 'inventory'">
                         Inventory
                     </button>
                 </div>
@@ -971,102 +914,58 @@ const cooperativeGroupedRows = computed(() => {
                     <div>
                         <label class="form-label">Region</label>
 
-                        <input
-                            v-if="isRegionLocked"
-                            :value="summaryLocationSearch.region_code"
-                            type="text"
-                            class="coop-search locked-input"
-                            readonly
-                        />
+                        <input v-if="isRegionLocked" :value="summaryLocationSearch.region_code" type="text"
+                            class="officer-search locked-input" readonly />
 
-                        <SelectSearch
-                            v-else
-                            :items="summaryFilteredRegions"
-                            itemLabelKey="name"
-                            itemKeyProp="code"
-                            v-model:search="summaryLocationSearch.region_code"
-                            :modelValue="summaryFilters.region_code"
+                        <SelectSearch v-else :items="summaryFilteredRegions" itemLabelKey="name" itemKeyProp="code"
+                            v-model:search="summaryLocationSearch.region_code" :modelValue="summaryFilters.region_code"
                             v-model:open="summaryOpenState.region_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('region_code', val)"
-                            @select="val => onSelectSummaryLocation('region_code', val)"
-                        />
+                            @select="val => onSelectSummaryLocation('region_code', val)" />
                     </div>
 
                     <div>
                         <label class="form-label">Province</label>
 
-                        <input
-                            v-if="isProvinceLocked"
-                            :value="summaryLocationSearch.province_code"
-                            type="text"
-                            class="coop-search locked-input"
-                            readonly
-                        />
+                        <input v-if="isProvinceLocked" :value="summaryLocationSearch.province_code" type="text"
+                            class="officer-search locked-input" readonly />
 
-                        <SelectSearch
-                            v-else
-                            :items="summaryFilteredProvinces"
-                            itemLabelKey="name"
-                            itemKeyProp="code"
+                        <SelectSearch v-else :items="summaryFilteredProvinces" itemLabelKey="name" itemKeyProp="code"
                             v-model:search="summaryLocationSearch.province_code"
-                            :modelValue="summaryFilters.province_code"
-                            v-model:open="summaryOpenState.province_code"
+                            :modelValue="summaryFilters.province_code" v-model:open="summaryOpenState.province_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('province_code', val)"
-                            @select="val => onSelectSummaryLocation('province_code', val)"
-                        />
+                            @select="val => onSelectSummaryLocation('province_code', val)" />
                     </div>
 
                     <div>
                         <label class="form-label">City</label>
 
-                        <input
-                            v-if="isCityLocked"
-                            :value="summaryLocationSearch.city_code"
-                            type="text"
-                            class="coop-search locked-input"
-                            readonly
-                        />
+                        <input v-if="isCityLocked" :value="summaryLocationSearch.city_code" type="text"
+                            class="officer-search locked-input" readonly />
 
-                        <SelectSearch
-                            v-else
-                            :items="summaryFilteredCities"
-                            itemLabelKey="name"
-                            itemKeyProp="code"
-                            v-model:search="summaryLocationSearch.city_code"
-                            :modelValue="summaryFilters.city_code"
+                        <SelectSearch v-else :items="summaryFilteredCities" itemLabelKey="name" itemKeyProp="code"
+                            v-model:search="summaryLocationSearch.city_code" :modelValue="summaryFilters.city_code"
                             v-model:open="summaryOpenState.city_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('city_code', val)"
-                            @select="val => onSelectSummaryLocation('city_code', val)"
-                        />
+                            @select="val => onSelectSummaryLocation('city_code', val)" />
                     </div>
 
                     <div>
                         <label class="form-label">Barangay</label>
 
-                        <input
-                            v-if="isBarangayLocked"
-                            :value="summaryLocationSearch.barangay_code"
-                            type="text"
-                            class="coop-search locked-input"
-                            readonly
-                        />
+                        <input v-if="isBarangayLocked" :value="summaryLocationSearch.barangay_code" type="text"
+                            class="officer-search locked-input" readonly />
 
-                        <SelectSearch
-                            v-else
-                            :items="summaryFilteredBarangays"
-                            itemLabelKey="name"
-                            itemKeyProp="code"
+                        <SelectSearch v-else :items="summaryFilteredBarangays" itemLabelKey="name" itemKeyProp="code"
                             v-model:search="summaryLocationSearch.barangay_code"
-                            :modelValue="summaryFilters.barangay_code"
-                            v-model:open="summaryOpenState.barangay_code"
+                            :modelValue="summaryFilters.barangay_code" v-model:open="summaryOpenState.barangay_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('barangay_code', val)"
-                            @select="val => onSelectSummaryLocation('barangay_code', val)"
-                        />
+                            @select="val => onSelectSummaryLocation('barangay_code', val)" />
                     </div>
 
                     <div>
                         <label class="form-label">Category</label>
-                        <select v-model="summaryFilters.category" class="coop-select">
+                        <select v-model="summaryFilters.category" class="officer-select">
                             <option value="">All Categories</option>
                             <option v-for="category in categories" :key="category.value" :value="category.value">
                                 {{ category.label }}
@@ -1076,7 +975,7 @@ const cooperativeGroupedRows = computed(() => {
 
                     <div>
                         <label class="form-label">Status</label>
-                        <select v-model="summaryFilters.status" class="coop-select">
+                        <select v-model="summaryFilters.status" class="officer-select">
                             <option value="all">All</option>
                             <option value="serviceable">Serviceable</option>
                             <option value="unserviceable">Unserviceable</option>
@@ -1086,7 +985,7 @@ const cooperativeGroupedRows = computed(() => {
 
                 <div class="summary-table-wrap">
                     <template v-if="summaryView === 'inventory'">
-                        <table class="coop-table summary-table">
+                        <table class="officer-table summary-table">
                             <thead>
                                 <tr>
                                     <th>{{ summaryFilters.category || 'Category / Name' }}</th>
@@ -1114,15 +1013,15 @@ const cooperativeGroupedRows = computed(() => {
                                             <td>{{ row.coop_location || '-' }}</td>
                                             <td>{{ row.item_location || '-' }}</td>
                                             <td>
-                                                {{ formatMoney(row.value) }} x {{ row.display_quantity }}
-                                                ({{ formatMoney(row.total) }})
+                                                {{ formatMoney(row.value) }} ₱ x {{ row.display_quantity }}
+                                                ({{ formatMoney(row.total) }} ₱)
                                             </td>
                                         </tr>
                                     </template>
                                 </template>
 
                                 <tr v-else>
-                                    <td colspan="6" class="coop-empty">
+                                    <td colspan="6" class="officer-empty">
                                         No summary records found.
                                     </td>
                                 </tr>
@@ -1131,7 +1030,7 @@ const cooperativeGroupedRows = computed(() => {
                     </template>
 
                     <template v-else>
-                        <table class="coop-table summary-table">
+                        <table class="officer-table summary-table">
                             <thead>
                                 <tr>
                                     <th>Coop Name</th>
@@ -1155,15 +1054,15 @@ const cooperativeGroupedRows = computed(() => {
                                             <td>{{ row.item_name }}</td>
                                             <td>{{ row.coop_location || '-' }}</td>
                                             <td>{{ row.item_location || '-' }}</td>
-                                            <td>{{ formatMoney(row.value) }}</td>
+                                            <td>{{ formatMoney(row.value) }} ₱</td>
                                             <td>{{ row.display_quantity }}</td>
-                                            <td>{{ formatMoney(row.total) }}</td>
+                                            <td>{{ formatMoney(row.total) }} ₱</td>
                                         </tr>
                                     </template>
                                 </template>
 
                                 <tr v-else>
-                                    <td colspan="7" class="coop-empty">
+                                    <td colspan="7" class="officer-empty">
                                         No summary records found.
                                     </td>
                                 </tr>
@@ -1172,8 +1071,8 @@ const cooperativeGroupedRows = computed(() => {
                     </template>
                 </div>
 
-                <div class="modal-actions">
-                    <button @click="closeSummaryModal" class="modal-cancel">
+                <div class="officer-modal-footer">
+                    <button @click="closeSummaryModal" class="officer-modal-btn-cancel">
                         Close
                     </button>
                 </div>
@@ -1181,15 +1080,14 @@ const cooperativeGroupedRows = computed(() => {
         </div>
     </AppLayout>
 </template>
-
 <style scoped>
-.coop-page {
+.officer-page {
     display: flex;
     flex-direction: column;
     gap: 16px;
 }
 
-.coop-header {
+.officer-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1197,55 +1095,64 @@ const cooperativeGroupedRows = computed(() => {
     flex-wrap: wrap;
 }
 
-.coop-header-left {
+.officer-header-left {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.coop-title {
+.officer-title {
     font-size: 24px;
     font-weight: 700;
     margin: 0;
 }
 
-.coop-description {
+.officer-description {
     margin: 0;
     color: #64748b;
 }
 
-.coop-header-right {
+.officer-header-right {
     display: flex;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
 }
 
-.report-label {
-    font-size: 14px;
-    color: #64748b;
+.officer-controls-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
-.report-badge,
-.coop-select,
-.coop-search {
+.officer-inputs-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.officer-label-white {
+    font-size: 14px;
+    color: #111827;
+    font-weight: 600;
+}
+
+.officer-report-badge,
+.officer-select,
+.officer-search {
     border: 1px solid #d1d5db;
     border-radius: 10px;
     padding: 10px 12px;
     background: white;
     width: 100%;
+    color: #111827;
 }
 
-.locked-input {
-    background: #f3f4f6;
-    color: #6b7280;
-    cursor: not-allowed;
-}
-
-.coop-btn-primary,
-.coop-btn-secondary,
-.modal-save,
-.modal-cancel,
+.officer-btn-primary,
+.officer-btn-summary,
+.officer-modal-btn-cancel,
 .pagination-btn,
 .summary-tab {
     border: none;
@@ -1255,27 +1162,22 @@ const cooperativeGroupedRows = computed(() => {
     cursor: pointer;
 }
 
-.coop-btn-primary,
-.modal-save,
+.officer-btn-primary,
+.officer-btn-summary,
 .summary-tab.active,
 .pagination-btn.active {
     background: #111827;
     color: white;
 }
 
-.coop-btn-secondary {
-    background: #e5e7eb;
-    color: #111827;
-}
-
-.modal-cancel,
+.officer-modal-btn-cancel,
 .pagination-btn,
 .summary-tab {
     background: #f3f4f6;
     color: #111827;
 }
 
-.coop-card {
+.officer-card {
     background: white;
     border-radius: 16px;
     padding: 16px;
@@ -1283,22 +1185,30 @@ const cooperativeGroupedRows = computed(() => {
     overflow: hidden;
 }
 
-.coop-card-header {
+.officer-card-header {
     margin-bottom: 14px;
 }
 
-.coop-filter {
+.officer-filter-row-top {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
 }
 
+.officer-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 14px 0;
+}
+
+.officer-location-grid,
 .location-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
 }
 
+.officer-form-label,
 .form-label {
     display: block;
     font-size: 13px;
@@ -1307,34 +1217,35 @@ const cooperativeGroupedRows = computed(() => {
     color: #374151;
 }
 
-.coop-table {
+.officer-table {
     width: 100%;
     border-collapse: collapse;
 }
 
-.coop-table th,
-.coop-table td {
+.officer-table th,
+.officer-table td {
     text-align: left;
     padding: 12px;
     border-bottom: 1px solid #e5e7eb;
     vertical-align: top;
+    color: #111827;
 }
 
-.coop-row {
+.officer-row {
     cursor: pointer;
 }
 
-.coop-row:hover {
+.officer-row:hover {
     background: #f9fafb;
 }
 
-.coop-empty {
+.officer-empty {
     text-align: center;
     color: #6b7280;
     padding: 24px;
 }
 
-.coop-pagination {
+.officer-pagination {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1353,18 +1264,19 @@ const cooperativeGroupedRows = computed(() => {
     gap: 8px;
 }
 
-.modal-overlay {
+/* FIXED MODAL */
+.officer-modal-overlay {
     position: fixed;
     inset: 0;
     background: rgba(15, 23, 42, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 999;
+    z-index: 9999;
     padding: 20px;
 }
 
-.modal-box {
+.officer-modal-box {
     background: white;
     border-radius: 18px;
     width: 100%;
@@ -1373,18 +1285,19 @@ const cooperativeGroupedRows = computed(() => {
 
 .summary-modal {
     max-width: 1300px;
-    padding: 20px;
     max-height: 90vh;
     overflow: auto;
+    padding: 20px;
 }
 
-.modal-title {
+.officer-modal-title {
     margin: 0;
     font-size: 20px;
     font-weight: 700;
+    color: #111827;
 }
 
-.modal-actions {
+.officer-modal-footer {
     margin-top: 16px;
     display: flex;
     justify-content: flex-end;
@@ -1396,11 +1309,6 @@ const cooperativeGroupedRows = computed(() => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 14px;
-}
-
-.icon-close {
-    min-width: 40px;
-    padding: 10px;
 }
 
 .summary-switch {
@@ -1417,13 +1325,29 @@ const cooperativeGroupedRows = computed(() => {
     overflow-x: auto;
 }
 
-.summary-table th {
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.summary-table th,
+.summary-table td {
+    color: #111827 !important;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.summary-table thead th {
     position: sticky;
     top: 0;
-    background: white;
+    background: #ffffff !important;
     z-index: 1;
-    color: #111827;
+    color: #111827 !important;
     font-weight: 700;
+}
+
+.summary-table tbody td {
+    background: #ffffff;
+    color: #111827 !important;
 }
 
 .group-title {
@@ -1441,20 +1365,63 @@ const cooperativeGroupedRows = computed(() => {
 
 .group-name {
     font-weight: 700;
+    color: #111827;
+}
+
+.icon-close {
+    min-width: 40px;
+    padding: 10px;
+}
+
+.officer-locked-input,
+.locked-input {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+    cursor: not-allowed;
+}
+
+.officer-location-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.badge-label {
+    background: #111827;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.badge-value {
+    background: #f3f4f6;
+    color: #111827;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 @media (max-width: 1100px) {
+    .officer-location-grid,
     .location-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 700px) {
+    .officer-location-grid,
     .location-grid {
         grid-template-columns: 1fr;
     }
 
-    .coop-pagination {
+    .officer-pagination {
         flex-direction: column;
         align-items: stretch;
     }

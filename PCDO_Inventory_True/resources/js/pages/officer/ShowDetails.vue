@@ -272,6 +272,7 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 </script>
 
 <template>
+
     <Head :title="cooperative?.name || 'Cooperative Details'" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
@@ -288,20 +289,17 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                 </div>
 
                 <div class="coop-header-right">
-                    <button
-                        v-if="cooperative?.id"
-                        class="edit-btn"
-                        @click="$inertia.visit(`${dashboardBasePath}/${cooperative.id}/edit`)"
-                        title="Edit Cooperative"
-                    >
-                        <SquarePen color="white" />
+                    <button v-if="cooperative?.id" class="edit-icon-btn"
+                        @click="$inertia.visit(`${dashboardBasePath}/${cooperative.id}/edit`)" title="Edit Cooperative">
+                        <SquarePen :size="18" color="white" />
                     </button>
 
-                    <span class="report-label">Reporting Period</span>
-
-                    <span class="report-badge">
-                        {{ reportingDate?.reporting_month || '-' }}/{{ reportingDate?.reporting_year || '-' }}
-                    </span>
+                    <div class="reporting-section">
+                        <span class="report-label">Reporting Period</span>
+                        <span class="report-badge-white">
+                            {{ reportingDate?.reporting_month || '-' }}/{{ reportingDate?.reporting_year || '-' }}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -326,14 +324,16 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                 </table>
             </div>
 
-            <div class="inventory-filters">
-                <input v-model="searchFilter" placeholder="Search item..." class="coop-search" />
+            <div class="filter-card">
+                <div class="inventory-filters">
+                    <input v-model="searchFilter" placeholder="Search item..." class="coop-search" />
 
-                <select v-model="statusFilter" class="coop-select">
-                    <option value="all">All</option>
-                    <option value="servicable">Servicable</option>
-                    <option value="non-servicable">Non-Servicable</option>
-                </select>
+                    <select v-model="statusFilter" class="coop-select">
+                        <option value="all">All</option>
+                        <option value="servicable">Servicable</option>
+                        <option value="non-servicable">Non-Servicable</option>
+                    </select>
+                </div>
             </div>
 
             <div v-if="!hasAnyInventory" class="instance-card">
@@ -344,11 +344,8 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
             <template v-else>
                 <div v-for="instance in instances" :key="instance?.id ?? Math.random()" class="instance-card">
                     <template v-if="hasVisibleItems(instance)">
-                        <details
-                            v-for="(items, category) in groupByCategory(filterItems(instance?.inventories ?? []))"
-                            :key="String(category)"
-                            open
-                        >
+                        <details v-for="(items, category) in groupByCategory(filterItems(instance?.inventories ?? []))"
+                            :key="String(category)" open>
                             <summary>{{ category }}</summary>
 
                             <table class="inventory-data-table">
@@ -369,12 +366,8 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                                         <td colspan="7">No matching inventory items.</td>
                                     </tr>
 
-                                    <tr
-                                        v-for="item in items"
-                                        :key="item?.id"
-                                        class="clickable-row"
-                                        @click="openFileModal(item)"
-                                    >
+                                    <tr v-for="item in items" :key="item?.id" class="clickable-row"
+                                        @click="openFileModal(item)">
                                         <td data-label="Name">{{ item?.name || '-' }}</td>
                                         <td data-label="Quantity">{{ item?.quantity ?? 0 }}</td>
                                         <td data-label="Value">₱ {{ formatCurrency(item?.value ?? 0) }}</td>
@@ -410,10 +403,8 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                 Grand Total: ₱ {{ formatCurrency(grandTotal) }}
             </div>
 
-            <button
-                @click="$inertia.visit(`${dashboardBasePath}?reporting_date_id=${reportingDateId}`)"
-                class="back-btn"
-            >
+            <button @click="$inertia.visit(`${dashboardBasePath}?reporting_date_id=${reportingDateId}`)"
+                class="back-btn">
                 Back to Cooperatives
             </button>
         </div>
@@ -425,35 +416,20 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                     <button type="button" class="file-modal-close" @click="closeFileModal">✕</button>
                 </div>
 
-                <div
-                    class="file-modal-body"
-                    :class="{ 'single-column': !showMoaSection }"
-                >
+                <div class="file-modal-body" :class="{ 'single-column': !showMoaSection }">
                     <div class="file-preview-section">
                         <h3>Item Picture:</h3>
 
                         <template v-if="selectedItemPicture">
-                            <img
-                                v-if="isImageFile(selectedItemPicture)"
-                                :src="getFileUrl(selectedItemPicture)"
-                                alt="Item Picture"
-                                class="file-preview-image"
-                            />
+                            <img v-if="isImageFile(selectedItemPicture)" :src="getFileUrl(selectedItemPicture)"
+                                alt="Item Picture" class="file-preview-image" />
 
                             <template v-else-if="isPdfFile(selectedItemPicture)">
-                                <iframe
-                                    v-if="!isMobile"
-                                    :src="getFileUrl(selectedItemPicture)"
-                                    class="file-preview-frame"
-                                ></iframe>
+                                <iframe v-if="!isMobile" :src="getFileUrl(selectedItemPicture)"
+                                    class="file-preview-frame"></iframe>
 
-                                <a
-                                    v-else
-                                    :href="getFileUrl(selectedItemPicture)"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="file-preview-link"
-                                >
+                                <a v-else :href="getFileUrl(selectedItemPicture)" target="_blank"
+                                    rel="noopener noreferrer" class="file-preview-link">
                                     Open PDF
                                 </a>
                             </template>
@@ -462,13 +438,8 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                                 Preview not available for this file type.
                             </div>
 
-                            <a
-                                :href="getFileUrl(selectedItemPicture)"
-                                :download="getFileName(selectedItemPicture)"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="file-download-btn"
-                            >
+                            <a :href="getFileUrl(selectedItemPicture)" :download="getFileName(selectedItemPicture)"
+                                target="_blank" rel="noopener noreferrer" class="file-download-btn">
                                 Download File
                             </a>
                         </template>
@@ -476,34 +447,19 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                         <p v-else>No item picture uploaded.</p>
                     </div>
 
-                    <div
-                        v-if="showMoaSection"
-                        class="file-preview-section"
-                    >
+                    <div v-if="showMoaSection" class="file-preview-section">
                         <h3>MOA File:</h3>
 
                         <template v-if="selectedMoaFile">
-                            <img
-                                v-if="isImageFile(selectedMoaFile)"
-                                :src="getFileUrl(selectedMoaFile)"
-                                alt="MOA File"
-                                class="file-preview-image"
-                            />
+                            <img v-if="isImageFile(selectedMoaFile)" :src="getFileUrl(selectedMoaFile)" alt="MOA File"
+                                class="file-preview-image" />
 
                             <template v-else-if="isPdfFile(selectedMoaFile)">
-                                <iframe
-                                    v-if="!isMobile"
-                                    :src="getFileUrl(selectedMoaFile)"
-                                    class="file-preview-frame"
-                                ></iframe>
+                                <iframe v-if="!isMobile" :src="getFileUrl(selectedMoaFile)"
+                                    class="file-preview-frame"></iframe>
 
-                                <a
-                                    v-else
-                                    :href="getFileUrl(selectedMoaFile)"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="file-preview-link"
-                                >
+                                <a v-else :href="getFileUrl(selectedMoaFile)" target="_blank" rel="noopener noreferrer"
+                                    class="file-preview-link">
                                     Open PDF
                                 </a>
                             </template>
@@ -512,13 +468,8 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                                 Preview not available for this file type.
                             </div>
 
-                            <a
-                                :href="getFileUrl(selectedMoaFile)"
-                                :download="getFileName(selectedMoaFile)"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="file-download-btn"
-                            >
+                            <a :href="getFileUrl(selectedMoaFile)" :download="getFileName(selectedMoaFile)"
+                                target="_blank" rel="noopener noreferrer" class="file-download-btn">
                                 Download File
                             </a>
                         </template>

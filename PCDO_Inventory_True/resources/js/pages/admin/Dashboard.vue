@@ -7,7 +7,7 @@ import type { BreadcrumbItem } from '@/types'
 import SelectSearch from '@/components/SelectSearch.vue'
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Cooperatives', href: '/cooperatives' }
+    { title: 'Dashboard', href: '#' }
 ]
 
 type SummaryRow = {
@@ -548,37 +548,33 @@ const cooperativeGroupedRows = computed(() => {
         <div class="coop-page">
             <div class="coop-header">
                 <div class="coop-header-left">
-                    <h1 class="coop-title">
-                        Cooperatives
-                    </h1>
-
-                    <p class="coop-description">
-                        Manage cooperative inventory reports.
-                    </p>
+                    <h1 class="coop-title">Cooperatives</h1>
+                    <p class="coop-description">Manage cooperative inventory reports.</p>
                 </div>
 
                 <div class="coop-header-right">
-                    <span class="report-label">Reporting Period</span>
+                    <div class="controls-group">
+                        <div class="inputs-row">
+                            <span class="label-black">Reporting Period:</span>
 
-                    <select class="report-badge" v-model="selectedDate" @change="filterDate">
-                        <option v-for="date in reportingDates" :key="date.id" :value="date.id">
-                            {{ date.reporting_month }}/{{ date.reporting_year }}
-                        </option>
-                    </select>
+                            <select class="report-badge" v-model="selectedDate" @change="filterDate">
+                                <option v-for="date in reportingDates" :key="date.id" :value="date.id">
+                                    {{ date.reporting_month }}/{{ date.reporting_year }}
+                                </option>
+                            </select>
 
-                    <button @click="openSummaryModal" class="coop-btn-secondary">
-                        Summary
-                    </button>
-
-                    <button @click="openModal" class="coop-btn-primary">
-                        +
-                    </button>
+                            <button @click="openModal" class="coop-btn-primary">+</button>
+                        </div>
+                        <button @click="openSummaryModal" class="coop-btn-summary">
+                            Summary Report
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div class="coop-card">
                 <div class="coop-card-header">
-                    <div class="coop-filter" > 
+                    <div class="coop-filter">
                         <input v-model="search" type="text" placeholder="Search cooperative..." class="coop-search" />
                         <select v-model="inventoryFilter" class="coop-select">
                             <option value="all">All Cooperatives</option>
@@ -823,8 +819,8 @@ const cooperativeGroupedRows = computed(() => {
                                             <td>{{ row.coop_location || '-' }}</td>
                                             <td>{{ row.item_location || '-' }}</td>
                                             <td>
-                                                {{ formatMoney(row.value) }} x {{ row.display_quantity }}
-                                                ({{ formatMoney(row.total) }})
+                                                {{ formatMoney(row.value) }} ₱ x {{ row.display_quantity }}
+                                                ({{ formatMoney(row.total) }} ₱)
                                             </td>
                                         </tr>
                                     </template>
@@ -865,9 +861,9 @@ const cooperativeGroupedRows = computed(() => {
                                             <td>{{ row.item_name }}</td>
                                             <td>{{ row.coop_location || '-' }}</td>
                                             <td>{{ row.item_location || '-' }}</td>
-                                            <td>{{ formatMoney(row.value) }}</td>
+                                            <td>{{ formatMoney(row.value) }} ₱</td>
                                             <td>{{ row.display_quantity }}</td>
-                                            <td>{{ formatMoney(row.total) }}</td>
+                                            <td>{{ formatMoney(row.total) }} ₱</td>
                                         </tr>
                                     </template>
                                 </template>
@@ -1127,13 +1123,29 @@ const cooperativeGroupedRows = computed(() => {
     overflow-x: auto;
 }
 
-.summary-table th {
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.summary-table th,
+.summary-table td {
+    color: #111827 !important;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.summary-table thead th {
     position: sticky;
     top: 0;
-    background: white;
+    background: #ffffff !important;
     z-index: 1;
-    color: #111827;
+    color: #111827 !important;
     font-weight: 700;
+}
+
+.summary-table tbody td {
+    background: #ffffff;
+    color: #111827 !important;
 }
 
 .group-title {

@@ -682,30 +682,10 @@ async function submit() {
     <Head title="Inventory Form" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="inventory-wrapper">
-            <div class="gov-header">
-                <div class="gov-header-inner">
-                    <div class="logo-left">
-                        <img src="/img/province_of_palawan_logo.png" alt="Palawan Logo">
-                    </div>
-
-                    <div class="gov-text">
-                        <div><strong>Republic of the Philippines</strong></div>
-                        <div>Provincial Government of Palawan</div>
-                        <div><strong>PROVINCIAL COOPERATIVE DEVELOPMENT OFFICE</strong></div>
-                        <div>Capitol Bldg., Puerto Princesa City</div>
-                        <div style="color:#1a73e8;">pcdo.palawan@gmail.com</div>
-                        <div>(048) 434-4173</div>
-                    </div>
-
-                    <div class="logo-right">
-                        <img src="/img/pcdo_logo.png" alt="PCDO Logo">
-                    </div>
-                </div>
-            </div>
+        <div class="edit-inventory-wrapper">
 
             <div class="inventory-header">
-                <h1 class="inventory-title">INVENTORY FORM</h1>
+                <h1 class="inventory-title">ADD COOPERATIVE INVENTORY</h1>
                 <p class="inventory-subtitle">
                     Create or update cooperative inventory details
                 </p>
@@ -1169,5 +1149,26 @@ async function submit() {
     color: #1d4ed8;
     word-break: break-word;
     margin-top: 6px;
+}
+
+.side-nav {
+    position: fixed;
+    right: 1px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    width: 130px;
+    max-height: 70vh;
+    overflow-y: auto;
+
+    padding: 12px;
+
+    background: transparent;
+    border: none;
+    box-shadow: none;
+
+    font-size: 14px;
+    opacity: 0.45;
+    transition: opacity 0.2s ease;
 }
 </style>

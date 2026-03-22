@@ -816,12 +816,13 @@ function submit() {
 </script>
 
 <template>
+
     <Head title="Edit Cooperative" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="edit-inventory-wrapper">
             <div class="inventory-header">
-                <h1 class="inventory-title">EDIT COOPERATIVE</h1>
+                <h1 class="inventory-title">EDIT COOPERATIVE INVENTORY</h1>
                 <p class="inventory-subtitle">Update registration and inventory information</p>
             </div>
 
@@ -833,13 +834,9 @@ function submit() {
                                 Cooperative Name
                                 <span v-if="fieldErrors.name" class="error-star">*</span>
                             </label>
-                            <Input
-                                class="form-input"
-                                :class="{ 'error-border': fieldErrors.name }"
-                                v-model="form.name"
+                            <Input class="form-input" :class="{ 'error-border': fieldErrors.name }" v-model="form.name"
                                 name="name"
-                                @input="form.name = sanitizeGeneralName(form.name); clearFieldError('name')"
-                            />
+                                @input="form.name = sanitizeGeneralName(form.name); clearFieldError('name')" />
                             <p v-if="fieldError('name')" class="form-error">{{ fieldError('name') }}</p>
                         </div>
 
@@ -848,13 +845,9 @@ function submit() {
                                 Email
                                 <span v-if="fieldErrors.email" class="error-star">*</span>
                             </label>
-                            <Input
-                                class="form-input"
-                                :class="{ 'error-border': fieldErrors.email }"
-                                v-model="form.email"
-                                name="email"
-                                @input="form.email = sanitizeEmail(form.email); clearFieldError('email')"
-                            />
+                            <Input class="form-input" :class="{ 'error-border': fieldErrors.email }"
+                                v-model="form.email" name="email"
+                                @input="form.email = sanitizeEmail(form.email); clearFieldError('email')" />
                             <p v-if="fieldError('email')" class="form-error">{{ fieldError('email') }}</p>
                         </div>
 
@@ -863,13 +856,9 @@ function submit() {
                                 Contact Number
                                 <span v-if="fieldErrors.number" class="error-star">*</span>
                             </label>
-                            <Input
-                                class="form-input"
-                                :class="{ 'error-border': fieldErrors.number }"
-                                v-model="form.number"
-                                name="number"
-                                @input="form.number = sanitizePhone(form.number); clearFieldError('number')"
-                            />
+                            <Input class="form-input" :class="{ 'error-border': fieldErrors.number }"
+                                v-model="form.number" name="number"
+                                @input="form.number = sanitizePhone(form.number); clearFieldError('number')" />
                             <p v-if="fieldError('number')" class="form-error">{{ fieldError('number') }}</p>
                         </div>
                     </div>
@@ -882,26 +871,17 @@ function submit() {
                                 Region
                                 <span v-if="fieldErrors.region_code" class="error-star">*</span>
                             </label>
-                            <div
-                                :class="{
-                                    'error-border': fieldErrors.region_code,
-                                    'locked-field': isRegionLocked
-                                }"
-                                @click="clearFieldError('region_code')"
-                            >
-                                <SelectSearch
-                                    :clearOnFocus="true"
-                                    :items="regions"
-                                    itemLabelKey="name"
-                                    itemKeyProp="code"
-                                    v-model:search="searchState.region_code"
-                                    :modelValue="form.region_code"
-                                    v-model:open="openState.region_code"
+                            <div :class="{
+                                'error-border': fieldErrors.region_code,
+                                'locked-field': isRegionLocked
+                            }" @click="clearFieldError('region_code')">
+                                <SelectSearch :clearOnFocus="true" :items="regions" itemLabelKey="name"
+                                    itemKeyProp="code" v-model:search="searchState.region_code"
+                                    :modelValue="form.region_code" v-model:open="openState.region_code"
                                     :disabled="isRegionLocked"
                                     @update:modelValue="val => { onLocationModelUpdate('region_code', val); clearFieldError('region_code') }"
                                     @select="val => { onSelect('region_code', val); clearFieldError('region_code') }"
-                                    name="region"
-                                />
+                                    name="region" />
                             </div>
                             <p v-if="fieldError('region_code')" class="form-error">{{ fieldError('region_code') }}</p>
                         </div>
@@ -911,28 +891,20 @@ function submit() {
                                 Province
                                 <span v-if="fieldErrors.province_code" class="error-star">*</span>
                             </label>
-                            <div
-                                :class="{
-                                    'error-border': fieldErrors.province_code,
-                                    'locked-field': isProvinceLocked
-                                }"
-                                @click="clearFieldError('province_code')"
-                            >
-                                <SelectSearch
-                                    :clearOnFocus="true"
-                                    :items="filteredProvinces"
-                                    itemLabelKey="name"
-                                    itemKeyProp="code"
-                                    v-model:search="searchState.province_code"
-                                    :modelValue="form.province_code"
-                                    v-model:open="openState.province_code"
+                            <div :class="{
+                                'error-border': fieldErrors.province_code,
+                                'locked-field': isProvinceLocked
+                            }" @click="clearFieldError('province_code')">
+                                <SelectSearch :clearOnFocus="true" :items="filteredProvinces" itemLabelKey="name"
+                                    itemKeyProp="code" v-model:search="searchState.province_code"
+                                    :modelValue="form.province_code" v-model:open="openState.province_code"
                                     :disabled="isProvinceLocked || !form.region_code"
                                     @update:modelValue="val => { onLocationModelUpdate('province_code', val); clearFieldError('province_code') }"
                                     @select="val => { onSelect('province_code', val); clearFieldError('province_code') }"
-                                    name="province"
-                                />
+                                    name="province" />
                             </div>
-                            <p v-if="fieldError('province_code')" class="form-error">{{ fieldError('province_code') }}</p>
+                            <p v-if="fieldError('province_code')" class="form-error">{{ fieldError('province_code') }}
+                            </p>
                         </div>
 
                         <div>
@@ -940,26 +912,17 @@ function submit() {
                                 City
                                 <span v-if="fieldErrors.city_code" class="error-star">*</span>
                             </label>
-                            <div
-                                :class="{
-                                    'error-border': fieldErrors.city_code,
-                                    'locked-field': isCityLocked
-                                }"
-                                @click="clearFieldError('city_code')"
-                            >
-                                <SelectSearch
-                                    :clearOnFocus="true"
-                                    :items="filteredCities"
-                                    itemLabelKey="name"
-                                    itemKeyProp="code"
-                                    v-model:search="searchState.city_code"
-                                    :modelValue="form.city_code"
-                                    v-model:open="openState.city_code"
+                            <div :class="{
+                                'error-border': fieldErrors.city_code,
+                                'locked-field': isCityLocked
+                            }" @click="clearFieldError('city_code')">
+                                <SelectSearch :clearOnFocus="true" :items="filteredCities" itemLabelKey="name"
+                                    itemKeyProp="code" v-model:search="searchState.city_code"
+                                    :modelValue="form.city_code" v-model:open="openState.city_code"
                                     :disabled="isCityLocked || !form.province_code"
                                     @update:modelValue="val => { onLocationModelUpdate('city_code', val); clearFieldError('city_code') }"
                                     @select="val => { onSelect('city_code', val); clearFieldError('city_code') }"
-                                    name="city"
-                                />
+                                    name="city" />
                             </div>
                             <p v-if="fieldError('city_code')" class="form-error">{{ fieldError('city_code') }}</p>
                         </div>
@@ -969,28 +932,20 @@ function submit() {
                                 Barangay
                                 <span v-if="fieldErrors.barangay_code" class="error-star">*</span>
                             </label>
-                            <div
-                                :class="{
-                                    'error-border': fieldErrors.barangay_code,
-                                    'locked-field': isBarangayLocked
-                                }"
-                                @click="clearFieldError('barangay_code')"
-                            >
-                                <SelectSearch
-                                    :clearOnFocus="true"
-                                    :items="filteredBarangays"
-                                    itemLabelKey="name"
-                                    itemKeyProp="code"
-                                    v-model:search="searchState.barangay_code"
-                                    :modelValue="form.barangay_code"
-                                    v-model:open="openState.barangay_code"
+                            <div :class="{
+                                'error-border': fieldErrors.barangay_code,
+                                'locked-field': isBarangayLocked
+                            }" @click="clearFieldError('barangay_code')">
+                                <SelectSearch :clearOnFocus="true" :items="filteredBarangays" itemLabelKey="name"
+                                    itemKeyProp="code" v-model:search="searchState.barangay_code"
+                                    :modelValue="form.barangay_code" v-model:open="openState.barangay_code"
                                     :disabled="isBarangayLocked || !form.city_code"
                                     @update:modelValue="val => { onLocationModelUpdate('barangay_code', val); clearFieldError('barangay_code') }"
                                     @select="val => { onSelect('barangay_code', val); clearFieldError('barangay_code') }"
-                                    name="barangay"
-                                />
+                                    name="barangay" />
                             </div>
-                            <p v-if="fieldError('barangay_code')" class="form-error">{{ fieldError('barangay_code') }}</p>
+                            <p v-if="fieldError('barangay_code')" class="form-error">{{ fieldError('barangay_code') }}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1001,13 +956,11 @@ function submit() {
                             <h2 class="section-title">{{ category.label }}</h2>
                         </div>
 
-                        <div
-                            v-for="({ item, originalIndex }, index) in getItemsByCategory(category.value)"
-                            :key="item.id ?? `${category.value}-${originalIndex}`"
-                            class="item-card"
-                            :id="`item-${originalIndex}`"
-                        >
-                            <button type="button" class="remove-x-btn" @click="removeItemByOriginalIndex(originalIndex)">
+                        <div v-for="({ item, originalIndex }, index) in getItemsByCategory(category.value)"
+                            :key="item.id ?? `${category.value}-${originalIndex}`" class="item-card"
+                            :id="`item-${originalIndex}`">
+                            <button type="button" class="remove-x-btn"
+                                @click="removeItemByOriginalIndex(originalIndex)">
                                 ✕
                             </button>
 
@@ -1019,33 +972,27 @@ function submit() {
                                 <div>
                                     <label class="form-label">
                                         Name
-                                        <span v-if="fieldErrors[`item-${originalIndex}-name`]" class="error-star">*</span>
+                                        <span v-if="fieldErrors[`item-${originalIndex}-name`]"
+                                            class="error-star">*</span>
                                     </label>
 
-                                    <div :class="{ 'error-border': fieldErrors[`item-${originalIndex}-name`] }" @click="clearFieldError(`item-${originalIndex}-name`)">
-                                        <SelectSearch
-                                            :items="getNameOptions(category.value)"
-                                            itemLabelKey="name"
-                                            itemKeyProp="name"
-                                            :search="item.name_search"
-                                            :modelValue="item.name"
+                                    <div :class="{ 'error-border': fieldErrors[`item-${originalIndex}-name`] }"
+                                        @click="clearFieldError(`item-${originalIndex}-name`)">
+                                        <SelectSearch :items="getNameOptions(category.value)" itemLabelKey="name"
+                                            itemKeyProp="name" :search="item.name_search" :modelValue="item.name"
                                             v-model:open="nameOpenState[item.id ?? `${category.value}-${originalIndex}`]"
                                             @update:search="val => {
                                                 onItemNameInput(item, val)
                                                 clearFieldError(`item-${originalIndex}-name`)
-                                            }"
-                                            @update:modelValue="val => {
+                                            }" @update:modelValue="val => {
                                                 onItemNameInput(item, val)
                                                 clearFieldError(`item-${originalIndex}-name`)
-                                            }"
-                                            @select="val => {
+                                            }" @select="val => {
                                                 const picked = String(val?.name ?? '').trim()
                                                 item.name = picked
                                                 item.name_search = picked
                                                 clearFieldError(`item-${originalIndex}-name`)
-                                            }"
-                                            name="item_name"
-                                        />
+                                            }" name="item_name" />
                                     </div>
 
                                     <p v-if="fieldError(`inventoryItem.${originalIndex}.name`)" class="form-error">
@@ -1056,27 +1003,23 @@ function submit() {
                                 <div>
                                     <label class="form-label">
                                         Granting Agency
-                                        <span v-if="fieldErrors[`item-${originalIndex}-granting_agency`]" class="error-star">*</span>
+                                        <span v-if="fieldErrors[`item-${originalIndex}-granting_agency`]"
+                                            class="error-star">*</span>
                                     </label>
 
-                                    <div :class="{ 'error-border': fieldErrors[`item-${originalIndex}-granting_agency`] }" @click="clearFieldError(`item-${originalIndex}-granting_agency`)">
-                                        <SelectSearch
-                                            :items="getGrantingAgencyOptions()"
-                                            itemLabelKey="name"
-                                            itemKeyProp="name"
-                                            :modelValue="item.granting_agency"
-                                            :freeInput="true"
+                                    <div :class="{ 'error-border': fieldErrors[`item-${originalIndex}-granting_agency`] }"
+                                        @click="clearFieldError(`item-${originalIndex}-granting_agency`)">
+                                        <SelectSearch :items="getGrantingAgencyOptions()" itemLabelKey="name"
+                                            itemKeyProp="name" :modelValue="item.granting_agency" :freeInput="true"
                                             :clearOnFocus="false"
                                             v-model:open="grantingAgencyOpenState[item.id ?? `${category.value}-${originalIndex}`]"
                                             @update:search="val => {
                                                 onGrantingAgencyInput(item, val)
                                                 clearFieldError(`item-${originalIndex}-granting_agency`)
-                                            }"
-                                            @update:modelValue="val => {
+                                            }" @update:modelValue="val => {
                                                 onGrantingAgencyInput(item, val)
                                                 clearFieldError(`item-${originalIndex}-granting_agency`)
-                                            }"
-                                            @select="val => {
+                                            }" @select="val => {
                                                 item.granting_agency = normalizeGrantingAgencyValue(String(val?.name ?? '').trim(), true)
                                                 clearFieldError(`item-${originalIndex}-granting_agency`)
 
@@ -1084,12 +1027,11 @@ function submit() {
                                                     item.granting_agency = 'Self'
                                                     item.moa_file = null
                                                 }
-                                            }"
-                                            name="item_granting_agency"
-                                        />
+                                            }" name="item_granting_agency" />
                                     </div>
 
-                                    <p v-if="fieldError(`inventoryItem.${originalIndex}.granting_agency`)" class="form-error">
+                                    <p v-if="fieldError(`inventoryItem.${originalIndex}.granting_agency`)"
+                                        class="form-error">
                                         {{ fieldError(`inventoryItem.${originalIndex}.granting_agency`) }}
                                     </p>
                                 </div>
@@ -1097,15 +1039,13 @@ function submit() {
                                 <div>
                                     <label class="form-label">
                                         Location
-                                        <span v-if="fieldErrors[`item-${originalIndex}-location`]" class="error-star">*</span>
+                                        <span v-if="fieldErrors[`item-${originalIndex}-location`]"
+                                            class="error-star">*</span>
                                     </label>
-                                    <Input
-                                        class="form-input"
+                                    <Input class="form-input"
                                         :class="{ 'error-border': fieldErrors[`item-${originalIndex}-location`] }"
-                                        v-model="item.location"
-                                        name="item_location"
-                                        @input="clearFieldError(`item-${originalIndex}-location`)"
-                                    />
+                                        v-model="item.location" name="item_location"
+                                        @input="clearFieldError(`item-${originalIndex}-location`)" />
                                     <p v-if="fieldError(`inventoryItem.${originalIndex}.location`)" class="form-error">
                                         {{ fieldError(`inventoryItem.${originalIndex}.location`) }}
                                     </p>
@@ -1114,17 +1054,13 @@ function submit() {
                                 <div>
                                     <label class="form-label">
                                         Value
-                                        <span v-if="fieldErrors[`item-${originalIndex}-value`]" class="error-star">*</span>
+                                        <span v-if="fieldErrors[`item-${originalIndex}-value`]"
+                                            class="error-star">*</span>
                                     </label>
-                                    <Input
-                                        class="form-input"
+                                    <Input class="form-input"
                                         :class="{ 'error-border': fieldErrors[`item-${originalIndex}-value`] }"
-                                        type="number"
-                                        step="0.01"
-                                        v-model="item.value"
-                                        name="item_value"
-                                        @input="clearFieldError(`item-${originalIndex}-value`)"
-                                    />
+                                        type="number" step="0.01" v-model="item.value" name="item_value"
+                                        @input="clearFieldError(`item-${originalIndex}-value`)" />
                                     <p v-if="fieldError(`inventoryItem.${originalIndex}.value`)" class="form-error">
                                         {{ fieldError(`inventoryItem.${originalIndex}.value`) }}
                                     </p>
@@ -1133,17 +1069,14 @@ function submit() {
                                 <div>
                                     <label class="form-label">
                                         Quantity
-                                        <span v-if="fieldErrors[`item-${originalIndex}-quantity`]" class="error-star">*</span>
+                                        <span v-if="fieldErrors[`item-${originalIndex}-quantity`]"
+                                            class="error-star">*</span>
                                     </label>
-                                    <Input
-                                        class="form-input"
+                                    <Input class="form-input"
                                         :class="{ 'error-border': fieldErrors[`item-${originalIndex}-quantity`] }"
-                                        type="number"
-                                        v-model="item.quantity"
-                                        name="item_quantity"
+                                        type="number" v-model="item.quantity" name="item_quantity"
                                         @input="clearFieldError(`item-${originalIndex}-quantity`)"
-                                        @change="item.status = null"
-                                    />
+                                        @change="item.status = null" />
                                     <p v-if="fieldError(`inventoryItem.${originalIndex}.quantity`)" class="form-error">
                                         {{ fieldError(`inventoryItem.${originalIndex}.quantity`) }}
                                     </p>
@@ -1152,22 +1085,16 @@ function submit() {
                                 <div>
                                     <label class="form-label">
                                         Status
-                                        <span v-if="fieldErrors[`item-${originalIndex}-status`]" class="error-star">*</span>
+                                        <span v-if="fieldErrors[`item-${originalIndex}-status`]"
+                                            class="error-star">*</span>
                                     </label>
-                                    <select
-                                        v-model.number="item.status"
-                                        class="form-select"
+                                    <select v-model.number="item.status" class="form-select"
                                         :class="{ 'error-border': fieldErrors[`item-${originalIndex}-status`] }"
-                                        :disabled="Number(item.quantity) === 0"
-                                        name="item_status"
-                                        @change="clearFieldError(`item-${originalIndex}-status`)"
-                                    >
+                                        :disabled="Number(item.quantity) === 0" name="item_status"
+                                        @change="clearFieldError(`item-${originalIndex}-status`)">
                                         <option :value="null" disabled>Select Status</option>
-                                        <option
-                                            v-for="option in getStatusOptions(item.quantity)"
-                                            :key="option.value"
-                                            :value="option.value"
-                                        >
+                                        <option v-for="option in getStatusOptions(item.quantity)" :key="option.value"
+                                            :value="option.value">
                                             {{ option.label }}
                                         </option>
                                     </select>
@@ -1179,25 +1106,25 @@ function submit() {
                                 <div>
                                     <label class="form-label">
                                         Acquired Date
-                                        <span v-if="fieldErrors[`item-${originalIndex}-acquired_date`]" class="error-star">*</span>
+                                        <span v-if="fieldErrors[`item-${originalIndex}-acquired_date`]"
+                                            class="error-star">*</span>
                                     </label>
-                                    <Input
-                                        class="form-input"
+                                    <Input class="form-input"
                                         :class="{ 'error-border': fieldErrors[`item-${originalIndex}-acquired_date`] }"
-                                        type="date"
-                                        v-model="item.acquired_date"
-                                        :max="today"
-                                        name="item_acquired_date"
+                                        type="date" v-model="item.acquired_date" :max="today" name="item_acquired_date"
                                         @input="clearFieldError(`item-${originalIndex}-acquired_date`)"
-                                        @change="clearFieldError(`item-${originalIndex}-acquired_date`)"
-                                    />
-                                    <p v-if="fieldError(`inventoryItem.${originalIndex}.acquired_date`)" class="form-error">
+                                        @change="clearFieldError(`item-${originalIndex}-acquired_date`)" />
+                                    <p v-if="fieldError(`inventoryItem.${originalIndex}.acquired_date`)"
+                                        class="form-error">
                                         {{ fieldError(`inventoryItem.${originalIndex}.acquired_date`) }}
                                     </p>
                                 </div>
 
                                 <div>
                                     <label class="form-label">Item Picture</label>
+
+                                    <input type="file" accept=".jpg,.jpeg,.png,.pdf" class="form-input"
+                                        @change="onFileChange($event, item, 'item_picture')" />
 
                                     <div v-if="item.item_picture_meta" class="file-name">
                                         Current file:
@@ -1206,18 +1133,12 @@ function submit() {
                                         </a>
                                     </div>
 
-                                    <input
-                                        type="file"
-                                        accept=".jpg,.jpeg,.png,.pdf"
-                                        class="form-input"
-                                        @change="onFileChange($event, item, 'item_picture')"
-                                    />
-
                                     <div v-if="item.item_picture?.name" class="file-name">
                                         New file: {{ item.item_picture.name }}
                                     </div>
 
-                                    <p v-if="fieldError(`inventoryItem.${originalIndex}.item_picture`)" class="form-error">
+                                    <p v-if="fieldError(`inventoryItem.${originalIndex}.item_picture`)"
+                                        class="form-error">
                                         {{ fieldError(`inventoryItem.${originalIndex}.item_picture`) }}
                                     </p>
                                 </div>
@@ -1225,19 +1146,15 @@ function submit() {
                                 <div v-if="!isSelfAgency(item)">
                                     <label class="form-label">MOA File</label>
 
+                                    <input type="file" accept=".jpg,.jpeg,.png,.pdf" class="form-input"
+                                        @change="onFileChange($event, item, 'moa_file')" />
+
                                     <div v-if="item.moa_file_meta" class="file-name">
                                         Current file:
                                         <a :href="getPreviewUrl(item.moa_file_meta)" target="_blank">
                                             {{ item.moa_file_meta.file_name }}
                                         </a>
                                     </div>
-
-                                    <input
-                                        type="file"
-                                        accept=".jpg,.jpeg,.png,.pdf"
-                                        class="form-input"
-                                        @change="onFileChange($event, item, 'moa_file')"
-                                    />
 
                                     <div v-if="item.moa_file?.name" class="file-name">
                                         New file: {{ item.moa_file.name }}
@@ -1257,11 +1174,8 @@ function submit() {
                         {{ form.processing ? 'Updating...' : 'Update Records' }}
                     </button>
 
-                    <button
-                        type="button"
-                        @click="router.visit(`${baseDashboardPath}/${props.cooperative.id}`)"
-                        class="edit-cancel-btn"
-                    >
+                    <button type="button" @click="router.visit(`${baseDashboardPath}/${props.cooperative.id}`)"
+                        class="edit-cancel-btn">
                         Cancel
                     </button>
                 </div>
@@ -1285,10 +1199,12 @@ function submit() {
 
 .locked-field {
     position: relative;
-    background-color: #f1f5f9; /* light gray */
+    background-color: #f1f5f9;
+    /* light gray */
     border: 1px dashed #94a3b8 !important;
     cursor: not-allowed;
-    pointer-events: none; /* fully block interaction */
+    pointer-events: none;
+    /* fully block interaction */
 }
 
 .locked-field :deep(input),

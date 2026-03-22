@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "C:\\Users\\msi\\Desktop\\John\\Applications\\php-8.4.14-nts-Win32-vs17-x64\\php.exe",
+            "args": [
+                "C:\\Users\\msi\\Desktop\\John\\Codes\\PCDO_VUELARAVEL\\PCDO_Inventory\\artisan",
+                "boost:mcp"
+            ]
+        }
+    }
+}

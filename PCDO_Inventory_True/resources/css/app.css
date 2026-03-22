@@ -3,6 +3,7 @@
 @import 'tw-animate-css';
 @import "./inventory.css";
 @import "./cooperative.css";
+@import "./officer.css";
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -95,7 +96,7 @@
 
 :root {
     --background:
-        oklch(1 0 0);
+        oklch(95.703% 0.02687 226.921);
     --foreground:
         oklch(0.145 0 0);
     --card:
@@ -111,24 +112,24 @@
     --primary-foreground:
         oklch(0.985 0 0);
     --secondary:
-        oklch(0.97 0 0);
+        oklch(0.96 0.01 240);
     --secondary-foreground:
         oklch(0.205 0 0);
     --muted:
-        oklch(0.97 0 0);
+        oklch(0.96 0.01 240);
     --muted-foreground:
-        oklch(0.556 0 0);
+        oklch(0.55 0.01 240);
     --accent:
-        oklch(0.97 0 0);
+        oklch(0.94 0.01 240);
     --accent-foreground:
         oklch(0.205 0 0);
     --destructive:
         oklch(0.577 0.245 27.325);
     --destructive-foreground: hsl(0 0% 98%);
     --border:
-        oklch(0.922 0 0);
+        oklch(90.496% 0.00434 237.281);
     --input:
-        oklch(0.922 0 0);
+        oklch(0.92 0.005 240);
     --ring:
         oklch(0.708 0 0);
     --chart-1:
@@ -143,7 +144,8 @@
         oklch(0.769 0.188 70.08);
     --radius:
         0.625rem;
-    --sidebar-background: hsl(0 0% 98%);
+    --sidebar-background: 
+        oklch(98.621% 0.00693 248.267);
     --sidebar-foreground:
         oklch(0.145 0 0);
     --sidebar-primary:
@@ -151,15 +153,15 @@
     --sidebar-primary-foreground:
         oklch(0.985 0 0);
     --sidebar-accent:
-        oklch(0.97 0 0);
+        oklch(0.93 0.01 240);
     --sidebar-accent-foreground:
         oklch(0.205 0 0);
     --sidebar-border:
-        oklch(0.922 0 0);
+        oklch(86.632% 0.01137 243.909);
     --sidebar-ring:
         oklch(0.708 0 0);
     --sidebar:
-        oklch(0.985 0 0);
+        oklch(0.975 0.01 240);
 }
 
 .dark {

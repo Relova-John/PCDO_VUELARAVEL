@@ -281,16 +281,19 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                 </div>
 
                 <div class="coop-header-right">
-                    <button v-if="cooperative?.id" class="edit-btn"
+                    <!-- Top Row: Edit Button -->
+                    <button v-if="cooperative?.id" class="edit-icon-btn"
                         @click="$inertia.visit(`${dashboardBasePath}/${cooperative.id}/edit`)" title="Edit Cooperative">
-                        <SquarePen color="white" />
+                        <SquarePen :size="18" color="white" />
                     </button>
 
-                    <span class="report-label">Reporting Period</span>
-
-                    <span class="report-badge">
-                        {{ reportingDate?.reporting_month || '-' }}/{{ reportingDate?.reporting_year || '-' }}
-                    </span>
+                    <!-- Bottom Row: Reporting Info -->
+                    <div class="reporting-section">
+                        <span class="report-label">Reporting Period</span>
+                        <span class="report-badge-white">
+                            {{ reportingDate?.reporting_month || '-' }}/{{ reportingDate?.reporting_year || '-' }}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -315,14 +318,16 @@ const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
                 </table>
             </div>
 
-            <div class="inventory-filters">
-                <input v-model="searchFilter" placeholder="Search item..." class="coop-search" />
+            <div class="filter-card">
+                <div class="inventory-filters">
+                    <input v-model="searchFilter" placeholder="Search item..." class="coop-search" />
 
-                <select v-model="statusFilter" class="coop-select">
-                    <option value="all">All</option>
-                    <option value="servicable">Servicable</option>
-                    <option value="non-servicable">Non-Servicable</option>
-                </select>
+                    <select v-model="statusFilter" class="coop-select">
+                        <option value="all">All</option>
+                        <option value="servicable">Servicable</option>
+                        <option value="non-servicable">Non-Servicable</option>
+                    </select>
+                </div>
             </div>
 
             <div v-if="!hasAnyInventory" class="instance-card">
