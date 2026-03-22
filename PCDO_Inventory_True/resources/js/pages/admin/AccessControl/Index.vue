@@ -5,6 +5,7 @@ import SelectSearch from '@/components/SelectSearch.vue'
 import type { BreadcrumbItem } from '@/types'
 import { reactive, computed, watch } from 'vue'
 import type { Regions, Provinces, Cities } from '@/types/locations'
+import { toast } from 'vue-sonner'
 
 type EntryType = 'municipality'
 type AccessType = 'access'
@@ -175,7 +176,7 @@ async function copyCode(accessType: AccessType, entryType: EntryType, id: string
 
     await navigator.clipboard.writeText(entry.code)
 
-    alert('Code copied.')
+    toast.success('Access code copied to clipboard!')
 }
 
 function persistEntry(payload: {

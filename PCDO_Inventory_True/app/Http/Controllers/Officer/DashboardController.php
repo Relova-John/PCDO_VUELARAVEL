@@ -85,6 +85,21 @@ class DashboardController extends Controller
                 'inventoryCounts' => [],
                 'locationScope' => null,
                 'locationName' => null,
+                'assignedLocation' => [
+                    'region_code' => null,
+                    'province_code' => null,
+                    'city_code' => null,
+                    'barangay_code' => null,
+                ],
+                'regions' => [],
+                'provinces' => [],
+                'cities' => [],
+                'barangays' => [],
+                'inventorySummaryRows' => [],
+                'categories' => [],
+                'breadcrumbs' => [
+                    ['title' => 'Cooperatives', 'href' => route('officer.dashboard')]
+                ],
             ]);
         }
 
@@ -205,6 +220,12 @@ class DashboardController extends Controller
             'selectedReportingDate' => (int) $reportingDateId,
             'locationScope' => $this->buildLocationScope($user),
             'locationName' => $this->buildLocationName($user),
+            'assignedLocation' => [
+                'region_code' => $user->region_code,
+                'province_code' => $user->province_code,
+                'city_code' => $user->city_code,
+                'barangay_code' => $user->barangay_code,
+            ],
             'regions' => $regions,
             'provinces' => $provinces,
             'cities' => $cities,

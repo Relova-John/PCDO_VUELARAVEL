@@ -42,6 +42,12 @@ const props = defineProps<{
     selectedReportingDate: number
     locationScope: string | null
     locationName: string | null
+    assignedLocation: {
+        region_code?: string | number | null
+        province_code?: string | number | null
+        city_code?: string | number | null
+        barangay_code?: string | number | null
+    }
     regions: Regions[]
     provinces: Provinces[]
     cities: Cities[]
@@ -100,9 +106,13 @@ function closeSummaryModal() {
 }
 
 function findNameByCode<T extends { code: string | number; name: string }>(
-    items: T[],
-    code: string
+    items: T[] | undefined | null,
+    code: string | number | null | undefined
 ) {
+    if (!Array.isArray(items) || code === null || code === undefined || code === '') {
+        return ''
+    }
+
     return items.find(item => String(item.code) === String(code))?.name ?? ''
 }
 
@@ -118,16 +128,20 @@ const normalizedScope = computed(() => {
     return ''
 })
 
-const assignedLocation = computed(() => {
-    const first = props.cooperatives[0]
-
-    return {
-        region_code: first?.region_code ? String(first.region_code) : '',
-        province_code: first?.province_code ? String(first.province_code) : '',
-        city_code: first?.city_code ? String(first.city_code) : '',
-        barangay_code: first?.barangay_code ? String(first.barangay_code) : ''
-    }
-})
+const assignedLocation = computed(() => ({
+    region_code: props.assignedLocation?.region_code
+        ? String(props.assignedLocation.region_code)
+        : '',
+    province_code: props.assignedLocation?.province_code
+        ? String(props.assignedLocation.province_code)
+        : '',
+    city_code: props.assignedLocation?.city_code
+        ? String(props.assignedLocation.city_code)
+        : '',
+    barangay_code: props.assignedLocation?.barangay_code
+        ? String(props.assignedLocation.barangay_code)
+        : ''
+}))
 
 const isRegionLocked = computed(() => {
     return ['region', 'province', 'city', 'barangay'].includes(normalizedScope.value)
@@ -223,19 +237,24 @@ function onLocationModelUpdate(field: LocationFields, value: string | number) {
 }
 
 const filteredRegions = computed(() => {
+    const regions = props.regions ?? []
+
     if (isRegionLocked.value && assignedLocation.value.region_code) {
-        return props.regions.filter(
+        return regions.filter(
             region => String(region.code) === String(assignedLocation.value.region_code)
         )
     }
 
-    return props.regions
+    return regions
 })
 
 const filteredProvinces = computed(() => {
-    const baseRegion = locationFilter.region_code || assignedLocation.value.region_code
+    const provinces = props.provinces ?? []
+    const baseRegion =
+        locationFilter.region_code ||
+        (isRegionLocked.value ? assignedLocation.value.region_code : '')
 
-    let result = props.provinces
+    let result = provinces
 
     if (baseRegion) {
         result = result.filter(
@@ -253,9 +272,12 @@ const filteredProvinces = computed(() => {
 })
 
 const filteredCities = computed(() => {
-    const baseProvince = locationFilter.province_code || assignedLocation.value.province_code
+    const cities = props.cities ?? []
+    const baseProvince =
+        locationFilter.province_code ||
+        (isProvinceLocked.value ? assignedLocation.value.province_code : '')
 
-    let result = props.cities
+    let result = cities
 
     if (baseProvince) {
         result = result.filter(
@@ -273,9 +295,12 @@ const filteredCities = computed(() => {
 })
 
 const filteredBarangays = computed(() => {
-    const baseCity = locationFilter.city_code || assignedLocation.value.city_code
+    const barangays = props.barangays ?? []
+    const baseCity =
+        locationFilter.city_code ||
+        (isCityLocked.value ? assignedLocation.value.city_code : '')
 
-    let result = props.barangays
+    let result = barangays
 
     if (baseCity) {
         result = result.filter(
@@ -492,19 +517,24 @@ function onSummaryLocationModelUpdate(field: LocationFields, value: string | num
 }
 
 const summaryFilteredRegions = computed(() => {
+    const regions = props.regions ?? []
+
     if (isRegionLocked.value && assignedLocation.value.region_code) {
-        return props.regions.filter(
+        return regions.filter(
             region => String(region.code) === String(assignedLocation.value.region_code)
         )
     }
 
-    return props.regions
+    return regions
 })
 
 const summaryFilteredProvinces = computed(() => {
-    const baseRegion = summaryFilters.region_code || assignedLocation.value.region_code
+    const provinces = props.provinces ?? []
+    const baseRegion =
+        summaryFilters.region_code ||
+        (isRegionLocked.value ? assignedLocation.value.region_code : '')
 
-    let result = props.provinces
+    let result = provinces
 
     if (baseRegion) {
         result = result.filter(
@@ -522,9 +552,12 @@ const summaryFilteredProvinces = computed(() => {
 })
 
 const summaryFilteredCities = computed(() => {
-    const baseProvince = summaryFilters.province_code || assignedLocation.value.province_code
+    const cities = props.cities ?? []
+    const baseProvince =
+        summaryFilters.province_code ||
+        (isProvinceLocked.value ? assignedLocation.value.province_code : '')
 
-    let result = props.cities
+    let result = cities
 
     if (baseProvince) {
         result = result.filter(
@@ -542,9 +575,12 @@ const summaryFilteredCities = computed(() => {
 })
 
 const summaryFilteredBarangays = computed(() => {
-    const baseCity = summaryFilters.city_code || assignedLocation.value.city_code
+    const barangays = props.barangays ?? []
+    const baseCity =
+        summaryFilters.city_code ||
+        (isCityLocked.value ? assignedLocation.value.city_code : '')
 
-    let result = props.barangays
+    let result = barangays
 
     if (baseCity) {
         result = result.filter(
@@ -700,7 +736,6 @@ const cooperativeGroupedRows = computed(() => {
 </script>
 
 <template>
-
     <Head title="Officer Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
@@ -745,8 +780,12 @@ const cooperativeGroupedRows = computed(() => {
                     </p>
 
                     <form @submit.prevent="activateCode" class="space-y-4">
-                        <input v-model="accessForm.code" type="text" placeholder="Enter access code"
-                            class="officer-search w-full" />
+                        <input
+                            v-model="accessForm.code"
+                            type="text"
+                            placeholder="Enter access code"
+                            class="officer-search w-full"
+                        />
 
                         <div v-if="page.props.errors.code" class="text-red-500 text-sm">
                             {{ page.props.errors.code }}
@@ -759,13 +798,15 @@ const cooperativeGroupedRows = computed(() => {
                 </div>
             </div>
 
-
-            <div class="officer-card">
+            <div v-else class="officer-card">
                 <div class="officer-card-header">
-                    <!-- TOP ROW: Search and Inventory Filter -->
                     <div class="officer-filter-row-top">
-                        <input v-model="search" type="text" placeholder="Search cooperative..."
-                            class="officer-search" />
+                        <input
+                            v-model="search"
+                            type="text"
+                            placeholder="Search cooperative..."
+                            class="officer-search"
+                        />
 
                         <select v-model="inventoryFilter" class="officer-select">
                             <option value="all">All Cooperatives</option>
@@ -778,46 +819,90 @@ const cooperativeGroupedRows = computed(() => {
                     <div class="officer-location-grid">
                         <div>
                             <label class="officer-form-label">Region</label>
-                            <input v-if="isRegionLocked" :value="locationSearch.region_code" type="text"
-                                class="officer-search officer-locked-input" readonly />
-                            <SelectSearch v-else :items="filteredRegions" itemLabelKey="name" itemKeyProp="code"
-                                v-model:search="locationSearch.region_code" :modelValue="locationFilter.region_code"
+                            <input
+                                v-if="isRegionLocked"
+                                :value="locationSearch.region_code"
+                                type="text"
+                                class="officer-search officer-locked-input"
+                                readonly
+                            />
+                            <SelectSearch
+                                v-else
+                                :items="filteredRegions"
+                                itemLabelKey="name"
+                                itemKeyProp="code"
+                                v-model:search="locationSearch.region_code"
+                                :modelValue="locationFilter.region_code"
                                 v-model:open="openState.region_code"
                                 @update:model-value="val => onLocationModelUpdate('region_code', val)"
-                                @select="val => onSelectLocation('region_code', val)" />
+                                @select="val => onSelectLocation('region_code', val)"
+                            />
                         </div>
 
                         <div>
                             <label class="officer-form-label">Province</label>
-                            <input v-if="isProvinceLocked" :value="locationSearch.province_code" type="text"
-                                class="officer-search officer-locked-input" readonly />
-                            <SelectSearch v-else :items="filteredProvinces" itemLabelKey="name" itemKeyProp="code"
-                                v-model:search="locationSearch.province_code" :modelValue="locationFilter.province_code"
+                            <input
+                                v-if="isProvinceLocked"
+                                :value="locationSearch.province_code"
+                                type="text"
+                                class="officer-search officer-locked-input"
+                                readonly
+                            />
+                            <SelectSearch
+                                v-else
+                                :items="filteredProvinces"
+                                itemLabelKey="name"
+                                itemKeyProp="code"
+                                v-model:search="locationSearch.province_code"
+                                :modelValue="locationFilter.province_code"
                                 v-model:open="openState.province_code"
                                 @update:model-value="val => onLocationModelUpdate('province_code', val)"
-                                @select="val => onSelectLocation('province_code', val)" />
+                                @select="val => onSelectLocation('province_code', val)"
+                            />
                         </div>
 
                         <div>
                             <label class="officer-form-label">City</label>
-                            <input v-if="isCityLocked" :value="locationSearch.city_code" type="text"
-                                class="officer-search officer-locked-input" readonly />
-                            <SelectSearch v-else :items="filteredCities" itemLabelKey="name" itemKeyProp="code"
-                                v-model:search="locationSearch.city_code" :modelValue="locationFilter.city_code"
+                            <input
+                                v-if="isCityLocked"
+                                :value="locationSearch.city_code"
+                                type="text"
+                                class="officer-search officer-locked-input"
+                                readonly
+                            />
+                            <SelectSearch
+                                v-else
+                                :items="filteredCities"
+                                itemLabelKey="name"
+                                itemKeyProp="code"
+                                v-model:search="locationSearch.city_code"
+                                :modelValue="locationFilter.city_code"
                                 v-model:open="openState.city_code"
                                 @update:model-value="val => onLocationModelUpdate('city_code', val)"
-                                @select="val => onSelectLocation('city_code', val)" />
+                                @select="val => onSelectLocation('city_code', val)"
+                            />
                         </div>
 
                         <div>
                             <label class="officer-form-label">Barangay</label>
-                            <input v-if="isBarangayLocked" :value="locationSearch.barangay_code" type="text"
-                                class="officer-search officer-locked-input" readonly />
-                            <SelectSearch v-else :items="filteredBarangays" itemLabelKey="name" itemKeyProp="code"
-                                v-model:search="locationSearch.barangay_code" :modelValue="locationFilter.barangay_code"
+                            <input
+                                v-if="isBarangayLocked"
+                                :value="locationSearch.barangay_code"
+                                type="text"
+                                class="officer-search officer-locked-input"
+                                readonly
+                            />
+                            <SelectSearch
+                                v-else
+                                :items="filteredBarangays"
+                                itemLabelKey="name"
+                                itemKeyProp="code"
+                                v-model:search="locationSearch.barangay_code"
+                                :modelValue="locationFilter.barangay_code"
                                 v-model:open="openState.barangay_code"
                                 @update:model-value="val => onLocationModelUpdate('barangay_code', val)"
-                                @select="val => onSelectLocation('barangay_code', val)" />
+                                @select="val => onSelectLocation('barangay_code', val)"
+                            />
                         </div>
                     </div>
                 </div>
@@ -842,8 +927,12 @@ const cooperativeGroupedRows = computed(() => {
                             </td>
                         </tr>
 
-                        <tr v-for="coop in paginatedCooperatives" :key="coop.id" class="officer-row"
-                            @click="openCoop(coop.id)">
+                        <tr
+                            v-for="coop in paginatedCooperatives"
+                            :key="coop.id"
+                            class="officer-row"
+                            @click="openCoop(coop.id)"
+                        >
                             <td>{{ coop.name }}</td>
                             <td>{{ inventoryCounts[coop.id] ?? 0 }}</td>
                         </tr>
@@ -885,9 +974,7 @@ const cooperativeGroupedRows = computed(() => {
                 </div>
             </div>
         </div>
-                
 
-        <!-- summary modal -->
         <div v-if="showSummaryModal" class="officer-modal-overlay">
             <div class="officer-modal-box summary-modal">
                 <div class="summary-header">
@@ -899,13 +986,19 @@ const cooperativeGroupedRows = computed(() => {
                 </div>
 
                 <div class="summary-switch">
-                    <button class="summary-tab" :class="{ active: summaryView === 'cooperative' }"
-                        @click="summaryView = 'cooperative'">
+                    <button
+                        class="summary-tab"
+                        :class="{ active: summaryView === 'cooperative' }"
+                        @click="summaryView = 'cooperative'"
+                    >
                         Cooperatives
                     </button>
 
-                    <button class="summary-tab" :class="{ active: summaryView === 'inventory' }"
-                        @click="summaryView = 'inventory'">
+                    <button
+                        class="summary-tab"
+                        :class="{ active: summaryView === 'inventory' }"
+                        @click="summaryView = 'inventory'"
+                    >
                         Inventory
                     </button>
                 </div>
@@ -914,53 +1007,97 @@ const cooperativeGroupedRows = computed(() => {
                     <div>
                         <label class="form-label">Region</label>
 
-                        <input v-if="isRegionLocked" :value="summaryLocationSearch.region_code" type="text"
-                            class="officer-search locked-input" readonly />
+                        <input
+                            v-if="isRegionLocked"
+                            :value="summaryLocationSearch.region_code"
+                            type="text"
+                            class="officer-search locked-input"
+                            readonly
+                        />
 
-                        <SelectSearch v-else :items="summaryFilteredRegions" itemLabelKey="name" itemKeyProp="code"
-                            v-model:search="summaryLocationSearch.region_code" :modelValue="summaryFilters.region_code"
+                        <SelectSearch
+                            v-else
+                            :items="summaryFilteredRegions"
+                            itemLabelKey="name"
+                            itemKeyProp="code"
+                            v-model:search="summaryLocationSearch.region_code"
+                            :modelValue="summaryFilters.region_code"
                             v-model:open="summaryOpenState.region_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('region_code', val)"
-                            @select="val => onSelectSummaryLocation('region_code', val)" />
+                            @select="val => onSelectSummaryLocation('region_code', val)"
+                        />
                     </div>
 
                     <div>
                         <label class="form-label">Province</label>
 
-                        <input v-if="isProvinceLocked" :value="summaryLocationSearch.province_code" type="text"
-                            class="officer-search locked-input" readonly />
+                        <input
+                            v-if="isProvinceLocked"
+                            :value="summaryLocationSearch.province_code"
+                            type="text"
+                            class="officer-search locked-input"
+                            readonly
+                        />
 
-                        <SelectSearch v-else :items="summaryFilteredProvinces" itemLabelKey="name" itemKeyProp="code"
+                        <SelectSearch
+                            v-else
+                            :items="summaryFilteredProvinces"
+                            itemLabelKey="name"
+                            itemKeyProp="code"
                             v-model:search="summaryLocationSearch.province_code"
-                            :modelValue="summaryFilters.province_code" v-model:open="summaryOpenState.province_code"
+                            :modelValue="summaryFilters.province_code"
+                            v-model:open="summaryOpenState.province_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('province_code', val)"
-                            @select="val => onSelectSummaryLocation('province_code', val)" />
+                            @select="val => onSelectSummaryLocation('province_code', val)"
+                        />
                     </div>
 
                     <div>
                         <label class="form-label">City</label>
 
-                        <input v-if="isCityLocked" :value="summaryLocationSearch.city_code" type="text"
-                            class="officer-search locked-input" readonly />
+                        <input
+                            v-if="isCityLocked"
+                            :value="summaryLocationSearch.city_code"
+                            type="text"
+                            class="officer-search locked-input"
+                            readonly
+                        />
 
-                        <SelectSearch v-else :items="summaryFilteredCities" itemLabelKey="name" itemKeyProp="code"
-                            v-model:search="summaryLocationSearch.city_code" :modelValue="summaryFilters.city_code"
+                        <SelectSearch
+                            v-else
+                            :items="summaryFilteredCities"
+                            itemLabelKey="name"
+                            itemKeyProp="code"
+                            v-model:search="summaryLocationSearch.city_code"
+                            :modelValue="summaryFilters.city_code"
                             v-model:open="summaryOpenState.city_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('city_code', val)"
-                            @select="val => onSelectSummaryLocation('city_code', val)" />
+                            @select="val => onSelectSummaryLocation('city_code', val)"
+                        />
                     </div>
 
                     <div>
                         <label class="form-label">Barangay</label>
 
-                        <input v-if="isBarangayLocked" :value="summaryLocationSearch.barangay_code" type="text"
-                            class="officer-search locked-input" readonly />
+                        <input
+                            v-if="isBarangayLocked"
+                            :value="summaryLocationSearch.barangay_code"
+                            type="text"
+                            class="officer-search locked-input"
+                            readonly
+                        />
 
-                        <SelectSearch v-else :items="summaryFilteredBarangays" itemLabelKey="name" itemKeyProp="code"
+                        <SelectSearch
+                            v-else
+                            :items="summaryFilteredBarangays"
+                            itemLabelKey="name"
+                            itemKeyProp="code"
                             v-model:search="summaryLocationSearch.barangay_code"
-                            :modelValue="summaryFilters.barangay_code" v-model:open="summaryOpenState.barangay_code"
+                            :modelValue="summaryFilters.barangay_code"
+                            v-model:open="summaryOpenState.barangay_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('barangay_code', val)"
-                            @select="val => onSelectSummaryLocation('barangay_code', val)" />
+                            @select="val => onSelectSummaryLocation('barangay_code', val)"
+                        />
                     </div>
 
                     <div>
@@ -1080,6 +1217,7 @@ const cooperativeGroupedRows = computed(() => {
         </div>
     </AppLayout>
 </template>
+
 <style scoped>
 .officer-page {
     display: flex;
@@ -1264,7 +1402,6 @@ const cooperativeGroupedRows = computed(() => {
     gap: 8px;
 }
 
-/* FIXED MODAL */
 .officer-modal-overlay {
     position: fixed;
     inset: 0;

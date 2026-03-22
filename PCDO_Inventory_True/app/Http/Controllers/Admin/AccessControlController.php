@@ -140,7 +140,7 @@ class AccessControlController extends Controller
 
     public function downloadStaticFormQr()
     {
-        $payload = url('/Form');
+        $payload = url('/form');
         $svg = $this->makeQrSvg($payload);
 
         $filename = 'form.svg';
