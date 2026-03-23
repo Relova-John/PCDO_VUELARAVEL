@@ -1088,6 +1088,7 @@ const cooperativeGroupedRows = computed(() => {
                         />
 
                         <SelectSearch
+                            :clearOnFocus="true"
                             v-else
                             :items="summaryFilteredBarangays"
                             itemLabelKey="name"

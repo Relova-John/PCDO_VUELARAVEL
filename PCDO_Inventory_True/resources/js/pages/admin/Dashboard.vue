@@ -334,8 +334,8 @@ watch(
 const summaryView = ref<'inventory' | 'cooperative'>('inventory')
 
 const summaryFilters = reactive({
-    region_code: '',
-    province_code: '',
+    region_code: '1700000000',
+    province_code: '1705300000',
     city_code: '',
     barangay_code: '',
     category: '',
@@ -587,7 +587,7 @@ const cooperativeGroupedRows = computed(() => {
                     <div class="coop-filter location-grid">
                         <div>
                             <label class="form-label">Region</label>
-                            <SelectSearch :items="regions" itemLabelKey="name" itemKeyProp="code"
+                            <SelectSearch :clearOnFocus="true" :items="regions" itemLabelKey="name" itemKeyProp="code"
                                 v-model:search="locationSearch.region_code" :modelValue="locationFilter.region_code"
                                 v-model:open="openState.region_code"
                                 @update:model-value="val => onLocationModelUpdate('region_code', val)"
@@ -596,27 +596,27 @@ const cooperativeGroupedRows = computed(() => {
 
                         <div>
                             <label class="form-label">Province</label>
-                            <SelectSearch :items="filteredProvinces" itemLabelKey="name" itemKeyProp="code"
-                                v-model:search="locationSearch.province_code" :modelValue="locationFilter.province_code"
-                                v-model:open="openState.province_code"
+                            <SelectSearch :clearOnFocus="true" :items="filteredProvinces" itemLabelKey="name"
+                                itemKeyProp="code" v-model:search="locationSearch.province_code"
+                                :modelValue="locationFilter.province_code" v-model:open="openState.province_code"
                                 @update:model-value="val => onLocationModelUpdate('province_code', val)"
                                 @select="val => onSelectLocation('province_code', val)" />
                         </div>
 
                         <div>
                             <label class="form-label">City</label>
-                            <SelectSearch :items="filteredCities" itemLabelKey="name" itemKeyProp="code"
-                                v-model:search="locationSearch.city_code" :modelValue="locationFilter.city_code"
-                                v-model:open="openState.city_code"
+                            <SelectSearch :clearOnFocus="true" :items="filteredCities" itemLabelKey="name"
+                                itemKeyProp="code" v-model:search="locationSearch.city_code"
+                                :modelValue="locationFilter.city_code" v-model:open="openState.city_code"
                                 @update:model-value="val => onLocationModelUpdate('city_code', val)"
                                 @select="val => onSelectLocation('city_code', val)" />
                         </div>
 
                         <div>
                             <label class="form-label">Barangay</label>
-                            <SelectSearch :items="filteredBarangays" itemLabelKey="name" itemKeyProp="code"
-                                v-model:search="locationSearch.barangay_code" :modelValue="locationFilter.barangay_code"
-                                v-model:open="openState.barangay_code"
+                            <SelectSearch :clearOnFocus="true" :items="filteredBarangays" itemLabelKey="name"
+                                itemKeyProp="code" v-model:search="locationSearch.barangay_code"
+                                :modelValue="locationFilter.barangay_code" v-model:open="openState.barangay_code"
                                 @update:model-value="val => onLocationModelUpdate('barangay_code', val)"
                                 @select="val => onSelectLocation('barangay_code', val)" />
                         </div>
@@ -734,7 +734,7 @@ const cooperativeGroupedRows = computed(() => {
                 <div class="summary-filters location-grid">
                     <div>
                         <label class="form-label">Region</label>
-                        <SelectSearch :items="regions" itemLabelKey="name" itemKeyProp="code"
+                        <SelectSearch :clearOnFocus="true" :items="regions" itemLabelKey="name" itemKeyProp="code"
                             v-model:search="summaryLocationSearch.region_code" :modelValue="summaryFilters.region_code"
                             v-model:open="summaryOpenState.region_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('region_code', val)"
@@ -743,8 +743,8 @@ const cooperativeGroupedRows = computed(() => {
 
                     <div>
                         <label class="form-label">Province</label>
-                        <SelectSearch :items="summaryFilteredProvinces" itemLabelKey="name" itemKeyProp="code"
-                            v-model:search="summaryLocationSearch.province_code"
+                        <SelectSearch :clearOnFocus="true" :items="summaryFilteredProvinces" itemLabelKey="name"
+                            itemKeyProp="code" v-model:search="summaryLocationSearch.province_code"
                             :modelValue="summaryFilters.province_code" v-model:open="summaryOpenState.province_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('province_code', val)"
                             @select="val => onSelectSummaryLocation('province_code', val)" />
@@ -752,17 +752,17 @@ const cooperativeGroupedRows = computed(() => {
 
                     <div>
                         <label class="form-label">City</label>
-                        <SelectSearch :items="summaryFilteredCities" itemLabelKey="name" itemKeyProp="code"
-                            v-model:search="summaryLocationSearch.city_code" :modelValue="summaryFilters.city_code"
-                            v-model:open="summaryOpenState.city_code"
+                        <SelectSearch :clearOnFocus="true" :items="summaryFilteredCities" itemLabelKey="name"
+                            itemKeyProp="code" v-model:search="summaryLocationSearch.city_code"
+                            :modelValue="summaryFilters.city_code" v-model:open="summaryOpenState.city_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('city_code', val)"
                             @select="val => onSelectSummaryLocation('city_code', val)" />
                     </div>
 
                     <div>
                         <label class="form-label">Barangay</label>
-                        <SelectSearch :items="summaryFilteredBarangays" itemLabelKey="name" itemKeyProp="code"
-                            v-model:search="summaryLocationSearch.barangay_code"
+                        <SelectSearch :clearOnFocus="true" :items="summaryFilteredBarangays" itemLabelKey="name"
+                            itemKeyProp="code" v-model:search="summaryLocationSearch.barangay_code"
                             :modelValue="summaryFilters.barangay_code" v-model:open="summaryOpenState.barangay_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('barangay_code', val)"
                             @select="val => onSelectSummaryLocation('barangay_code', val)" />
