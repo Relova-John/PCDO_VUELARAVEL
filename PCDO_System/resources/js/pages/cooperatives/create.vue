@@ -296,7 +296,7 @@ function handleSubmit() {
             submitting.value = false;
             const messages = Object.values(errors);
             if (messages.length) {
-                toast.error(messages.map(msg => `- ${msg}`).join('\n'))
+                toast.error(messages.map(msg => `${msg}`).join('\n'))
             }
         },
         onSuccess: () => {

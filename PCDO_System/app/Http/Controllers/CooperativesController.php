@@ -153,18 +153,22 @@ class CooperativesController extends Controller
             'number' => 'required|string|max:20',
         ]);
 
-        if ($data['email'] && User::where('email', $data['email'])->exists()) {
+        $existingCooperative = Cooperative::where('name', $data['name'])->first();
+
+        if ($existingCooperative) {
+            return redirect()
+                ->route('cooperatives.show', $existingCooperative)
+                ->with('info', 'Cooperative already exists. Redirected to its details page.');
+        }
+
+        if (
+            $data['email'] &&
+            User::where('email', $data['email'])->exists()
+        ) {
             return redirect()
                 ->back()
                 ->withInput()
-                ->withErrors(['email' => 'The email has already been taken by another user.']);
-        }
-
-        $cooperative = Cooperative::where('name', $data['name'])->first();
-        if ($cooperative) {
-            return redirect()
-                ->route('cooperatives.show', $cooperative)
-                ->with('info', 'Cooperative already exists. Redirected to its details page.');
+                ->withErrors(['error' => 'The email has already been taken by another user.']);
         }
 
         $cooperative = Cooperative::create([
@@ -172,25 +176,29 @@ class CooperativesController extends Controller
             'name' => $data['name'],
         ]);
 
+        $user = null;
+
         if ($data['email']) {
-            $data['password'] = bin2hex(random_bytes(8));
-            Mail::to($data['email'])->send(new UserMail($data['password']));
-            $data['active'] = true;
+            $password = bin2hex(random_bytes(8));
+
+            Mail::to($data['email'])->send(new UserMail($password));
 
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => Hash::make($data['password']),
-                'active' => $data['active'] ?? true,
+                'password' => Hash::make($password),
+                'active' => true,
             ]);
+
             $user->assignRole('cooperative');
+
             $cooperative->user_id = $user->id;
             $cooperative->save();
         }
 
-        $detailsData = [
+        CoopDetail::create([
             'coop_id' => $cooperative->id,
-            'user_id' => $user->id ?? null,
+            'user_id' => $cooperative->user_id,
             'region_code' => $data['region_code'],
             'province_code' => $data['province_code'],
             'city_code' => $data['city_code'],
@@ -206,12 +214,9 @@ class CooperativesController extends Controller
             'net_surplus' => $data['net_surplus'],
             'email' => $data['email'],
             'number' => $data['number'],
-        ];
+        ]);
 
-        CoopDetail::create($detailsData);
-
-        return redirect()
-            ->route('cooperatives.show', $cooperative);
+        return redirect()->route('cooperatives.show', $cooperative);
     }
 
     /**
@@ -383,18 +388,61 @@ class CooperativesController extends Controller
             'members_count' => 'required|integer|min:1',
             'total_asset' => 'required|numeric|min:0',
             'net_surplus' => 'required|numeric',
-            'email' => 'required|string|max:25',
+            'email' => 'required|string|max:50',
             'number' => 'required|string|max:20',
         ]);
+
+        if ($data['email'] && User::where('email', $data['email'])->where('id', '!=', $cooperative->user_id)->exists()) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['error' => 'The email has already been taken by another user.']);
+        }
 
         $cooperative->update([
             'id' => $data['id'],
             'name' => $data['name'],
         ]);
 
+        if ($data['email'] && $cooperative->user_id) {
+            $user = User::find($cooperative->user_id);
+
+            if ($user) {
+                User::where('id', $cooperative->user_id)->update([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                ]);
+            }
+        } elseif ($data['email'] && ! $cooperative->user_id) {
+            $data['password'] = bin2hex(random_bytes(8));
+            Mail::to($data['email'])->send(new UserMail($data['password']));
+            $data['active'] = true;
+
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'active' => $data['active'] ?? true,
+            ]);
+
+            $user->assignRole('cooperative');
+            $cooperative->user_id = $user->id;
+            $cooperative->save();
+        } elseif (! $data['email'] && $cooperative->user_id) {
+            $user = User::find($cooperative->user_id);
+
+            if ($user) {
+                User::where('id', $cooperative->user_id)->delete();
+            }
+
+            $cooperative->user_id = null;
+            $cooperative->save();
+        }
+
         $cooperative->details()->updateOrCreate(
             ['coop_id' => $cooperative->id],
             [
+                'user_id' => $cooperative->user_id,
                 'region_code' => $data['region_code'],
                 'province_code' => $data['province_code'],
                 'city_code' => $data['city_code'],
@@ -412,44 +460,6 @@ class CooperativesController extends Controller
                 'number' => $data['number'],
             ]
         );
-
-        if ($data['email'] && User::where('email', $data['email'])->where('id', '!=', $cooperative->user_id)->exists()) {
-            return redirect()
-                ->back()
-                ->withInput()
-                ->withErrors(['email' => 'The email has already been taken by another user.']);
-        }
-
-        if ($data['email'] && $cooperative->user_id) {
-            $user = User::find($cooperative->user_id);
-            if ($user) {
-                $user->update([
-                    'name' => $data['name'],
-                    'email' => $data['email'],
-                ]);
-            }
-        } elseif ($data['email'] && ! $cooperative->user_id) {
-            $data['password'] = bin2hex(random_bytes(8));
-            Mail::to($data['email'])->send(new UserMail($data['password']));
-            $data['active'] = true;
-
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => Hash::make($data['password']),
-                'active' => $data['active'] ?? true,
-            ]);
-            $user->assignRole('cooperative');
-            $cooperative->user_id = $user->id;
-            $cooperative->save();
-        } elseif (! $data['email'] && $cooperative->user_id) {
-            $user = User::find($cooperative->user_id);
-            if ($user) {
-                $user->delete();
-            }
-            $cooperative->user_id = null;
-            $cooperative->save();
-        }
 
         return redirect()
             ->route('cooperatives.show', $cooperative->id)

@@ -11,8 +11,8 @@ class QRCodeController extends Controller
 {
     public function index()
     {
-        $url = url('/inventory');
-
+        // $url = url('/inventory');
+        $url = "https://forms.gle/vyDQT2hhwuZ8sfAF7";
         $renderer = new ImageRenderer(
             new RendererStyle(300),
             new SvgImageBackEnd()

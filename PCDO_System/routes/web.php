@@ -35,15 +35,15 @@ Route::get('/', function () {
         return redirect()->route('login');
     }
 
-    if (in_array($user->role, ['superadmin', 'admin'])) {
+    if ($user->hasRole(['superadmin', 'admin'])) {
         return redirect()->route('admin.dashboard');
     }
 
-    if ($user->role === 'officer') {
+    if ($user->hasRole('officer')) {
         return redirect()->route('dashboard');
     }
 
-    if ($user->role === 'cooperative') {
+    if ($user->hasRole('cooperative')) {
         return redirect()->route('coop.dashboard', $user->cooperative?->id);
     }
 
@@ -52,7 +52,7 @@ Route::get('/', function () {
 
 Route::get('/ping', fn () => response()->json(['pong' => true]));
 
-Route::middleware(['auth', 'role:admin|superadmin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'redirect.role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('dashboard');
     Route::post('/users', [AdminController::class, 'storeUser'])->name('storeUser');
     Route::post('/users/{id}/deactivate', [AdminController::class, 'deactivateUser'])->name('users.deactivate');
@@ -141,10 +141,10 @@ Route::middleware(['auth', 'role:admin|superadmin'])->prefix('admin')->name('adm
     Route::get('/documentation/downloads', [AdminDocumentationController::class, 'downloadFiltered'])->name('documentation.filtered.download');
 });
 
-Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
+Route::middleware(['auth', 'verified', 'redirect.role:officer'])->group(function () {
     Route::get('/dashboard', function () {
         $user = Auth::user();
-        if (in_array($user->role, ['superadmin', 'admin'])) {
+        if ($user->hasRole(['superadmin', 'admin'])) {
             return redirect()->route('admin.dashboard');
         }
 
@@ -253,7 +253,7 @@ Route::middleware(['auth', 'verified', 'role:officer'])->group(function () {
     });
 });
 
-Route::middleware(['auth', 'role:cooperative'])->prefix('coop')->name('coop.')->group(function () {
+Route::middleware(['auth', 'redirect.role:cooperative'])->prefix('coop')->name('coop.')->group(function () {
     Route::get('/dashboard', [CoopController::class, 'index'])->name('dashboard');
 
     // Members

@@ -25,7 +25,7 @@ use OpenSpout\Writer\XLSX\Writer as XlsxWriter;
 
 class AdminCoopController extends Controller
 {
-     /**
+    /**
      * Display a listing of the resource.
      */
     public function index()
@@ -149,15 +149,24 @@ class AdminCoopController extends Controller
             'members_count' => 'required|integer|min:1',
             'total_asset' => 'required|numeric|min:0',
             'net_surplus' => 'required|numeric',
-            'email' => 'required|string|max:25',
+            'email' => 'required|string|max:50',
             'number' => 'required|string|max:20',
         ]);
 
-        $cooperative = Cooperative::where('name', $data['name'])->first();
-        if ($cooperative) {
+        // NAME CHECK
+        $existing = Cooperative::where('name', $data['name'])->first();
+        if ($existing) {
             return redirect()
-                ->route('admin.cooperatives.show', $cooperative)
+                ->route('admin.cooperatives.show', $existing)
                 ->with('info', 'Cooperative already exists. Redirected to its details page.');
+        }
+
+        // EMAIL CHECK
+        if (User::where('email', $data['email'])->exists()) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['error' => 'The email has already been taken by another user.']);
         }
 
         $cooperative = Cooperative::create([
@@ -165,25 +174,24 @@ class AdminCoopController extends Controller
             'name' => $data['name'],
         ]);
 
-        if ($data['email']) {
-            $data['password'] = bin2hex(random_bytes(8));
-            Mail::to($data['email'])->send(new UserMail($data['password']));
-            $data['active'] = true;
+        $password = bin2hex(random_bytes(8));
 
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => Hash::make($data['password']),
-                'active' => $data['active'] ?? true,
-            ]);
-            $user->assignRole('cooperative');
-            $cooperative->user_id = $user->id;
-            $cooperative->save();
-        }
+        Mail::to($data['email'])->send(new UserMail($password));
 
-        $detailsData = [
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($password),
+            'active' => true,
+        ]);
+
+        $user->assignRole('cooperative');
+
+        $cooperative->update(['user_id' => $user->id]);
+
+        CoopDetail::create([
             'coop_id' => $cooperative->id,
-            'user_id' => $user->id ?? null,
+            'user_id' => $user->id,
             'region_code' => $data['region_code'],
             'province_code' => $data['province_code'],
             'city_code' => $data['city_code'],
@@ -199,12 +207,9 @@ class AdminCoopController extends Controller
             'net_surplus' => $data['net_surplus'],
             'email' => $data['email'],
             'number' => $data['number'],
-        ];
+        ]);
 
-        CoopDetail::create($detailsData);
-
-        return redirect()
-            ->route('admin.cooperatives.show', $cooperative);
+        return redirect()->route('admin.cooperatives.show', $cooperative);
     }
 
     /**
@@ -380,14 +385,61 @@ class AdminCoopController extends Controller
             'number' => 'required|string|max:20',
         ]);
 
+        // NAME CHECK
+        $existing = Cooperative::where('name', $data['name'])
+            ->where('id', '!=', $cooperative->id)
+            ->first();
+
+        if ($existing) {
+            return redirect()
+                ->route('admin.cooperatives.show', $existing) // FIXED ROUTE
+                ->with('info', 'Cooperative already exists. Redirected to its details page.');
+        }
+
+        // EMAIL CHECK
+        if (
+            User::where('email', $data['email'])
+            ->where('id', '!=', $cooperative->user_id)
+            ->exists()
+        ) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['error' => 'The email has already been taken by another user.']);
+        }
+
         $cooperative->update([
             'id' => $data['id'],
             'name' => $data['name'],
         ]);
 
+        // USER SYNC
+        if ($cooperative->user_id) {
+            User::where('id', $cooperative->user_id)->update([
+                'name' => $data['name'],
+                'email' => $data['email'],
+            ]);
+        } else {
+            $password = bin2hex(random_bytes(8));
+
+            Mail::to($data['email'])->send(new UserMail($password));
+
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($password),
+                'active' => true,
+            ]);
+
+            $user->assignRole('cooperative');
+
+            $cooperative->update(['user_id' => $user->id]);
+        }
+
         $cooperative->details()->updateOrCreate(
             ['coop_id' => $cooperative->id],
             [
+                'user_id' => $cooperative->user_id,
                 'region_code' => $data['region_code'],
                 'province_code' => $data['province_code'],
                 'city_code' => $data['city_code'],
@@ -406,39 +458,8 @@ class AdminCoopController extends Controller
             ]
         );
 
-        if ($data['email'] && $cooperative->user_id) {
-            $user = User::find($cooperative->user_id);
-            if ($user) {
-                $user->update([
-                    'name' => $data['name'],
-                    'email' => $data['email'],
-                ]);
-            }
-        } elseif ($data['email'] && ! $cooperative->user_id) {
-            $data['password'] = bin2hex(random_bytes(8));
-            Mail::to($data['email'])->send(new UserMail($data['password']));
-            $data['active'] = true;
-
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => Hash::make($data['password']),
-                'active' => $data['active'] ?? true,
-            ]);
-            $user->assignRole('cooperative');
-            $cooperative->user_id = $user->id;
-            $cooperative->save();
-        } elseif (! $data['email'] && $cooperative->user_id) {
-            $user = User::find($cooperative->user_id);
-            if ($user) {
-                $user->delete();
-            }
-            $cooperative->user_id = null;
-            $cooperative->save();
-        }
-
         return redirect()
-            ->route('admin.cooperatives.show', $cooperative->id)
+            ->route('admin.cooperatives.show', $cooperative)
             ->with('success', 'Cooperative updated successfully!');
     }
 
@@ -595,4 +616,3 @@ class AdminCoopController extends Controller
         return response()->download($filePath)->deleteFileAfterSend(true);
     }
 }
-

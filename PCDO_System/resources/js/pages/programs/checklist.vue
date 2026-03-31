@@ -275,8 +275,7 @@ const isLoanFormValid = computed(() => {
 const breadcrumbs: BreadcrumbItem[] = [
 	{ title: 'Programs', href: '/programs' },
 	{ title: props.coopProgram.program?.name || 'N/A', href: `/programs/${props.coopProgram.program?.id}` },
-	{ title: `Cooperative Program ID: ${props.coopProgram.id}`, href: '#' },
-	{ title: 'Checklist', href: '#' },
+	{ title: `${props.coopProgram.cooperative.name} Checklist`, href: '#' },
 ]
 
 const isMobile = ref(false)

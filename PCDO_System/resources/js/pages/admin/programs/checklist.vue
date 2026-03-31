@@ -15,6 +15,7 @@ interface ChecklistItem {
 
 interface CoopProgram {
 	id: number
+	name: string
 	cooperative: { id: number; name: string }
 	program?: { id: number; name: string; min_amount: number; max_amount: number; grace_period: number } | null
 	loan_amount?: number | null
@@ -208,8 +209,7 @@ function handleDelete(uploadId: number, fileName: string) {
 const breadcrumbs: BreadcrumbItem[] = [
 	{ title: 'Programs', href: '/admin/programs' },
 	{ title: props.coopProgram.program?.name || 'N/A', href: `/admin/programs/${props.coopProgram.program?.id}` },
-	{ title: `Cooperative Program ID: ${props.coopProgram.id}`, href: '#' },
-	{ title: 'Checklist', href: '#' },
+	{ title: `${props.coopProgram.cooperative.name} Checklist`, href: `#` },
 ]
 
 const isMobile = ref(false)
