@@ -24,7 +24,7 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $pendingCode = $request->session()->pull('pending_access_code');
+        $pendingCode = $request->session()->get('pending_access_code');
 
         if ($pendingCode && ! $user->access_control_id) {
             $accessControl = AccessControl::query()
@@ -51,6 +51,8 @@ class DashboardController extends Controller
                     ]);
                 });
 
+                $request->session()->forget('pending_access_code');
+                
                 return redirect()
                     ->route('officer.dashboard')
                     ->with('success', 'Access code activated successfully.');

@@ -62,6 +62,13 @@ const openState = reactive({
     city_code: false
 })
 
+const qrModal = reactive({
+    open: false,
+    title: '',
+    svg: '',
+    filename: 'qr-code'
+})
+
 const dependencyMap = {
     region_code: ['province_code', 'city_code'],
     province_code: ['city_code'],
@@ -227,7 +234,15 @@ function regenerateOfficerMunicipality(city: Cities) {
     })
 }
 
-function generateQrCode(accessType: AccessType, entryType: EntryType, id: string | number) {
+function slugify(value: string) {
+    return value
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+}
+
+async function openQrModal(accessType: AccessType, entryType: EntryType, id: string | number, label: string) {
     const entry = ensureEntry(accessType, entryType, id)
 
     if (!entry.id) {
@@ -235,18 +250,116 @@ function generateQrCode(accessType: AccessType, entryType: EntryType, id: string
         return
     }
 
-    window.open(`/admin/access-control/${entry.id}/qr`, '_blank')
+    try {
+        const response = await fetch(`/admin/access-control/${entry.id}/qr`, {
+            headers: {
+                Accept: 'image/svg+xml'
+            }
+        })
+
+        if (!response.ok) {
+            throw new Error('Failed to load QR code.')
+        }
+
+        const svg = await response.text()
+
+        qrModal.open = true
+        qrModal.title = label
+        qrModal.svg = svg
+        qrModal.filename = `${slugify(label || 'qr-code')}.png`
+    } catch {
+        toast.error('Unable to load QR code.')
+    }
 }
 
-function getFormQrCode() {
-    window.open('/admin/access-control/static-form-qr', '_blank')
+async function openFormQrModal() {
+    try {
+        const response = await fetch('/admin/access-control/static-form-qr', {
+            headers: {
+                Accept: 'image/svg+xml'
+            }
+        })
+
+        if (!response.ok) {
+            throw new Error('Failed to load QR code.')
+        }
+
+        const svg = await response.text()
+
+        qrModal.open = true
+        qrModal.title = 'Form QR'
+        qrModal.svg = svg
+        qrModal.filename = 'form.png'
+    } catch {
+        toast.error('Unable to load QR code.')
+    }
+}
+
+function closeQrModal() {
+    qrModal.open = false
+    qrModal.title = ''
+    qrModal.svg = ''
+    qrModal.filename = 'qr-code.png'
+}
+
+async function downloadQrAsPng() {
+    if (!qrModal.svg) return
+
+    const svgBlob = new Blob([qrModal.svg], { type: 'image/svg+xml;charset=utf-8' })
+    const svgUrl = URL.createObjectURL(svgBlob)
+
+    const img = new Image()
+
+    img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width || 300
+        canvas.height = img.height || 300
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+            URL.revokeObjectURL(svgUrl)
+            toast.error('Unable to prepare PNG download.')
+            return
+        }
+
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0)
+
+        canvas.toBlob(blob => {
+            URL.revokeObjectURL(svgUrl)
+
+            if (!blob) {
+                toast.error('Unable to prepare PNG download.')
+                return
+            }
+
+            const pngUrl = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = pngUrl
+            link.download = qrModal.filename
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            URL.revokeObjectURL(pngUrl)
+
+            toast.success('QR downloaded as PNG.')
+        }, 'image/png')
+    }
+
+    img.onerror = () => {
+        URL.revokeObjectURL(svgUrl)
+        toast.error('Unable to prepare PNG download.')
+    }
+
+    img.src = svgUrl
 }
 </script>
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-
         <Head title="Access Control" />
+
         <div class="p-6 max-w-7xl space-y-6">
             <div class="coop-header-banner">
                 <div class="header-content-left">
@@ -255,8 +368,8 @@ function getFormQrCode() {
                 </div>
 
                 <div class="header-content-right">
-                    <button type="button" @click="getFormQrCode" class="btn-download-white">
-                        Download Form QR
+                    <button type="button" @click="openFormQrModal" class="btn-download-white">
+                        Form QR
                     </button>
                 </div>
             </div>
@@ -265,16 +378,28 @@ function getFormQrCode() {
                 <div class="coop-filter">
                     <div class="flex-1">
                         <label class="block mb-1 text-xs font-bold uppercase text-gray-500">Region</label>
-                        <SelectSearch :items="regions" itemLabelKey="name" itemKeyProp="code"
-                            v-model:search="searchState.region_code" :modelValue="filters.region_code"
-                            v-model:open="openState.region_code" @select="(val) => onSelect('region_code', val)" />
+                        <SelectSearch
+                            :items="regions"
+                            itemLabelKey="name"
+                            itemKeyProp="code"
+                            v-model:search="searchState.region_code"
+                            :modelValue="filters.region_code"
+                            v-model:open="openState.region_code"
+                            @select="(val) => onSelect('region_code', val)"
+                        />
                     </div>
 
                     <div class="flex-1">
                         <label class="block mb-1 text-xs font-bold uppercase text-gray-500">Province</label>
-                        <SelectSearch :items="filteredProvinces" itemLabelKey="name" itemKeyProp="code"
-                            v-model:search="searchState.province_code" :modelValue="filters.province_code"
-                            v-model:open="openState.province_code" @select="(val) => onSelect('province_code', val)" />
+                        <SelectSearch
+                            :items="filteredProvinces"
+                            itemLabelKey="name"
+                            itemKeyProp="code"
+                            v-model:search="searchState.province_code"
+                            :modelValue="filters.province_code"
+                            v-model:open="openState.province_code"
+                            @select="(val) => onSelect('province_code', val)"
+                        />
                     </div>
                 </div>
             </div>
@@ -304,15 +429,18 @@ function getFormQrCode() {
                             <td style="text-align: right;">
                                 <div class="flex justify-end gap-2">
                                     <button @click="regenerateOfficerMunicipality(city)" class="btn-past-white text-xs">
-                                        Regenerate
+                                        {{ generatedEntries[`access-municipality-${city.code}`]?.code ? 'Regenerate' : 'Generate' }}
                                     </button>
-                                    <button @click="copyCode('access', 'municipality', city.code)"
-                                        class="btn-past-white text-xs">
+
+                                    <button @click="copyCode('access', 'municipality', city.code)" class="btn-past-white text-xs">
                                         Copy
                                     </button>
-                                    <button @click="generateQrCode('access', 'municipality', city.code)"
+
+                                    <button
+                                        @click="openQrModal('access', 'municipality', city.code, `${city.name} QR`)"
                                         class="btn-past-black text-xs"
-                                        :disabled="!(generatedEntries[`access-municipality-${city.code}`]?.code)">
+                                        :disabled="!(generatedEntries[`access-municipality-${city.code}`]?.code)"
+                                    >
                                         QR
                                     </button>
                                 </div>
@@ -326,6 +454,53 @@ function getFormQrCode() {
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <div
+            v-if="qrModal.open"
+            class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4"
+            @click.self="closeQrModal"
+        >
+            <div class="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+                <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900">{{ qrModal.title }}</h2>
+                        <p class="text-sm text-gray-500">Preview QR code before downloading.</p>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="rounded-full px-3 py-1 text-sm font-semibold text-gray-500 hover:bg-gray-100"
+                        @click="closeQrModal"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <div class="flex justify-center rounded-xl border border-gray-200 bg-gray-50 p-6">
+                        <div class="h-[300px] w-[300px]" v-html="qrModal.svg"></div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 border-t border-gray-200 px-5 py-4">
+                    <button
+                        type="button"
+                        class="btn-past-white text-sm"
+                        @click="closeQrModal"
+                    >
+                        Close
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-past-black text-sm"
+                        @click="downloadQrAsPng"
+                    >
+                        Download PNG
+                    </button>
+                </div>
             </div>
         </div>
     </AppLayout>

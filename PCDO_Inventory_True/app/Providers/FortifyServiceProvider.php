@@ -14,6 +14,8 @@ use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Contracts\LoginResponse;
 use App\Http\Responses\LoginResponse as CustomLoginResponse;
+use Laravel\Fortify\Contracts\RegisterResponse;
+use App\Http\Responses\RegisterResponse as CustomRegisterResponse;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(LoginResponse::class, CustomLoginResponse::class);
+        $this->app->singleton(RegisterResponse::class, CustomRegisterResponse::class);
     }
 
     /**
@@ -53,6 +56,7 @@ class FortifyServiceProvider extends ServiceProvider
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'canRegister' => Features::enabled(Features::registration()),
             'status' => $request->session()->get('status'),
+            'qr_token' => $request->query('qr_token'),
         ]));
 
         Fortify::resetPasswordView(fn(Request $request) => Inertia::render('auth/ResetPassword', [
@@ -68,7 +72,9 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn() => Inertia::render('auth/Register'));
+        Fortify::registerView(fn (Request $request) => Inertia::render('auth/Register', [
+            'qr_token' => $request->query('qr_token'),
+        ]));
 
         Fortify::twoFactorChallengeView(fn() => Inertia::render('auth/TwoFactorChallenge'));
 

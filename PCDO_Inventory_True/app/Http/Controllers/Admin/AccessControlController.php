@@ -8,6 +8,7 @@ use App\Models\Barangay;
 use App\Models\City;
 use App\Models\Province;
 use App\Models\Region;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -77,6 +78,24 @@ class AccessControlController extends Controller
             'barangay_code' => ['nullable', 'string'],
         ]);
 
+        $existing = AccessControl::query()->where([
+            'type' => $validated['type'],
+            'city_code' => $validated['city_code'] ?: null,
+            'barangay_code' => $validated['barangay_code'] ?: null,
+        ])->first();
+
+        if ($existing) {
+            User::query()
+                ->where('access_control_id', $existing->id)
+                ->update([
+                    'access_control_id' => null,
+                    'region_code' => null,
+                    'province_code' => null,
+                    'city_code' => null,
+                    'barangay_code' => null,
+                ]);
+        }
+
         AccessControl::updateOrCreate(
             [
                 'type' => $validated['type'],
@@ -96,6 +115,8 @@ class AccessControlController extends Controller
                 'city_code' => $validated['city_code'] ?: null,
                 'barangay_code' => $validated['barangay_code'] ?: null,
                 'closed_at' => null,
+                'used_count' => 0,
+                'last_used_at' => null,
             ]
         );
 
@@ -127,14 +148,9 @@ class AccessControlController extends Controller
         $payload = route('qr.resolve', ['token' => $accessControl->token]);
         $svg = $this->makeQrSvg($payload);
 
-        $locationName = $this->resolveLocationName($accessControl);
-        $safeLocationName = Str::slug($locationName ?: 'qr-code');
-
-        $filename = "{$accessControl->type}-{$safeLocationName}.svg";
-
         return response($svg, 200, [
-            'Content-Type' => 'image/svg+xml',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Type' => 'image/svg+xml; charset=utf-8',
+            'Content-Disposition' => 'inline; filename="qr.svg"',
         ]);
     }
 
@@ -143,11 +159,9 @@ class AccessControlController extends Controller
         $payload = url('/form');
         $svg = $this->makeQrSvg($payload);
 
-        $filename = 'form.svg';
-
         return response($svg, 200, [
-            'Content-Type' => 'image/svg+xml',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Type' => 'image/svg+xml; charset=utf-8',
+            'Content-Disposition' => 'inline; filename="form.svg"',
         ]);
     }
 

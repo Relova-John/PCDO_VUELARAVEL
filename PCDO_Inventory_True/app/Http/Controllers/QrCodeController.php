@@ -11,7 +11,6 @@ class QRCodeController extends Controller
     {
         $accessControl = AccessControl::query()
             ->where('token', $token)
-            ->where('is_active', true)
             ->firstOrFail();
 
         if (! $accessControl->isUsable()) {
@@ -19,9 +18,15 @@ class QRCodeController extends Controller
         }
 
         if ($accessControl->type === 'access') {
+            if (! $request->user()) {
+                return redirect()->route('login', [
+                    'qr_token' => $token,
+                ]);
+            }
+
             $request->session()->put('pending_access_code', $accessControl->code);
 
-            return redirect()->route('home');
+            return redirect()->route('dashboard');
         }
 
         return redirect()->route('form');

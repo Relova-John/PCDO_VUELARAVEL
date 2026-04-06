@@ -10,6 +10,10 @@ import { Spinner } from '@/components/ui/spinner';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
+
+const props = defineProps<{
+    qr_token?: string | null;
+}>();
 </script>
 
 <template>
@@ -21,86 +25,58 @@ import { store } from '@/routes/register';
 
         <Form
             v-bind="store.form()"
-            :reset-on-success="['password', 'password_confirmation']"
             v-slot="{ errors, processing }"
             class="flex flex-col gap-6"
         >
+            <input
+                v-if="qr_token"
+                type="hidden"
+                name="qr_token"
+                :value="qr_token"
+            />
+
             <div class="grid gap-6">
                 <div class="grid gap-2">
                     <Label for="name">Name</Label>
-                    <Input
-                        id="name"
-                        type="text"
-                        required
-                        autofocus
-                        :tabindex="1"
-                        autocomplete="name"
-                        name="name"
-                        placeholder="Full name"
-                    />
+                    <Input id="name" type="text" name="name" required autofocus />
                     <InputError :message="errors.name" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="email">Email address</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        required
-                        :tabindex="2"
-                        autocomplete="email"
-                        name="email"
-                        placeholder="email@example.com"
-                    />
+                    <Input id="email" type="email" name="email" required />
                     <InputError :message="errors.email" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="password">Password</Label>
-                    <PasswordInput
-                        id="password"
-                        required
-                        :tabindex="3"
-                        autocomplete="new-password"
-                        name="password"
-                        placeholder="Password"
-                    />
+                    <PasswordInput id="password" name="password" required />
                     <InputError :message="errors.password" />
                 </div>
 
                 <div class="grid gap-2">
                     <Label for="password_confirmation">Confirm password</Label>
-                    <PasswordInput
-                        id="password_confirmation"
-                        required
-                        :tabindex="4"
-                        autocomplete="new-password"
-                        name="password_confirmation"
-                        placeholder="Confirm password"
-                    />
+                    <PasswordInput id="password_confirmation" name="password_confirmation" required />
                     <InputError :message="errors.password_confirmation" />
                 </div>
 
                 <Button
                     type="submit"
-                    class="mt-2 w-full"
-                    tabindex="5"
+                    class="mt-4 w-full"
                     :disabled="processing"
-                    data-test="register-user-button"
                 >
                     <Spinner v-if="processing" />
-                    Create account
+                    Sign up
                 </Button>
             </div>
 
             <div class="text-center text-sm text-muted-foreground">
                 Already have an account?
                 <TextLink
-                    :href="login()"
-                    class="underline underline-offset-4"
-                    :tabindex="6"
-                    >Log in</TextLink
+                    :href="qr_token ? login({ query: { qr_token } }) : login()"
                 >
+                    Log in
+                </TextLink>
             </div>
         </Form>
     </AuthBase>
