@@ -16,16 +16,24 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import type { NavItem } from '@/types';
-import { Handshake } from 'lucide-vue-next';
 
 const page = usePage<{
     auth?: {
         user?: {
-            role?: string
+            roles?: {
+                id: number
+                name: string
+            }[]
         }
     }
 }>()
-const userRole = computed(() => page.props.auth?.user?.role ?? '')
+
+const userRoles = computed(() => page.props.auth?.user?.roles ?? [])
+
+const hasAdminAccess = computed(() =>
+    userRoles.value.some(role => ['admin', 'superadmin'].includes(role.name))
+)
+
 const mainNavItems = computed<NavItem[]>(() => {
     const items: NavItem[] = [
         {
@@ -35,7 +43,7 @@ const mainNavItems = computed<NavItem[]>(() => {
         },
     ]
 
-    if (['admin', 'superadmin'].includes(userRole.value)) {
+    if (hasAdminAccess.value) {
         items.push({
             title: 'Access Control',
             href: '/access-control',
@@ -45,8 +53,8 @@ const mainNavItems = computed<NavItem[]>(() => {
 
     return items
 })
-const footerNavItems: NavItem[] = [
-];
+
+const footerNavItems: NavItem[] = []
 </script>
 
 <template>

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('logs', function (Blueprint $table) {
+        Schema::create('sync_logs', function (Blueprint $table) {
             $table->id();
             $table->string('table_name');
             $table->string('operation');

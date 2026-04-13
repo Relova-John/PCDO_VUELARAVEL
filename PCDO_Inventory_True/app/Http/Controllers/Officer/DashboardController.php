@@ -75,7 +75,7 @@ class DashboardController extends Controller
         $reportingDateId = $request->reporting_date_id ?? $reportingDates->first()->id;
         $reportingDate = ReportingDate::find($reportingDateId);
 
-        $hasAccess = !is_null($user->access_control_id);
+        $hasAccess = $user && ! is_null($user->locationAccesses());
 
         if (! $hasAccess) {
             return inertia('officer/Dashboard', [
@@ -213,6 +213,21 @@ class DashboardController extends Controller
             ])
             ->values();
 
+        $locationAccesses = $this->getLocationAccesses($user);
+        foreach ($locationAccesses as $access) {
+            if ($access->region_code) {
+                $access->location_name = Region::where('code', $access->region_code)->value('name');
+            } elseif ($access->province_code) {
+                $access->location_name = Province::where('code', $access->province_code)->value('name');
+            } elseif ($access->city_code) {
+                $access->location_name = City::where('code', $access->city_code)->value('name');
+            } elseif ($access->barangay_code) {
+                $access->location_name = Barangay::where('code', $access->barangay_code)->value('name');
+            } else {
+                $access->location_name = 'Unknown';
+            }
+        }
+
         return inertia('officer/Dashboard', [
             'locked' => false,
             'cooperatives' => $cooperatives,
@@ -222,12 +237,12 @@ class DashboardController extends Controller
             'selectedReportingDate' => (int) $reportingDateId,
             'locationScope' => $this->buildLocationScope($user),
             'locationName' => $this->buildLocationName($user),
-            'assignedLocation' => [
-                'region_code' => $user->region_code,
-                'province_code' => $user->province_code,
-                'city_code' => $user->city_code,
-                'barangay_code' => $user->barangay_code,
-            ],
+            // 'assignedLocation' => [
+            //     'region_code' => $regionCode,
+            //     'province_code' => $provinceCode,
+            //     'city_code' => $cityCode,
+            //     'barangay_code' => $barangayCode,
+            // ],
             'regions' => $regions,
             'provinces' => $provinces,
             'cities' => $cities,
@@ -513,54 +528,100 @@ class DashboardController extends Controller
         ]);
     }
 
+    private function getLocationAccesses($user)
+    {
+        return collect($user->locationAccesses ?? []);
+    }
+
     private function applyLocationScope($query, $user): void
     {
-        if ($user->barangay_code) {
-            $query->where('barangay_code', $user->barangay_code);
-            return;
-        }
+        $accesses = $this->getLocationAccesses($user);
 
-        if ($user->city_code) {
-            $query->where('city_code', $user->city_code);
-            return;
-        }
+        $hasBarangay = $accesses->whereNotNull('barangay_code')->isNotEmpty();
+        $hasCity = $accesses->whereNotNull('city_code')->isNotEmpty();
+        $hasProvince = $accesses->whereNotNull('province_code')->isNotEmpty();
+        $hasRegion = $accesses->whereNotNull('region_code')->isNotEmpty();
 
-        if ($user->province_code) {
-            $query->where('province_code', $user->province_code);
-            return;
-        }
-
-        if ($user->region_code) {
-            $query->where('region_code', $user->region_code);
+        if ($hasBarangay) {
+            $barangayCodes = $accesses->whereNotNull('barangay_code')->pluck('barangay_code')->unique()->toArray();
+            $query->whereIn('barangay_code', $barangayCodes);
+        } elseif ($hasCity) {
+            $cityCodes = $accesses->whereNotNull('city_code')->pluck('city_code')->unique()->toArray();
+            $query->whereIn('city_code', $cityCodes);
+        } elseif ($hasProvince) {
+            $provinceCodes = $accesses->whereNotNull('province_code')->pluck('province_code')->unique()->toArray();
+            $query->whereIn('province_code', $provinceCodes);
+        } elseif ($hasRegion) {
+            $regionCodes = $accesses->whereNotNull('region_code')->pluck('region_code')->unique()->toArray();
+            $query->whereIn('region_code', $regionCodes);
         }
     }
 
     private function buildLocationScope($user): ?string
     {
-        if ($user->barangay_code) return 'Barangay Scope';
-        if ($user->city_code) return 'City / Municipality Scope';
-        if ($user->province_code) return 'Province Scope';
-        if ($user->region_code) return 'Region Scope';
+        $accesses = $this->getLocationAccesses($user);
+
+        if ($accesses->whereNotNull('barangay_code')->isNotEmpty()) {
+            $count = $accesses->whereNotNull('barangay_code')->pluck('barangay_code')->unique()->count();
+            return 'Barangay Scope' . ($count > 1 ? " ({$count})" : '');
+        }
+
+        if ($accesses->whereNotNull('city_code')->isNotEmpty()) {
+            $count = $accesses->whereNotNull('city_code')->pluck('city_code')->unique()->count();
+            return 'City / Municipality Scope' . ($count > 1 ? " ({$count})" : '');
+        }
+
+        if ($accesses->whereNotNull('province_code')->isNotEmpty()) {
+            $count = $accesses->whereNotNull('province_code')->pluck('province_code')->unique()->count();
+            return 'Province Scope' . ($count > 1 ? " ({$count})" : '');
+        }
+
+        if ($accesses->whereNotNull('region_code')->isNotEmpty()) {
+            $count = $accesses->whereNotNull('region_code')->pluck('region_code')->unique()->count();
+            return 'Region Scope' . ($count > 1 ? " ({$count})" : '');
+        }
 
         return null;
     }
 
     private function buildLocationName($user): ?string
     {
-        if ($user->barangay_code) {
-            return Barangay::where('code', $user->barangay_code)->value('name');
+        $accesses = $this->getLocationAccesses($user);
+
+        $barangayCodes = $accesses->whereNotNull('barangay_code')->pluck('barangay_code')->unique()->values()->all();
+        if (! empty($barangayCodes)) {
+            return Barangay::whereIn('code', $barangayCodes)
+                ->orderBy('name')
+                ->pluck('name')
+                ->unique()
+                ->implode(', ');
         }
 
-        if ($user->city_code) {
-            return City::where('code', $user->city_code)->value('name');
+        $cityCodes = $accesses->whereNotNull('city_code')->pluck('city_code')->unique()->values()->all();
+        if (! empty($cityCodes)) {
+            return City::whereIn('code', $cityCodes)
+                ->orderBy('name')
+                ->pluck('name')
+                ->unique()
+                ->implode(', ');
         }
 
-        if ($user->province_code) {
-            return Province::where('code', $user->province_code)->value('name');
+        $provinceCodes = $accesses->whereNotNull('province_code')->pluck('province_code')->unique()->values()->all();
+        if (! empty($provinceCodes)) {
+            return Province::whereIn('code', $provinceCodes)
+                ->orderBy('name')
+                ->pluck('name')
+                ->unique()
+                ->implode(', ');
         }
 
-        if ($user->region_code) {
-            return Region::where('code', $user->region_code)->value('name');
+        $regionCodes = $accesses->whereNotNull('region_code')->pluck('region_code')->unique()->values()->all();
+        if (! empty($regionCodes)) {
+            return Region::whereIn('code', $regionCodes)
+                ->orderBy('name')
+                ->pluck('name')
+                ->unique()
+                ->implode(', ');
         }
 
         return null;

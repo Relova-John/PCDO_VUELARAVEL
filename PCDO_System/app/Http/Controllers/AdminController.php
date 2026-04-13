@@ -36,7 +36,7 @@ class AdminController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'roles' => $user->roles->map(fn ($r) => ['id' => $r->id, 'name' => $r->name]),
+                    'roles' => $user->roles->map(fn($r) => ['id' => $r->id, 'name' => $r->name]),
                     'created_at' => $user->created_at,
                     'active' => $user->active,
                 ];
@@ -95,7 +95,7 @@ class AdminController extends Controller
         } elseif ($authUser->hasRole('admin')) {
             $allowedRoles = ['officer'];
         } else {
-            abort(403, 'Unauthorized to create users.');
+            return back()->with('error', 'User not authorized.');
         }
 
         $data = $request->validate([
@@ -109,8 +109,6 @@ class AdminController extends Controller
         Mail::to($data['email'])->send(new UserMail($data['password']));
 
         $data['active'] = true;
-
-        
 
         $user = User::create([
             'name' => $data['name'],
@@ -162,5 +160,4 @@ class AdminController extends Controller
 
         return back();
     }
-
 }

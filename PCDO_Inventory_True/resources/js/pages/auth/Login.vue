@@ -15,100 +15,44 @@ import { request } from '@/routes/password';
 const props = defineProps<{
     status?: string;
     canResetPassword: boolean;
-    canRegister: boolean;
-    qr_token?: string | null;
 }>();
 </script>
 
 <template>
-    <AuthBase
-        title="Log in to your account"
-        description="Enter your email and password below to log in"
-    >
+    <AuthBase title="Log in to your account" description="Enter your email and password below to log in">
+
         <Head title="Log in" />
 
-        <div
-            v-if="status"
-            class="mb-4 text-center text-sm font-medium text-green-600"
-        >
+        <div v-if="status" class="mb-4 text-center text-sm font-medium text-green-600">
             {{ status }}
         </div>
 
-        <Form
-            v-bind="store.form()"
-            :reset-on-success="['password']"
-            v-slot="{ errors, processing }"
-            class="flex flex-col gap-6"
-        >
-            <input
-                v-if="qr_token"
-                type="hidden"
-                name="qr_token"
-                :value="qr_token"
-            />
-
+        <Form v-bind="store.form()" :reset-on-success="['password']" v-slot="{ errors, processing }"
+            class="flex flex-col gap-6">
             <div class="grid gap-6">
                 <div class="grid gap-2">
                     <Label for="email">Email address</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        name="email"
-                        required
-                        autofocus
-                        :tabindex="1"
-                        autocomplete="email"
-                        placeholder="email@example.com"
-                    />
+                    <Input id="email" type="email" name="email" required autofocus :tabindex="1" autocomplete="email"
+                        placeholder="email@example.com" />
                     <InputError :message="errors.email" />
                 </div>
 
                 <div class="grid gap-2">
                     <div class="flex items-center justify-between">
                         <Label for="password">Password</Label>
-                        <TextLink
-                            v-if="canResetPassword"
-                            :href="request()"
-                            class="text-sm"
-                            :tabindex="5"
-                        >
+                        <TextLink v-if="canResetPassword" :href="request()" class="text-sm" :tabindex="5">
                             Forgot password?
                         </TextLink>
                     </div>
-                    <PasswordInput
-                        id="password"
-                        name="password"
-                        required
-                        :tabindex="2"
-                        autocomplete="current-password"
-                        placeholder="Password"
-                    />
+                    <PasswordInput id="password" name="password" required :tabindex="2" autocomplete="current-password"
+                        placeholder="Password" />
                     <InputError :message="errors.password" />
                 </div>
 
-                <Button
-                    type="submit"
-                    class="mt-4 w-full"
-                    :tabindex="4"
-                    :disabled="processing"
-                    data-test="login-button"
-                >
+                <Button type="submit" class="mt-4 w-full" :tabindex="4" :disabled="processing" data-test="login-button">
                     <Spinner v-if="processing" />
                     Log in
                 </Button>
-            </div>
-
-            <div
-                class="text-center text-sm text-muted-foreground"
-                v-if="canRegister"
-            >
-                Don't have an account?
-                <TextLink
-                    :href="qr_token ? register({ query: { qr_token } }) : register()"
-                    :tabindex="5"
-                >
-                    Sign up
-                </TextLink>
             </div>
         </Form>
     </AuthBase>

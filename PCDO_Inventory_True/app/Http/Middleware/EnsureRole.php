@@ -13,6 +13,8 @@ class EnsureRole
      *
      * @param  Closure(Request): (Response)  $next
      */
+
+
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         $user = $request->user();
@@ -21,7 +23,11 @@ class EnsureRole
             abort(403, 'Unauthorized.');
         }
 
-        if (! in_array($user->role, $roles, true)) {
+        $hasRole = $user->roles()
+            ->whereIn('name', $roles)
+            ->exists();
+
+        if (! $hasRole) {
             abort(403, 'You do not have permission to access this page.');
         }
 

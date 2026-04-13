@@ -23,6 +23,7 @@
                 type="button"
                 class="clear-btn"
                 aria-label="Clear selection"
+                @mousedown.prevent
                 @click.stop="clearSelection"
             >
                 ×
@@ -63,16 +64,7 @@ const props = defineProps({
     itemLabelKey: { type: String, default: 'name' },
     itemKeyProp: { type: String, default: 'id' },
 
-    /**
-     * false = must choose from list
-     * true  = can type custom value
-     */
     freeInput: { type: Boolean, default: false },
-
-    /**
-     * true = clear visible input text on focus
-     * useful for location picker style UX
-     */
     clearOnFocus: { type: Boolean, default: false },
 })
 
@@ -90,6 +82,7 @@ const open = ref(props.open)
 const searchValue = ref('')
 const highlightedIndex = ref(-1)
 const isFocused = ref(false)
+const suppressRestoreOnce = ref(false)
 
 watch(
     () => props.open,
@@ -134,6 +127,7 @@ function getDisplayValueFromModel(value: string | number | null | undefined) {
 watch(
     () => props.modelValue,
     (value) => {
+        if (suppressRestoreOnce.value) return
         searchValue.value = getDisplayValueFromModel(value)
     },
     { immediate: true }
@@ -142,7 +136,7 @@ watch(
 watch(
     () => props.items,
     () => {
-        if (!isFocused.value) {
+        if (!isFocused.value && !suppressRestoreOnce.value) {
             searchValue.value = getDisplayValueFromModel(props.modelValue)
         }
     },
@@ -187,6 +181,7 @@ function handleInput(event: Event) {
     const target = event.target as HTMLInputElement
     const raw = target.value
 
+    suppressRestoreOnce.value = false
     searchValue.value = raw
     emit('update:search', raw)
 
@@ -208,6 +203,7 @@ function selectItem(item: Item) {
     const label = itemLabel(item)
     const value = itemKey(item)
 
+    suppressRestoreOnce.value = false
     searchValue.value = label
 
     emit('update:modelValue', value)
@@ -227,19 +223,28 @@ function closeDropdown() {
         emit('update:modelValue', trimmed)
         emit('update:search', trimmed)
     } else {
-        searchValue.value = getDisplayValueFromModel(props.modelValue)
-        emit('update:search', searchValue.value)
+        if (suppressRestoreOnce.value) {
+            emit('update:search', '')
+        } else {
+            searchValue.value = getDisplayValueFromModel(props.modelValue)
+            emit('update:search', searchValue.value)
+        }
     }
 
     setOpen(false)
 }
 
 function clearSelection() {
+    suppressRestoreOnce.value = true
     searchValue.value = ''
     emit('update:modelValue', '')
     emit('update:search', '')
+    emit('select', { id: '', name: '' })
     setOpen(false)
-    inputEl.value?.focus()
+
+    if (!props.clearOnFocus) {
+        inputEl.value?.focus()
+    }
 }
 
 function highlightNext() {

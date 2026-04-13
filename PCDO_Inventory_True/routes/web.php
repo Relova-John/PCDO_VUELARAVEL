@@ -10,7 +10,7 @@ use App\Http\Controllers\Guest\FormController;
 use App\Http\Controllers\QRCodeController;
 
 Route::inertia('/', 'auth/Login', [
-    'canRegister' => Features::enabled(Features::registration()),
+    'canResetPassword' => Features::enabled(Features::resetPasswords()),
 ])->name('home');
 
 Route::get('/qr/{token}', [QRCodeController::class, 'resolve'])->name('qr.resolve');
@@ -22,11 +22,11 @@ Route::get('/form', function () {
         return redirect()->route('guest.create');
     }
 
-    if ($user->role === 'officer') {
+    if ($user->hasRole(['officerI', 'officerII'])) {
         return redirect()->route('officer.create');
     }
 
-    if (in_array($user->role, ['admin', 'superadmin'])) {
+    if ($user->hasRole(['admin', 'superadmin'])) {
         return redirect()->route('admin.create');
     }
 
@@ -42,11 +42,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
         $user = request()->user();
 
-        if ($user->role === 'superadmin' || $user->role === 'admin') {
+        if ($user->hasRole(['superadmin', 'admin'])) {
             return redirect()->route('admin.dashboard');
         }
 
-        if ($user->role === 'officer') {
+        if ($user->hasRole(['officerI', 'officerII'])) {
             return redirect()->route('officer.dashboard');
         }
 
@@ -56,7 +56,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/access-control', function () {
         $user = request()->user();
 
-        if ($user->role === 'superadmin' || $user->role === 'admin') {
+        if ($user->hasRole(['superadmin', 'admin'])) {
             return redirect()->route('admin.access-control.index');
         }
 
@@ -77,13 +77,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('/access-control', [AdminAccessControlController::class, 'index'])->name('access-control.index');
             Route::post('/access-control', [AdminAccessControlController::class, 'store'])->name('access-control.store');
-            Route::patch('/access-control/{accessControl}/close', [AdminAccessControlController::class, 'close'])->name('access-control.close');
-            Route::patch('/access-control/{accessControl}/reopen', [AdminAccessControlController::class, 'reopen'])->name('access-control.reopen');
-            Route::get('/access-control/{accessControl}/qr', [AdminAccessControlController::class, 'downloadQr'])->name('access-control.qr');
+            Route::post('/users', [AdminAccessControlController::class, 'createUsers'])->name('createUser');
+            Route::post('/users/{id}/deactivate', [AdminAccessControlController::class, 'deactivateUser'])->name('users.deactivate');
+            Route::post('/users/{id}/activate', [AdminAccessControlController::class, 'activateUser'])->name('users.activate');
+            Route::get('/logs/{id}/changes', [AdminAccessControlController::class, 'getLogChanges'])->name('logs.changes');
+            Route::post('users/{user}/change-role', [AdminAccessControlController::class, 'changeRole'])->name('users.changeRole');
+
+            Route::get('/logs/{id}/changes', [AdminAccessControlController::class, 'getLogChanges'])->name('logs.changes');
             Route::get('/access-control/static-form-qr', [AdminAccessControlController::class, 'downloadStaticFormQr'])->name('access-control.static-form-qr');
         });
 
-    Route::middleware('role:officer')
+    Route::middleware('role:officerI,officerII')
         ->prefix('officer')
         ->name('officer.')
         ->group(function () {
@@ -93,7 +97,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/dashboard/{id}', [OfficerDashboardController::class, 'showDetails'])->name('dashboard.showdetails');
             Route::get('/dashboard/{id}/edit', [OfficerDashboardController::class, 'edit'])->name('dashboard.edit');
             Route::put('/dashboard/{id}', [OfficerDashboardController::class, 'update'])->name('dashboard.update');
-            Route::post('/dashboard/access-control/activate', [OfficerDashboardController::class, 'activate'])->name('dashboard.access-control.activate');
         });
 });
 

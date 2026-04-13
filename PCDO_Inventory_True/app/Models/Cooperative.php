@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Cooperative extends Model
 {
-    use HasFactory;
+    use HasFactory, SyncLogger;
     protected $fillable = [
         'name',
         'region_code',

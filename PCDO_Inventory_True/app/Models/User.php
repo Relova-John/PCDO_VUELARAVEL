@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use App\Traits\SyncLogger;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,7 +15,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, SyncLogger;
 
     /**
      * The attributes that are mass assignable.
@@ -25,11 +27,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'access_control_id',
-        'region_code',
-        'province_code',
-        'city_code',
-        'barangay_code',
+        'is_active',
+        'created_by',
     ];
 
     /**
@@ -58,61 +57,52 @@ class User extends Authenticatable
         ];
     }
 
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'user_role', 'user_id', 'role_id');
+    }
+
+    public function hasRole(string|array $roles): bool
+    {
+        $roles = is_array($roles) ? $roles : [$roles];
+
+        return $this->roles()
+            ->whereIn('name', $roles)
+            ->exists();
+    }
+
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'superadmin';
+        return $this->hasRole('superadmin');
     }
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->hasRole('admin');
     }
 
-    public function isOfficer(): bool
+    public function isOfficerI(): bool
     {
-        return $this->role === 'officer';
+        return $this->hasRole('officerI');
+    }
+
+    public function isOfficerII(): bool
+    {
+        return $this->hasRole('officerII');
+    }
+
+    public function isOfficerLevel(): bool
+    {
+        return $this->isOfficerI() || $this->isOfficerII();
     }
 
     public function isAdminLevel(): bool
     {
-        return in_array($this->role, ['superadmin', 'admin'], true);
+        return $this->isAdmin() || $this->isSuperAdmin();
     }
 
-    public function accessControl()
+    public function locationAccesses()
     {
-        return $this->belongsTo(AccessControl::class);
-    }
-
-    public function activateByAccessControl($user, AccessControl $accessControl): void
-    {
-        if (! $accessControl->is_active || $accessControl->closed_at) {
-            abort(422, 'This access code is no longer active.');
-        }
-
-        if ($accessControl->expires_at && now()->gt($accessControl->expires_at)) {
-            abort(422, 'This access code has expired.');
-        }
-
-        if (! is_null($accessControl->max_uses) && $accessControl->used_count >= $accessControl->max_uses) {
-            abort(422, 'This access code has reached its usage limit.');
-        }
-
-        DB::transaction(function () use ($user, $accessControl) {
-            $user->update([
-                'access_control_id' => $accessControl->id,
-                'region_code' => $accessControl->region_code,
-                'province_code' => $accessControl->province_code,
-                'city_code' => $accessControl->city_code,
-                'barangay_code' => $accessControl->barangay_code,
-            ]);
-
-            $accessControl->increment('used_count');
-
-            $accessControl->update([
-                'last_used_at' => now(),
-                'is_active' => $accessControl->one_time ? false : $accessControl->is_active,
-                'closed_at' => $accessControl->one_time ? now() : $accessControl->closed_at,
-            ]);
-        });
+        return $this->hasMany(UserLocationAccess::class);
     }
 }

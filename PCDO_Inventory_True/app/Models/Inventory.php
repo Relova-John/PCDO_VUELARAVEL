@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Model;
 
 class Inventory extends Model
 {
+    use SyncLogger;
     protected $fillable = [
         'inventory_instance_id',
         'name',

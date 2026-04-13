@@ -71,14 +71,6 @@ const perPage = 10
 const showModal = ref(false)
 const showSummaryModal = ref(false)
 
-const accessForm = useForm({
-    code: ''
-})
-
-function activateCode() {
-    accessForm.post('/officer/dashboard/access-control/activate')
-}
-
 function filterDate() {
     router.get(
         '/officer/dashboard',
@@ -774,27 +766,11 @@ const cooperativeGroupedRows = computed(() => {
 
             <div v-if="locked" class="officer-card">
                 <div class="p-6 max-w-md mx-auto">
-                    <h2 class="text-xl font-semibold mb-2">Enter Access Code</h2>
+                    <h2 class="text-xl font-semibold mb-2">No Location Access</h2>
                     <p class="text-sm text-gray-500 mb-4">
                         Your code determines which location data you are allowed to view.
+                        Please contact your administrator if you believe this is an error or to request access.
                     </p>
-
-                    <form @submit.prevent="activateCode" class="space-y-4">
-                        <input
-                            v-model="accessForm.code"
-                            type="text"
-                            placeholder="Enter access code"
-                            class="officer-search w-full"
-                        />
-
-                        <div v-if="page.props.errors.code" class="text-red-500 text-sm">
-                            {{ page.props.errors.code }}
-                        </div>
-
-                        <button type="submit" class="officer-btn-primary w-full">
-                            Activate Access
-                        </button>
-                    </form>
                 </div>
             </div>
 

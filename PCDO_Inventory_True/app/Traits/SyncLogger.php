@@ -41,7 +41,7 @@ trait SyncLogger
             'operation' => $operation,
             'record_id' => $model->id,
             'user_id' => $user?->id ?? 0,
-            'user_name' => $user?->name ?? 'system',
+            'user_name' => $user?->name ?? 'System',
             'changes' => $safeChanges,
             'source' => $source,
             'executed_at' => now(),

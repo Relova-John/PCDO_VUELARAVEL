@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\SyncLogger;
 use Illuminate\Database\Eloquent\Model;
 
 class ItemPicturesFiles extends Model
 {
+    use SyncLogger;
     protected $table = 'item_pictures_files';
 
     protected $fillable = [
