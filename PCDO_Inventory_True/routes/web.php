@@ -98,6 +98,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
             Route::get('/dashboard/{id}', [OfficerDashboardController::class, 'showDetails'])->name('dashboard.showdetails');
             Route::get('/dashboard/{id}/edit', [OfficerDashboardController::class, 'edit'])->name('dashboard.edit');
             Route::put('/dashboard/{id}', [OfficerDashboardController::class, 'update'])->name('dashboard.update');
+            Route::get('/dashboard/summary-report/pdf', [OfficerDashboardController::class, 'downloadSummaryPdf'])->name('dashboard.summary-report.pdf');
         });
 });
 

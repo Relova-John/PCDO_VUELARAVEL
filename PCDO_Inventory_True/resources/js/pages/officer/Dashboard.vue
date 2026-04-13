@@ -565,6 +565,7 @@ const summaryFilters = reactive({
     barangay_code: '',
     category: '',
     status: 'all',
+    name: '',
 })
 
 const summaryLocationSearch = reactive<Record<LocationFields, string>>({
@@ -812,6 +813,14 @@ const filteredSummaryRows = computed(() => {
         rows = rows.filter(row => row.unserviceable > 0)
     }
 
+    if (summaryFilters.name.trim()) {
+        const keyword = summaryFilters.name.trim().toLowerCase()
+
+        rows = rows.filter(row =>
+            String(row.name || '').toLowerCase().includes(keyword)
+        )
+    }
+
     return rows
 })
 
@@ -917,9 +926,26 @@ const cooperativeGroupedRows = computed(() => {
 
     return [...map.values()].sort((a, b) => a.coop_name.localeCompare(b.coop_name))
 })
+
+function downloadSummaryPdf() {
+    const params = new URLSearchParams({
+        reporting_date_id: String(selectedDate.value ?? ''),
+        view: summaryView.value,
+        region_code: summaryFilters.region_code || '',
+        province_code: summaryFilters.province_code || '',
+        city_code: summaryFilters.city_code || '',
+        barangay_code: summaryFilters.barangay_code || '',
+        category: summaryFilters.category || '',
+        status: summaryFilters.status || 'all',
+        name: summaryFilters.name || '',
+    })
+
+    window.open(`/officer/dashboard/summary-report/pdf?${params.toString()}`, '_blank')
+}
 </script>
 
 <template>
+
     <Head title="Officer Dashboard" />
     <!-- <div class="fixed top-4 right-4 p-4 bg-white border rounded shadow z-50 max-h-96 overflow-y-auto">
         <pre>{{ props }}</pre>
@@ -972,12 +998,8 @@ const cooperativeGroupedRows = computed(() => {
             <div v-else class="officer-card">
                 <div class="officer-card-header">
                     <div class="officer-filter-row-top">
-                        <input
-                            v-model="search"
-                            type="text"
-                            placeholder="Search cooperative..."
-                            class="officer-search"
-                        />
+                        <input v-model="search" type="text" placeholder="Search cooperative..."
+                            class="officer-search" />
 
                         <select v-model="inventoryFilter" class="officer-select">
                             <option value="all">All Cooperatives</option>
@@ -990,93 +1012,46 @@ const cooperativeGroupedRows = computed(() => {
                     <div class="officer-location-grid">
                         <div>
                             <label class="officer-form-label">Region</label>
-                            <input
-                                v-if="isRegionLocked"
-                                :value="locationSearch.region_code"
-                                type="text"
-                                class="officer-search officer-locked-input"
-                                readonly
-                            />
-                            <SelectSearch
-                                v-else
-                                :items="filteredRegions"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.region_code"
-                                :modelValue="locationFilter.region_code"
+                            <input v-if="isRegionLocked" :value="locationSearch.region_code" type="text"
+                                class="officer-search officer-locked-input" readonly />
+                            <SelectSearch v-else :items="filteredRegions" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.region_code" :modelValue="locationFilter.region_code"
                                 v-model:open="openState.region_code"
                                 @update:model-value="val => onLocationModelUpdate('region_code', val)"
-                                @select="val => onSelectLocation('region_code', val)"
-                            />
+                                @select="val => onSelectLocation('region_code', val)" />
                         </div>
 
                         <div>
                             <label class="officer-form-label">Province</label>
-                            <input
-                                v-if="isProvinceLocked"
-                                :value="locationSearch.province_code"
-                                type="text"
-                                class="officer-search officer-locked-input"
-                                readonly
-                            />
-                            <SelectSearch
-                                v-else
-                                :items="filteredProvinces"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.province_code"
-                                :modelValue="locationFilter.province_code"
-                                v-model:open="openState.province_code"
-                                :disabled="isProvinceDisabled"
+                            <input v-if="isProvinceLocked" :value="locationSearch.province_code" type="text"
+                                class="officer-search officer-locked-input" readonly />
+                            <SelectSearch v-else :items="filteredProvinces" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.province_code" :modelValue="locationFilter.province_code"
+                                v-model:open="openState.province_code" :disabled="isProvinceDisabled"
                                 @update:model-value="val => onLocationModelUpdate('province_code', val)"
-                                @select="val => onSelectLocation('province_code', val)"
-                            />
+                                @select="val => onSelectLocation('province_code', val)" />
                         </div>
 
                         <div>
                             <label class="officer-form-label">City</label>
-                            <input
-                                v-if="isCityLocked"
-                                :value="locationSearch.city_code"
-                                type="text"
-                                class="officer-search officer-locked-input"
-                                readonly
-                            />
-                            <SelectSearch
-                                v-else
-                                :items="filteredCities"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.city_code"
-                                :modelValue="locationFilter.city_code"
-                                v-model:open="openState.city_code"
-                                :disabled="isCityDisabled"
+                            <input v-if="isCityLocked" :value="locationSearch.city_code" type="text"
+                                class="officer-search officer-locked-input" readonly />
+                            <SelectSearch v-else :items="filteredCities" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.city_code" :modelValue="locationFilter.city_code"
+                                v-model:open="openState.city_code" :disabled="isCityDisabled"
                                 @update:model-value="val => onLocationModelUpdate('city_code', val)"
-                                @select="val => onSelectLocation('city_code', val)"
-                            />
+                                @select="val => onSelectLocation('city_code', val)" />
                         </div>
 
                         <div>
                             <label class="officer-form-label">Barangay</label>
-                            <input
-                                v-if="isBarangayLocked"
-                                :value="locationSearch.barangay_code"
-                                type="text"
-                                class="officer-search officer-locked-input"
-                                readonly
-                            />
-                            <SelectSearch
-                                v-else
-                                :items="filteredBarangays"
-                                itemLabelKey="name"
-                                itemKeyProp="code"
-                                v-model:search="locationSearch.barangay_code"
-                                :modelValue="locationFilter.barangay_code"
-                                v-model:open="openState.barangay_code"
-                                :disabled="isBarangayDisabled"
+                            <input v-if="isBarangayLocked" :value="locationSearch.barangay_code" type="text"
+                                class="officer-search officer-locked-input" readonly />
+                            <SelectSearch v-else :items="filteredBarangays" itemLabelKey="name" itemKeyProp="code"
+                                v-model:search="locationSearch.barangay_code" :modelValue="locationFilter.barangay_code"
+                                v-model:open="openState.barangay_code" :disabled="isBarangayDisabled"
                                 @update:model-value="val => onLocationModelUpdate('barangay_code', val)"
-                                @select="val => onSelectLocation('barangay_code', val)"
-                            />
+                                @select="val => onSelectLocation('barangay_code', val)" />
                         </div>
                     </div>
                 </div>
@@ -1101,12 +1076,8 @@ const cooperativeGroupedRows = computed(() => {
                             </td>
                         </tr>
 
-                        <tr
-                            v-for="coop in paginatedCooperatives"
-                            :key="coop.id"
-                            class="officer-row"
-                            @click="openCoop(coop.id)"
-                        >
+                        <tr v-for="coop in paginatedCooperatives" :key="coop.id" class="officer-row"
+                            @click="openCoop(coop.id)">
                             <td>{{ coop.name }}</td>
                             <td>{{ inventoryCounts[coop.id] ?? 0 }}</td>
                         </tr>
@@ -1153,26 +1124,16 @@ const cooperativeGroupedRows = computed(() => {
             <div class="officer-modal-box summary-modal">
                 <div class="summary-header">
                     <h2 class="officer-modal-title">Inventory Summary</h2>
-
-                    <button class="officer-modal-btn-cancel icon-close" @click="closeSummaryModal">
-                        ✕
-                    </button>
                 </div>
 
                 <div class="summary-switch">
-                    <button
-                        class="summary-tab"
-                        :class="{ active: summaryView === 'cooperative' }"
-                        @click="summaryView = 'cooperative'"
-                    >
+                    <button class="summary-tab" :class="{ active: summaryView === 'cooperative' }"
+                        @click="summaryView = 'cooperative'">
                         Cooperatives
                     </button>
 
-                    <button
-                        class="summary-tab"
-                        :class="{ active: summaryView === 'inventory' }"
-                        @click="summaryView = 'inventory'"
-                    >
+                    <button class="summary-tab" :class="{ active: summaryView === 'inventory' }"
+                        @click="summaryView = 'inventory'">
                         Inventory
                     </button>
                 </div>
@@ -1181,111 +1142,66 @@ const cooperativeGroupedRows = computed(() => {
                     <div>
                         <label class="form-label">Region</label>
 
-                        <input
-                            v-if="isSummaryRegionLocked"
-                            :value="summaryLocationSearch.region_code"
-                            type="text"
-                            class="officer-search locked-input"
-                            readonly
-                        />
+                        <input v-if="isSummaryRegionLocked" :value="summaryLocationSearch.region_code" type="text"
+                            class="officer-search locked-input" readonly />
 
-                        <SelectSearch
-                            v-else
-                            :items="summaryFilteredRegions"
-                            itemLabelKey="name"
-                            itemKeyProp="code"
-                            v-model:search="summaryLocationSearch.region_code"
-                            :modelValue="summaryFilters.region_code"
+                        <SelectSearch v-else :items="summaryFilteredRegions" itemLabelKey="name" itemKeyProp="code"
+                            v-model:search="summaryLocationSearch.region_code" :modelValue="summaryFilters.region_code"
                             v-model:open="summaryOpenState.region_code"
                             @update:model-value="val => onSummaryLocationModelUpdate('region_code', val)"
-                            @select="val => onSelectSummaryLocation('region_code', val)"
-                        />
+                            @select="val => onSelectSummaryLocation('region_code', val)" />
                     </div>
 
                     <div>
                         <label class="form-label">Province</label>
 
-                        <input
-                            v-if="isSummaryProvinceLocked"
-                            :value="summaryLocationSearch.province_code"
-                            type="text"
-                            class="officer-search locked-input"
-                            readonly
-                        />
+                        <input v-if="isSummaryProvinceLocked" :value="summaryLocationSearch.province_code" type="text"
+                            class="officer-search locked-input" readonly />
 
-                        <SelectSearch
-                            v-else
-                            :items="summaryFilteredProvinces"
-                            itemLabelKey="name"
-                            itemKeyProp="code"
+                        <SelectSearch v-else :items="summaryFilteredProvinces" itemLabelKey="name" itemKeyProp="code"
                             v-model:search="summaryLocationSearch.province_code"
-                            :modelValue="summaryFilters.province_code"
-                            v-model:open="summaryOpenState.province_code"
+                            :modelValue="summaryFilters.province_code" v-model:open="summaryOpenState.province_code"
                             :disabled="isSummaryProvinceDisabled"
                             @update:model-value="val => onSummaryLocationModelUpdate('province_code', val)"
-                            @select="val => onSelectSummaryLocation('province_code', val)"
-                        />
+                            @select="val => onSelectSummaryLocation('province_code', val)" />
                     </div>
 
                     <div>
                         <label class="form-label">City</label>
 
-                        <input
-                            v-if="isSummaryCityLocked"
-                            :value="summaryLocationSearch.city_code"
-                            type="text"
-                            class="officer-search locked-input"
-                            readonly
-                        />
+                        <input v-if="isSummaryCityLocked" :value="summaryLocationSearch.city_code" type="text"
+                            class="officer-search locked-input" readonly />
 
-                        <SelectSearch
-                            v-else
-                            :items="summaryFilteredCities"
-                            itemLabelKey="name"
-                            itemKeyProp="code"
-                            v-model:search="summaryLocationSearch.city_code"
-                            :modelValue="summaryFilters.city_code"
-                            v-model:open="summaryOpenState.city_code"
-                            :disabled="isSummaryCityDisabled"
+                        <SelectSearch v-else :items="summaryFilteredCities" itemLabelKey="name" itemKeyProp="code"
+                            v-model:search="summaryLocationSearch.city_code" :modelValue="summaryFilters.city_code"
+                            v-model:open="summaryOpenState.city_code" :disabled="isSummaryCityDisabled"
                             @update:model-value="val => onSummaryLocationModelUpdate('city_code', val)"
-                            @select="val => onSelectSummaryLocation('city_code', val)"
-                        />
+                            @select="val => onSelectSummaryLocation('city_code', val)" />
                     </div>
 
                     <div>
                         <label class="form-label">Barangay</label>
 
-                        <input
-                            v-if="isSummaryBarangayLocked"
-                            :value="summaryLocationSearch.barangay_code"
-                            type="text"
-                            class="officer-search locked-input"
-                            readonly
-                        />
+                        <input v-if="isSummaryBarangayLocked" :value="summaryLocationSearch.barangay_code" type="text"
+                            class="officer-search locked-input" readonly />
 
-                        <SelectSearch
-                            v-else
-                            :items="summaryFilteredBarangays"
-                            itemLabelKey="name"
-                            itemKeyProp="code"
+                        <SelectSearch v-else :items="summaryFilteredBarangays" itemLabelKey="name" itemKeyProp="code"
                             v-model:search="summaryLocationSearch.barangay_code"
-                            :modelValue="summaryFilters.barangay_code"
-                            v-model:open="summaryOpenState.barangay_code"
+                            :modelValue="summaryFilters.barangay_code" v-model:open="summaryOpenState.barangay_code"
                             :disabled="isSummaryBarangayDisabled"
                             @update:model-value="val => onSummaryLocationModelUpdate('barangay_code', val)"
-                            @select="val => onSelectSummaryLocation('barangay_code', val)"
-                        />
+                            @select="val => onSelectSummaryLocation('barangay_code', val)" />
                     </div>
-
+                    <div>
+                        <label class="form-label">Search Name</label>
+                        <input v-model="summaryFilters.name" type="text" placeholder="Search..."
+                            class="coop-search" />
+                    </div>
                     <div>
                         <label class="form-label">Category</label>
                         <select v-model="summaryFilters.category" class="officer-select">
                             <option value="">All Categories</option>
-                            <option
-                                v-for="category in categories"
-                                :key="category.value"
-                                :value="category.value"
-                            >
+                            <option v-for="category in categories" :key="category.value" :value="category.value">
                                 {{ category.label }}
                             </option>
                         </select>
@@ -1301,83 +1217,103 @@ const cooperativeGroupedRows = computed(() => {
                     </div>
                 </div>
 
-                <div v-if="summaryView === 'inventory'" class="summary-body">
-                    <div v-if="inventoryGroupedRows.length === 0" class="officer-empty">
-                        No inventory found.
-                    </div>
-
-                    <div
-                        v-for="group in inventoryGroupedRows"
-                        :key="group.key"
-                        class="summary-group"
-                    >
-                        <div class="summary-group-title">
-                            {{ group.itemName }}
-                            <span v-if="group.category">({{ group.category }})</span>
-                        </div>
-
-                        <table class="officer-table">
+                <div class="summary-table-wrap">
+                    <!-- INVENTORY VIEW -->
+                    <template v-if="summaryView === 'inventory'">
+                        <table class="officer-table summary-table">
                             <thead>
                                 <tr>
+                                    <th>{{ summaryFilters.category || 'Category / Name' }}</th>
+                                    <th>Quantity</th>
                                     <th>Cooperative</th>
                                     <th>Coop Location</th>
                                     <th>Item Location</th>
-                                    <th>Qty</th>
-                                    <th>Value</th>
-                                    <th>Total</th>
+                                    <th>Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(row, index) in group.rows" :key="`${group.key}-${index}`">
-                                    <td>{{ row.coop_name }}</td>
-                                    <td>{{ row.coop_location }}</td>
-                                    <td>{{ row.item_location }}</td>
-                                    <td>{{ row.display_quantity }}</td>
-                                    <td>{{ formatMoney(row.value) }}</td>
-                                    <td>{{ formatMoney(row.total) }}</td>
+                                <template v-if="inventoryGroupedRows.length">
+                                    <template v-for="group in inventoryGroupedRows" :key="group.key">
+                                        <tr v-for="(row, index) in group.rows" :key="`${group.key}-${index}`">
+                                            <td>
+                                                <template v-if="index === 0">
+                                                    <div class="group-title">
+                                                        <div class="group-category">{{ group.category }}</div>
+                                                        <div class="group-name">{{ group.itemName }}</div>
+                                                    </div>
+                                                </template>
+                                            </td>
+                                            <td>{{ row.display_quantity }}</td>
+                                            <td>{{ row.coop_name }}</td>
+                                            <td>{{ row.coop_location || '-' }}</td>
+                                            <td>{{ row.item_location || '-' }}</td>
+                                            <td>
+                                                {{ formatMoney(row.value) }} ₱ x {{ row.display_quantity }}
+                                                ({{ formatMoney(row.total) }} ₱)
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </template>
+
+                                <tr v-else>
+                                    <td colspan="6" class="officer-empty">
+                                        No summary records found.
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
+                    </template>
 
-                <div v-else class="summary-body">
-                    <div v-if="cooperativeGroupedRows.length === 0" class="officer-empty">
-                        No cooperatives found.
-                    </div>
-
-                    <div
-                        v-for="group in cooperativeGroupedRows"
-                        :key="group.key"
-                        class="summary-group"
-                    >
-                        <div class="summary-group-title">
-                            {{ group.coop_name }}
-                        </div>
-
-                        <table class="officer-table">
+                    <!-- COOPERATIVE VIEW -->
+                    <template v-else>
+                        <table class="officer-table summary-table">
                             <thead>
                                 <tr>
-                                    <th>Item</th>
+                                    <th>Coop Name</th>
+                                    <th>Item Name</th>
                                     <th>Coop Location</th>
-                                    <th>Item Location</th>
-                                    <th>Qty</th>
-                                    <th>Value</th>
+                                    <th>Location</th>
+                                    <th>Amount</th>
+                                    <th>Quantity</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(row, index) in group.item_rows" :key="`${group.key}-${index}`">
-                                    <td>{{ row.item_name }}</td>
-                                    <td>{{ row.coop_location }}</td>
-                                    <td>{{ row.item_location }}</td>
-                                    <td>{{ row.display_quantity }}</td>
-                                    <td>{{ formatMoney(row.value) }}</td>
-                                    <td>{{ formatMoney(row.total) }}</td>
+                                <template v-if="cooperativeGroupedRows.length">
+                                    <template v-for="group in cooperativeGroupedRows" :key="group.key">
+                                        <tr v-for="(row, index) in group.item_rows" :key="`${group.key}-${index}`">
+                                            <td>
+                                                <template v-if="index === 0">
+                                                    {{ group.coop_name }}
+                                                </template>
+                                            </td>
+                                            <td>{{ row.item_name }}</td>
+                                            <td>{{ row.coop_location || '-' }}</td>
+                                            <td>{{ row.item_location || '-' }}</td>
+                                            <td>{{ formatMoney(row.value) }} ₱</td>
+                                            <td>{{ row.display_quantity }}</td>
+                                            <td>{{ formatMoney(row.total) }} ₱</td>
+                                        </tr>
+                                    </template>
+                                </template>
+
+                                <tr v-else>
+                                    <td colspan="7" class="officer-empty">
+                                        No summary records found.
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
+                    </template>
+                </div>
+
+                <div class="modal-actions">
+                    <button @click="downloadSummaryPdf" class="modal-save">
+                        Download as PDF
+                    </button>
+                    <button @click="closeSummaryModal" class="modal-cancel">
+                        Close
+                    </button>
                 </div>
             </div>
         </div>

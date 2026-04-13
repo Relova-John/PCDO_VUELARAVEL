@@ -103,6 +103,7 @@
 
         $filterParts = collect([
             !empty($filters['category']) ? 'Category: ' . $filters['category'] : 'Category: All',
+            !empty($filters['search_name']) ? 'Name: ' . $filters['search_name'] : null,
             'Status: ' . ucfirst($filters['status'] ?? 'all'),
             'View: ' . ucfirst($viewType),
         ])->implode(' | ');

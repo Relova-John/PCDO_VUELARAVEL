@@ -110,7 +110,7 @@ class DashboardController extends Controller
         $inventoryCounts = DB::table('inventory_instances')
             ->join('inventories', 'inventory_instances.id', '=', 'inventories.inventory_instance_id')
             ->where('inventory_instances.reporting_date_id', $reportingDateId)
-            ->when($coopIds->isNotEmpty(), fn ($query) => $query->whereIn('inventory_instances.coop_id', $coopIds))
+            ->when($coopIds->isNotEmpty(), fn($query) => $query->whereIn('inventory_instances.coop_id', $coopIds))
             ->select(
                 'inventory_instances.coop_id',
                 DB::raw('COUNT(inventories.id) as count')
@@ -126,7 +126,7 @@ class DashboardController extends Controller
             ->leftJoin('cities', 'cooperatives.city_code', '=', 'cities.code')
             ->leftJoin('barangays', 'cooperatives.barangay_code', '=', 'barangays.code')
             ->where('inventory_instances.reporting_date_id', $reportingDateId)
-            ->when($coopIds->isNotEmpty(), fn ($query) => $query->whereIn('inventory_instances.coop_id', $coopIds))
+            ->when($coopIds->isNotEmpty(), fn($query) => $query->whereIn('inventory_instances.coop_id', $coopIds))
             ->select(
                 'inventories.id',
                 'inventories.name',
@@ -190,12 +190,12 @@ class DashboardController extends Controller
 
         $categories = $inventorySummaryRows
             ->pluck('category')
-            ->filter(fn ($category) => filled($category))
-            ->map(fn ($category) => trim((string) $category))
+            ->filter(fn($category) => filled($category))
+            ->map(fn($category) => trim((string) $category))
             ->unique()
             ->sort()
             ->values()
-            ->map(fn (string $category) => [
+            ->map(fn(string $category) => [
                 'value' => $category,
                 'label' => ucfirst($category),
             ])
@@ -458,8 +458,8 @@ class DashboardController extends Controller
 
         $reportingDateId = $request->reporting_date_id
             ?? ReportingDate::orderByDesc('reporting_year')
-                ->orderByDesc('reporting_month')
-                ->value('id');
+            ->orderByDesc('reporting_month')
+            ->value('id');
 
         $reportingDate = ReportingDate::find($reportingDateId);
 
@@ -848,10 +848,10 @@ class DashboardController extends Controller
         ?string $barangayCode
     ): void {
         $query
-            ->when($regionCode, fn ($q) => $q->where('region_code', $regionCode))
-            ->when($provinceCode, fn ($q) => $q->where('province_code', $provinceCode))
-            ->when($cityCode, fn ($q) => $q->where('city_code', $cityCode))
-            ->when($barangayCode, fn ($q) => $q->where('barangay_code', $barangayCode));
+            ->when($regionCode, fn($q) => $q->where('region_code', $regionCode))
+            ->when($provinceCode, fn($q) => $q->where('province_code', $provinceCode))
+            ->when($cityCode, fn($q) => $q->where('city_code', $cityCode))
+            ->when($barangayCode, fn($q) => $q->where('barangay_code', $barangayCode));
     }
 
     private function buildLocationOptions($user): array
@@ -867,10 +867,10 @@ class DashboardController extends Controller
             ];
         }
 
-        $barangayCodes = $accesses->pluck('barangay_code')->filter()->map(fn ($code) => (string) $code)->unique()->values();
-        $cityCodes = $accesses->pluck('city_code')->filter()->map(fn ($code) => (string) $code)->unique()->values();
-        $provinceCodes = $accesses->pluck('province_code')->filter()->map(fn ($code) => (string) $code)->unique()->values();
-        $regionCodes = $accesses->pluck('region_code')->filter()->map(fn ($code) => (string) $code)->unique()->values();
+        $barangayCodes = $accesses->pluck('barangay_code')->filter()->map(fn($code) => (string) $code)->unique()->values();
+        $cityCodes = $accesses->pluck('city_code')->filter()->map(fn($code) => (string) $code)->unique()->values();
+        $provinceCodes = $accesses->pluck('province_code')->filter()->map(fn($code) => (string) $code)->unique()->values();
+        $regionCodes = $accesses->pluck('region_code')->filter()->map(fn($code) => (string) $code)->unique()->values();
 
         if ($barangayCodes->isNotEmpty()) {
             $barangays = Barangay::query()
@@ -1023,7 +1023,7 @@ class DashboardController extends Controller
         $provinces = Province::query()
             ->select('code', 'name', 'region_code')
             ->whereIn('code', $locationOptions['province_codes'])
-            ->when($selectedRegionCode, fn ($query) => $query->where('region_code', $selectedRegionCode))
+            ->when($selectedRegionCode, fn($query) => $query->where('region_code', $selectedRegionCode))
             ->orderBy('name')
             ->get();
 
@@ -1038,8 +1038,8 @@ class DashboardController extends Controller
         $cities = City::query()
             ->select('code', 'name', 'province_code', 'region_code')
             ->whereIn('code', $locationOptions['city_codes'])
-            ->when($selectedRegionCode, fn ($query) => $query->where('region_code', $selectedRegionCode))
-            ->when($selectedProvinceCode, fn ($query) => $query->where('province_code', $selectedProvinceCode))
+            ->when($selectedRegionCode, fn($query) => $query->where('region_code', $selectedRegionCode))
+            ->when($selectedProvinceCode, fn($query) => $query->where('province_code', $selectedProvinceCode))
             ->orderBy('name')
             ->get();
 
@@ -1053,7 +1053,7 @@ class DashboardController extends Controller
         $barangays = Barangay::query()
             ->select('code', 'name', 'city_code')
             ->whereIn('code', $locationOptions['barangay_codes'])
-            ->when($selectedCityCode, fn ($query) => $query->where('city_code', $selectedCityCode))
+            ->when($selectedCityCode, fn($query) => $query->where('city_code', $selectedCityCode))
             ->orderBy('name')
             ->get();
 
@@ -1426,5 +1426,226 @@ class DashboardController extends Controller
         }
 
         return $lock;
+    }
+
+    public function downloadSummaryPdf(Request $request)
+    {
+        $user = $request->user();
+        $reportingDateId = $request->reporting_date_id;
+        $view = $request->get('view', 'inventory');
+        $status = $request->get('status', 'all');
+
+        $reportingDate = ReportingDate::find($reportingDateId);
+
+        $rows = DB::table('inventory_instances')
+            ->join('inventories', 'inventory_instances.id', '=', 'inventories.inventory_instance_id')
+            ->join('cooperatives', 'inventory_instances.coop_id', '=', 'cooperatives.id')
+            ->leftJoin('regions', 'cooperatives.region_code', '=', 'regions.code')
+            ->leftJoin('provinces', 'cooperatives.province_code', '=', 'provinces.code')
+            ->leftJoin('cities', 'cooperatives.city_code', '=', 'cities.code')
+            ->leftJoin('barangays', 'cooperatives.barangay_code', '=', 'barangays.code')
+            ->where('inventory_instances.reporting_date_id', $reportingDateId)
+            ->select(
+                'inventories.id',
+                'inventories.name',
+                'inventories.category',
+                'inventories.location as item_location',
+                'inventories.value',
+                'inventories.quantity',
+                'inventories.status',
+                'cooperatives.id as coop_id',
+                'cooperatives.name as coop_name',
+                'cooperatives.region_code',
+                'cooperatives.province_code',
+                'cooperatives.city_code',
+                'cooperatives.barangay_code',
+                'regions.name as region_name',
+                'provinces.name as province_name',
+                'cities.name as city_name',
+                'barangays.name as barangay_name'
+            );
+
+        $this->applyLocationScopeToSummaryQuery($rows, $user);
+
+        if ($request->filled('region_code')) {
+            $rows->where('cooperatives.region_code', $request->region_code);
+        }
+
+        if ($request->filled('province_code')) {
+            $rows->where('cooperatives.province_code', $request->province_code);
+        }
+
+        if ($request->filled('city_code')) {
+            $rows->where('cooperatives.city_code', $request->city_code);
+        }
+
+        if ($request->filled('barangay_code')) {
+            $rows->where('cooperatives.barangay_code', $request->barangay_code);
+        }
+
+        if ($request->filled('category')) {
+            $rows->where('inventories.category', $request->category);
+        }
+
+        if ($request->filled('name')) {
+            $name = trim($request->name);
+            $name = preg_replace('/\s+/', ' ', $name);
+            $name = Str::lower($name);
+
+            $rows->whereRaw('LOWER(TRIM(inventories.name)) LIKE ?', ["%{$name}%"]);
+        }
+
+        $rows = $rows
+            ->orderBy('inventories.category')
+            ->orderBy('inventories.name')
+            ->orderBy('cooperatives.name')
+            ->get()
+            ->map(function ($row) use ($status) {
+                $quantity = (int) ($row->quantity ?? 0);
+                $serviceable = max(0, (int) ($row->status ?? 0));
+                $unserviceable = max(0, $quantity - $serviceable);
+
+                $displayQuantity = match ($status) {
+                    'serviceable' => $serviceable,
+                    'unserviceable' => $unserviceable,
+                    default => $quantity,
+                };
+
+                return [
+                    'id' => $row->id,
+                    'name' => $row->name,
+                    'category' => $row->category,
+                    'item_location' => $row->item_location,
+                    'value' => (float) ($row->value ?? 0),
+                    'quantity' => $quantity,
+                    'serviceable' => $serviceable,
+                    'unserviceable' => $unserviceable,
+                    'display_quantity' => $displayQuantity,
+                    'coop_id' => $row->coop_id,
+                    'coop_name' => $row->coop_name,
+                    'region_code' => $row->region_code,
+                    'province_code' => $row->province_code,
+                    'city_code' => $row->city_code,
+                    'barangay_code' => $row->barangay_code,
+                    'region_name' => $row->region_name,
+                    'province_name' => $row->province_name,
+                    'city_name' => $row->city_name,
+                    'barangay_name' => $row->barangay_name,
+                    'coop_location' => collect([
+                        $row->barangay_name,
+                        $row->city_name,
+                        $row->province_name,
+                        $row->region_name,
+                    ])->filter()->implode(', '),
+                    'total' => ((float) ($row->value ?? 0)) * $displayQuantity,
+                ];
+            })
+            ->filter(fn($row) => $row['display_quantity'] > 0)
+            ->values();
+
+        $inventoryGroupedRows = $rows
+            ->groupBy(fn($row) => $row['category'] . '__' . $row['name'])
+            ->map(function ($group, $key) {
+                $first = $group->first();
+
+                return [
+                    'key' => $key,
+                    'itemName' => $first['name'],
+                    'category' => $first['category'],
+                    'rows' => $group->map(fn($row) => [
+                        'coop_name' => $row['coop_name'],
+                        'coop_location' => $row['coop_location'],
+                        'item_location' => $row['item_location'],
+                        'display_quantity' => $row['display_quantity'],
+                        'value' => $row['value'],
+                        'total' => $row['total'],
+                    ])->values(),
+                ];
+            })
+            ->values();
+
+        $cooperativeGroupedRows = $rows
+            ->groupBy('coop_id')
+            ->map(function ($group, $key) {
+                $first = $group->first();
+
+                return [
+                    'key' => (string) $key,
+                    'coop_name' => $first['coop_name'],
+                    'item_rows' => $group->map(fn($row) => [
+                        'item_name' => $row['name'],
+                        'coop_location' => $row['coop_location'],
+                        'item_location' => $row['item_location'],
+                        'value' => $row['value'],
+                        'display_quantity' => $row['display_quantity'],
+                        'total' => $row['total'],
+                    ])->values(),
+                ];
+            })
+            ->sortBy('coop_name')
+            ->values();
+
+        $filters = [
+            'region_code' => $request->region_code,
+            'province_code' => $request->province_code,
+            'city_code' => $request->city_code,
+            'barangay_code' => $request->barangay_code,
+            'category' => $request->category,
+            'status' => $status,
+            'view' => $view,
+            'search_name' => $request->name,
+        ];
+
+        $html = view('pdf.summary-report', [
+            'reportingDate' => $reportingDate,
+            'viewType' => $view,
+            'filters' => $filters,
+            'inventoryGroupedRows' => $inventoryGroupedRows,
+            'cooperativeGroupedRows' => $cooperativeGroupedRows,
+        ])->render();
+
+        $mpdf = new \Mpdf\Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4-L',
+            'margin_top' => 10,
+            'margin_bottom' => 10,
+            'margin_left' => 10,
+            'margin_right' => 10,
+        ]);
+
+        $fileName = 'summary-report-' . now()->format('Y-m-d-His') . '.pdf';
+
+        $mpdf->SetTitle('Summary Report');
+        $mpdf->WriteHTML($html);
+
+        return response($mpdf->Output($fileName, 'S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+        ]);
+    }
+    private function applyLocationScopeToSummaryQuery($query, $user): void
+    {
+        $accesses = $this->getLocationAccesses($user);
+
+        $hasBarangay = $accesses->whereNotNull('barangay_code')->isNotEmpty();
+        $hasCity = $accesses->whereNotNull('city_code')->isNotEmpty();
+        $hasProvince = $accesses->whereNotNull('province_code')->isNotEmpty();
+        $hasRegion = $accesses->whereNotNull('region_code')->isNotEmpty();
+
+        if ($hasBarangay) {
+            $barangayCodes = $accesses->whereNotNull('barangay_code')->pluck('barangay_code')->unique()->values()->all();
+            $query->whereIn('cooperatives.barangay_code', $barangayCodes);
+        } elseif ($hasCity) {
+            $cityCodes = $accesses->whereNotNull('city_code')->pluck('city_code')->unique()->values()->all();
+            $query->whereIn('cooperatives.city_code', $cityCodes);
+        } elseif ($hasProvince) {
+            $provinceCodes = $accesses->whereNotNull('province_code')->pluck('province_code')->unique()->values()->all();
+            $query->whereIn('cooperatives.province_code', $provinceCodes);
+        } elseif ($hasRegion) {
+            $regionCodes = $accesses->whereNotNull('region_code')->pluck('region_code')->unique()->values()->all();
+            $query->whereIn('cooperatives.region_code', $regionCodes);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
     }
 }

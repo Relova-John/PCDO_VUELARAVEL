@@ -328,10 +328,6 @@ watch(
     }
 )
 
-/* =========================
-   SUMMARY MODAL LOGIC
-========================= */
-
 const summaryView = ref<'inventory' | 'cooperative'>('inventory')
 
 const summaryFilters = reactive({
@@ -340,7 +336,8 @@ const summaryFilters = reactive({
     city_code: '',
     barangay_code: '',
     category: '',
-    status: 'all'
+    status: 'all',
+    name: '',
 })
 
 const summaryLocationSearch = reactive({
@@ -432,6 +429,14 @@ const filteredSummaryRows = computed(() => {
 
     if (summaryFilters.status === 'unserviceable') {
         rows = rows.filter(row => row.unserviceable > 0)
+    }
+
+    if (summaryFilters.name.trim()) {
+        const keyword = summaryFilters.name.trim().toLowerCase()
+
+        rows = rows.filter(row =>
+            String(row.name || '').toLowerCase().includes(keyword)
+        )
     }
 
     return rows
@@ -550,6 +555,7 @@ function downloadSummaryPdf() {
         barangay_code: summaryFilters.barangay_code || '',
         category: summaryFilters.category || '',
         status: summaryFilters.status || 'all',
+        name: summaryFilters.name.trim() || ''
     })
 
     window.open(`/admin/dashboard/summary-report/pdf?${params.toString()}`, '_blank')
@@ -729,10 +735,6 @@ function downloadSummaryPdf() {
             <div class="modal-box summary-modal">
                 <div class="summary-header">
                     <h2 class="modal-title">Inventory Summary</h2>
-
-                    <button class="modal-cancel icon-close" @click="closeSummaryModal">
-                        ✕
-                    </button>
                 </div>
 
                 <div class="summary-switch">
@@ -783,7 +785,11 @@ function downloadSummaryPdf() {
                             @update:model-value="val => onSummaryLocationModelUpdate('barangay_code', val)"
                             @select="val => onSelectSummaryLocation('barangay_code', val)" />
                     </div>
-
+                    <div >
+                        <label class="form-label">Search Name</label>
+                        <input v-model="summaryFilters.name" type="text" placeholder="Search..."
+                            class="coop-search" />
+                    </div>
                     <div>
                         <label class="form-label">Category</label>
                         <select v-model="summaryFilters.category" class="coop-select">

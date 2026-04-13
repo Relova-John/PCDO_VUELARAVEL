@@ -702,6 +702,14 @@ class DashboardController extends Controller
             $rows->where('inventories.category', $request->category);
         }
 
+        if ($request->filled('name')) {
+            $name = trim($request->name);
+            $name = preg_replace('/\s+/', ' ', $name);
+            $name = Str::lower($name);
+
+            $rows->whereRaw('LOWER(TRIM(inventories.name)) LIKE ?', ["%{$name}%"]);
+        }
+
         $rows = $rows
             ->orderBy('inventories.category')
             ->orderBy('inventories.name')
@@ -800,6 +808,7 @@ class DashboardController extends Controller
             'category' => $request->category,
             'status' => $status,
             'view' => $view,
+            'search_name' => $request->name,
         ];
 
         $html = view('pdf.summary-report', [
