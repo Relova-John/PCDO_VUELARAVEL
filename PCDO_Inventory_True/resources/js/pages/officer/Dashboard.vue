@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, useForm, usePage } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import { computed, reactive, ref, watch } from 'vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import SelectSearch from '@/components/SelectSearch.vue'
@@ -7,6 +7,15 @@ import type { BreadcrumbItem } from '@/types'
 import type { Regions, Provinces, Cities, Barangays } from '@/types/locations'
 
 type LocationFields = 'region_code' | 'province_code' | 'city_code' | 'barangay_code'
+
+type CooperativeRow = {
+    id: number
+    name: string
+    region_code: string | number | null
+    province_code: string | number | null
+    city_code: string | number | null
+    barangay_code: string | number | null
+}
 
 type SummaryRow = {
     id: number
@@ -34,9 +43,8 @@ type SummaryRow = {
 
 const props = defineProps<{
     locked: boolean
-    cooperatives: any[]
+    cooperatives: CooperativeRow[]
     inventoryCounts: Record<number, number>
-    inventoryStatus: Record<number, any>
     reportingDate: any
     reportingDates: any[]
     selectedReportingDate: number
@@ -48,34 +56,33 @@ const props = defineProps<{
         city_code?: string | number | null
         barangay_code?: string | number | null
     }
+    availableLocationCodes: {
+        region_codes: Array<string | number>
+        province_codes: Array<string | number>
+        city_codes: Array<string | number>
+        barangay_codes: Array<string | number>
+    }
     regions: Regions[]
     provinces: Provinces[]
     cities: Cities[]
     barangays: Barangays[]
     breadcrumbs: BreadcrumbItem[]
-    categories: { value: string, label: string }[]
+    categories: { value: string; label: string }[]
     inventorySummaryRows: SummaryRow[]
-}>()
-
-const page = usePage<{
-    errors: Record<string, string>
-    flash: { success?: string }
 }>()
 
 const selectedDate = ref(props.selectedReportingDate)
 const search = ref('')
-const inventoryFilter = ref('with-inventory')
+const inventoryFilter = ref<'all' | 'with-inventory'>('with-inventory')
 const currentPage = ref(1)
 const perPage = 10
-
-const showModal = ref(false)
 const showSummaryModal = ref(false)
 
 function filterDate() {
     router.get(
         '/officer/dashboard',
         {
-            reporting_date_id: selectedDate.value
+            reporting_date_id: selectedDate.value,
         },
         { preserveState: true }
     )
@@ -89,7 +96,7 @@ function goToCreatePage() {
     router.visit('/officer/create')
 }
 
-function openSummaryModal() {
+function openSummaryModalFn() {
     showSummaryModal.value = true
 }
 
@@ -108,76 +115,261 @@ function findNameByCode<T extends { code: string | number; name: string }>(
     return items.find(item => String(item.code) === String(code))?.name ?? ''
 }
 
-const normalizedScope = computed(() => {
-    const scope = (props.locationScope ?? '').toLowerCase().trim()
+function normalizeCode(value: string | number | null | undefined) {
+    return value === null || value === undefined || value === '' ? '' : String(value)
+}
 
-    if (scope.includes('barangay')) return 'barangay'
-    if (scope.includes('city')) return 'city'
-    if (scope.includes('municipality')) return 'city'
-    if (scope.includes('province')) return 'province'
-    if (scope.includes('region')) return 'region'
+function uniqueStringCodes(values: Array<string | number | null | undefined>) {
+    return [...new Set(values.map(normalizeCode).filter(Boolean))]
+}
+
+const assignedLocation = computed(() => ({
+    region_code: normalizeCode(props.assignedLocation?.region_code),
+    province_code: normalizeCode(props.assignedLocation?.province_code),
+    city_code: normalizeCode(props.assignedLocation?.city_code),
+    barangay_code: normalizeCode(props.assignedLocation?.barangay_code),
+}))
+
+const availableRegionCodes = computed(() =>
+    uniqueStringCodes(props.availableLocationCodes?.region_codes ?? [])
+)
+
+const availableProvinceCodes = computed(() =>
+    uniqueStringCodes(props.availableLocationCodes?.province_codes ?? [])
+)
+
+const availableCityCodes = computed(() =>
+    uniqueStringCodes(props.availableLocationCodes?.city_codes ?? [])
+)
+
+const availableBarangayCodes = computed(() =>
+    uniqueStringCodes(props.availableLocationCodes?.barangay_codes ?? [])
+)
+
+const filteredRegions = computed(() => {
+    return (props.regions ?? []).filter(region =>
+        availableRegionCodes.value.length === 0 ||
+        availableRegionCodes.value.includes(String(region.code))
+    )
+})
+
+const filteredProvincesBase = computed(() => {
+    return (props.provinces ?? []).filter(province =>
+        availableProvinceCodes.value.length === 0 ||
+        availableProvinceCodes.value.includes(String(province.code))
+    )
+})
+
+const filteredCitiesBase = computed(() => {
+    return (props.cities ?? []).filter(city =>
+        availableCityCodes.value.length === 0 ||
+        availableCityCodes.value.includes(String(city.code))
+    )
+})
+
+const filteredBarangaysBase = computed(() => {
+    return (props.barangays ?? []).filter(barangay =>
+        availableBarangayCodes.value.length === 0 ||
+        availableBarangayCodes.value.includes(String(barangay.code))
+    )
+})
+
+const preselectedRegionCode = computed(() => {
+    if (assignedLocation.value.region_code) return assignedLocation.value.region_code
+    if (availableRegionCodes.value.length === 1) return availableRegionCodes.value[0]
+
+    const mimaropa = filteredRegions.value.find(region =>
+        String(region.name).trim().toLowerCase() === 'mimaropa'
+    )
+
+    if (mimaropa) return String(mimaropa.code)
 
     return ''
 })
 
-const assignedLocation = computed(() => ({
-    region_code: props.assignedLocation?.region_code
-        ? String(props.assignedLocation.region_code)
-        : '',
-    province_code: props.assignedLocation?.province_code
-        ? String(props.assignedLocation.province_code)
-        : '',
-    city_code: props.assignedLocation?.city_code
-        ? String(props.assignedLocation.city_code)
-        : '',
-    barangay_code: props.assignedLocation?.barangay_code
-        ? String(props.assignedLocation.barangay_code)
-        : ''
-}))
-
-const isRegionLocked = computed(() => {
-    return ['region', 'province', 'city', 'barangay'].includes(normalizedScope.value)
+const preselectedProvinceCode = computed(() => {
+    if (assignedLocation.value.province_code) return assignedLocation.value.province_code
+    if (availableProvinceCodes.value.length === 1) return availableProvinceCodes.value[0]
+    return ''
 })
 
-const isProvinceLocked = computed(() => {
-    return ['province', 'city', 'barangay'].includes(normalizedScope.value)
+const preselectedCityCode = computed(() => {
+    if (assignedLocation.value.city_code) return assignedLocation.value.city_code
+    if (availableCityCodes.value.length === 1) return availableCityCodes.value[0]
+    return ''
 })
 
-const isCityLocked = computed(() => {
-    return ['city', 'barangay'].includes(normalizedScope.value)
+const preselectedBarangayCode = computed(() => {
+    if (assignedLocation.value.barangay_code) return assignedLocation.value.barangay_code
+    if (availableBarangayCodes.value.length === 1) return availableBarangayCodes.value[0]
+    return ''
 })
 
-const isBarangayLocked = computed(() => {
-    return normalizedScope.value === 'barangay'
+const locationFilter = reactive<Record<LocationFields, string>>({
+    region_code: preselectedRegionCode.value,
+    province_code: '',
+    city_code: '',
+    barangay_code: '',
 })
 
-const locationFilter = reactive({
-    region_code: assignedLocation.value.region_code,
-    province_code: isProvinceLocked.value ? assignedLocation.value.province_code : '',
-    city_code: isCityLocked.value ? assignedLocation.value.city_code : '',
-    barangay_code: isBarangayLocked.value ? assignedLocation.value.barangay_code : ''
+const locationSearch = reactive<Record<LocationFields, string>>({
+    region_code: '',
+    province_code: '',
+    city_code: '',
+    barangay_code: '',
 })
 
-const locationSearch = reactive({
-    region_code: findNameByCode(props.regions, locationFilter.region_code),
-    province_code: findNameByCode(props.provinces, locationFilter.province_code),
-    city_code: findNameByCode(props.cities, locationFilter.city_code),
-    barangay_code: findNameByCode(props.barangays, locationFilter.barangay_code)
-})
-
-const openState = reactive({
+const openState = reactive<Record<LocationFields, boolean>>({
     region_code: false,
     province_code: false,
     city_code: false,
-    barangay_code: false
+    barangay_code: false,
 })
 
-const dependencyMap = {
+const dependencyMap: Record<LocationFields, LocationFields[]> = {
     region_code: ['province_code', 'city_code', 'barangay_code'],
     province_code: ['city_code', 'barangay_code'],
     city_code: ['barangay_code'],
-    barangay_code: []
-} as const
+    barangay_code: [],
+}
+
+const filteredProvinces = computed(() => {
+    let result = filteredProvincesBase.value
+
+    if (locationFilter.region_code) {
+        result = result.filter(
+            province => String(province.region_code) === String(locationFilter.region_code)
+        )
+    }
+
+    return result
+})
+
+const filteredCities = computed(() => {
+    let result = filteredCitiesBase.value
+
+    if (locationFilter.province_code) {
+        result = result.filter(
+            city => String(city.province_code) === String(locationFilter.province_code)
+        )
+    }
+
+    return result
+})
+
+const filteredBarangays = computed(() => {
+    let result = filteredBarangaysBase.value
+
+    if (locationFilter.city_code) {
+        result = result.filter(
+            barangay => String(barangay.city_code) === String(locationFilter.city_code)
+        )
+    }
+
+    return result
+})
+
+const isRegionLocked = computed(() => filteredRegions.value.length === 1)
+const isProvinceLocked = computed(() => !!locationFilter.region_code && filteredProvinces.value.length === 1)
+const isCityLocked = computed(() => !!locationFilter.province_code && filteredCities.value.length === 1)
+const isBarangayLocked = computed(() => !!locationFilter.city_code && filteredBarangays.value.length === 1)
+
+const isProvinceDisabled = computed(() => !locationFilter.region_code || filteredProvinces.value.length === 0)
+const isCityDisabled = computed(() => !locationFilter.province_code || filteredCities.value.length === 0)
+const isBarangayDisabled = computed(() => !locationFilter.city_code || filteredBarangays.value.length === 0)
+
+function syncLocationSearch() {
+    locationSearch.region_code = findNameByCode(props.regions, locationFilter.region_code)
+    locationSearch.province_code = findNameByCode(props.provinces, locationFilter.province_code)
+    locationSearch.city_code = findNameByCode(props.cities, locationFilter.city_code)
+    locationSearch.barangay_code = findNameByCode(props.barangays, locationFilter.barangay_code)
+}
+
+function applyAutoSelections() {
+    if (!locationFilter.region_code && preselectedRegionCode.value) {
+        locationFilter.region_code = preselectedRegionCode.value
+    }
+
+    if (!locationFilter.region_code) {
+        locationFilter.province_code = ''
+        locationFilter.city_code = ''
+        locationFilter.barangay_code = ''
+        syncLocationSearch()
+        return
+    }
+
+    if (
+        locationFilter.province_code &&
+        !filteredProvinces.value.some(item => String(item.code) === String(locationFilter.province_code))
+    ) {
+        locationFilter.province_code = ''
+    }
+
+    if (
+        !locationFilter.province_code &&
+        (
+            preselectedProvinceCode.value &&
+            filteredProvinces.value.some(item => String(item.code) === String(preselectedProvinceCode.value))
+        )
+    ) {
+        locationFilter.province_code = preselectedProvinceCode.value
+    } else if (!locationFilter.province_code && filteredProvinces.value.length === 1) {
+        locationFilter.province_code = String(filteredProvinces.value[0].code)
+    }
+
+    if (!locationFilter.province_code) {
+        locationFilter.city_code = ''
+        locationFilter.barangay_code = ''
+        syncLocationSearch()
+        return
+    }
+
+    if (
+        locationFilter.city_code &&
+        !filteredCities.value.some(item => String(item.code) === String(locationFilter.city_code))
+    ) {
+        locationFilter.city_code = ''
+    }
+
+    if (
+        !locationFilter.city_code &&
+        (
+            preselectedCityCode.value &&
+            filteredCities.value.some(item => String(item.code) === String(preselectedCityCode.value))
+        )
+    ) {
+        locationFilter.city_code = preselectedCityCode.value
+    } else if (!locationFilter.city_code && filteredCities.value.length === 1) {
+        locationFilter.city_code = String(filteredCities.value[0].code)
+    }
+
+    if (!locationFilter.city_code) {
+        locationFilter.barangay_code = ''
+        syncLocationSearch()
+        return
+    }
+
+    if (
+        locationFilter.barangay_code &&
+        !filteredBarangays.value.some(item => String(item.code) === String(locationFilter.barangay_code))
+    ) {
+        locationFilter.barangay_code = ''
+    }
+
+    if (
+        !locationFilter.barangay_code &&
+        (
+            preselectedBarangayCode.value &&
+            filteredBarangays.value.some(item => String(item.code) === String(preselectedBarangayCode.value))
+        )
+    ) {
+        locationFilter.barangay_code = preselectedBarangayCode.value
+    } else if (!locationFilter.barangay_code && filteredBarangays.value.length === 1) {
+        locationFilter.barangay_code = String(filteredBarangays.value[0].code)
+    }
+
+    syncLocationSearch()
+}
 
 function onSelectLocation(field: LocationFields, payload: { id: string; name: string }) {
     if (
@@ -199,6 +391,7 @@ function onSelectLocation(field: LocationFields, payload: { id: string; name: st
         openState[dep] = false
     })
 
+    applyAutoSelections()
     currentPage.value = 1
 }
 
@@ -212,7 +405,7 @@ function onLocationModelUpdate(field: LocationFields, value: string | number) {
         return
     }
 
-    locationFilter[field] = String(value)
+    locationFilter[field] = value ? String(value) : ''
 
     if (!value) {
         locationSearch[field] = ''
@@ -225,146 +418,61 @@ function onLocationModelUpdate(field: LocationFields, value: string | number) {
         })
     }
 
+    applyAutoSelections()
     currentPage.value = 1
 }
 
-const filteredRegions = computed(() => {
-    const regions = props.regions ?? []
-
-    if (isRegionLocked.value && assignedLocation.value.region_code) {
-        return regions.filter(
-            region => String(region.code) === String(assignedLocation.value.region_code)
-        )
-    }
-
-    return regions
-})
-
-const filteredProvinces = computed(() => {
-    const provinces = props.provinces ?? []
-    const baseRegion =
-        locationFilter.region_code ||
-        (isRegionLocked.value ? assignedLocation.value.region_code : '')
-
-    let result = provinces
-
-    if (baseRegion) {
-        result = result.filter(
-            province => String(province.region_code) === String(baseRegion)
-        )
-    }
-
-    if (isProvinceLocked.value && assignedLocation.value.province_code) {
-        result = result.filter(
-            province => String(province.code) === String(assignedLocation.value.province_code)
-        )
-    }
-
-    return result
-})
-
-const filteredCities = computed(() => {
-    const cities = props.cities ?? []
-    const baseProvince =
-        locationFilter.province_code ||
-        (isProvinceLocked.value ? assignedLocation.value.province_code : '')
-
-    let result = cities
-
-    if (baseProvince) {
-        result = result.filter(
-            city => String(city.province_code) === String(baseProvince)
-        )
-    }
-
-    if (isCityLocked.value && assignedLocation.value.city_code) {
-        result = result.filter(
-            city => String(city.code) === String(assignedLocation.value.city_code)
-        )
-    }
-
-    return result
-})
-
-const filteredBarangays = computed(() => {
-    const barangays = props.barangays ?? []
-    const baseCity =
-        locationFilter.city_code ||
-        (isCityLocked.value ? assignedLocation.value.city_code : '')
-
-    let result = barangays
-
-    if (baseCity) {
-        result = result.filter(
-            barangay => String(barangay.city_code) === String(baseCity)
-        )
-    }
-
-    if (isBarangayLocked.value && assignedLocation.value.barangay_code) {
-        result = result.filter(
-            barangay => String(barangay.code) === String(assignedLocation.value.barangay_code)
-        )
-    }
-
-    return result
-})
+applyAutoSelections()
 
 const filteredCooperatives = computed(() => {
-    let result = props.cooperatives
+    let result = [...props.cooperatives]
 
     if (inventoryFilter.value === 'with-inventory') {
         result = result.filter(coop => (props.inventoryCounts[coop.id] ?? 0) > 0)
     }
 
-    if (search.value) {
-        result = result.filter((coop: any) =>
-            coop.name.toLowerCase().includes(search.value.toLowerCase())
-        )
+    if (search.value.trim()) {
+        const keyword = search.value.toLowerCase()
+        result = result.filter(coop => coop.name.toLowerCase().includes(keyword))
     }
 
     if (locationFilter.region_code) {
         result = result.filter(
-            (coop: any) => String(coop.region_code) === String(locationFilter.region_code)
+            coop => String(coop.region_code ?? '') === String(locationFilter.region_code)
         )
     }
 
     if (locationFilter.province_code) {
         result = result.filter(
-            (coop: any) => String(coop.province_code) === String(locationFilter.province_code)
+            coop => String(coop.province_code ?? '') === String(locationFilter.province_code)
         )
     }
 
     if (locationFilter.city_code) {
         result = result.filter(
-            (coop: any) => String(coop.city_code) === String(locationFilter.city_code)
+            coop => String(coop.city_code ?? '') === String(locationFilter.city_code)
         )
     }
 
     if (locationFilter.barangay_code) {
         result = result.filter(
-            (coop: any) => String(coop.barangay_code) === String(locationFilter.barangay_code)
+            coop => String(coop.barangay_code ?? '') === String(locationFilter.barangay_code)
         )
     }
 
-    result = [...result].sort((a: any, b: any) => {
+    return result.sort((a, b) => {
         const aCount = props.inventoryCounts[a.id] ?? 0
         const bCount = props.inventoryCounts[b.id] ?? 0
         return bCount - aCount
     })
-
-    return result
 })
 
 const totalItems = computed(() => filteredCooperatives.value.length)
-
-const totalPages = computed(() => {
-    return Math.max(1, Math.ceil(totalItems.value / perPage))
-})
+const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / perPage)))
 
 const paginatedCooperatives = computed(() => {
     const start = (currentPage.value - 1) * perPage
-    const end = start + perPage
-    return filteredCooperatives.value.slice(start, end)
+    return filteredCooperatives.value.slice(start, start + perPage)
 })
 
 const startItem = computed(() => {
@@ -419,11 +527,23 @@ watch(search, () => {
 
 watch(
     () => [
+        filteredRegions.value.map(item => item.code).join(','),
+        filteredProvinces.value.map(item => item.code).join(','),
+        filteredCities.value.map(item => item.code).join(','),
+        filteredBarangays.value.map(item => item.code).join(','),
+    ],
+    () => {
+        applyAutoSelections()
+    }
+)
+
+watch(
+    () => [
         locationFilter.region_code,
         locationFilter.province_code,
         locationFilter.city_code,
         locationFilter.barangay_code,
-        inventoryFilter.value
+        inventoryFilter.value,
     ],
     () => {
         currentPage.value = 1
@@ -436,34 +556,170 @@ watch(filteredCooperatives, () => {
     }
 })
 
-/* =========================
-   SUMMARY MODAL LOGIC
-========================= */
-
 const summaryView = ref<'inventory' | 'cooperative'>('inventory')
 
 const summaryFilters = reactive({
-    region_code: assignedLocation.value.region_code,
-    province_code: isProvinceLocked.value ? assignedLocation.value.province_code : '',
-    city_code: isCityLocked.value ? assignedLocation.value.city_code : '',
-    barangay_code: isBarangayLocked.value ? assignedLocation.value.barangay_code : '',
+    region_code: '',
+    province_code: '',
+    city_code: '',
+    barangay_code: '',
     category: '',
-    status: 'all'
+    status: 'all',
 })
 
-const summaryLocationSearch = reactive({
-    region_code: findNameByCode(props.regions, summaryFilters.region_code),
-    province_code: findNameByCode(props.provinces, summaryFilters.province_code),
-    city_code: findNameByCode(props.cities, summaryFilters.city_code),
-    barangay_code: findNameByCode(props.barangays, summaryFilters.barangay_code)
+const summaryLocationSearch = reactive<Record<LocationFields, string>>({
+    region_code: '',
+    province_code: '',
+    city_code: '',
+    barangay_code: '',
 })
 
-const summaryOpenState = reactive({
+const summaryOpenState = reactive<Record<LocationFields, boolean>>({
     region_code: false,
     province_code: false,
     city_code: false,
-    barangay_code: false
+    barangay_code: false,
 })
+
+function syncSummaryLocationSearch() {
+    summaryLocationSearch.region_code = findNameByCode(props.regions, summaryFilters.region_code)
+    summaryLocationSearch.province_code = findNameByCode(props.provinces, summaryFilters.province_code)
+    summaryLocationSearch.city_code = findNameByCode(props.cities, summaryFilters.city_code)
+    summaryLocationSearch.barangay_code = findNameByCode(props.barangays, summaryFilters.barangay_code)
+}
+
+const summaryFilteredRegions = computed(() => filteredRegions.value)
+
+const summaryFilteredProvinces = computed(() => {
+    let result = filteredProvincesBase.value
+
+    if (summaryFilters.region_code) {
+        result = result.filter(
+            province => String(province.region_code) === String(summaryFilters.region_code)
+        )
+    }
+
+    return result
+})
+
+const summaryFilteredCities = computed(() => {
+    let result = filteredCitiesBase.value
+
+    if (summaryFilters.province_code) {
+        result = result.filter(
+            city => String(city.province_code) === String(summaryFilters.province_code)
+        )
+    }
+
+    return result
+})
+
+const summaryFilteredBarangays = computed(() => {
+    let result = filteredBarangaysBase.value
+
+    if (summaryFilters.city_code) {
+        result = result.filter(
+            barangay => String(barangay.city_code) === String(summaryFilters.city_code)
+        )
+    }
+
+    return result
+})
+
+const isSummaryRegionLocked = computed(() => summaryFilteredRegions.value.length === 1)
+const isSummaryProvinceLocked = computed(() => !!summaryFilters.region_code && summaryFilteredProvinces.value.length === 1)
+const isSummaryCityLocked = computed(() => !!summaryFilters.province_code && summaryFilteredCities.value.length === 1)
+const isSummaryBarangayLocked = computed(() => !!summaryFilters.city_code && summaryFilteredBarangays.value.length === 1)
+
+const isSummaryProvinceDisabled = computed(() => !summaryFilters.region_code || summaryFilteredProvinces.value.length === 0)
+const isSummaryCityDisabled = computed(() => !summaryFilters.province_code || summaryFilteredCities.value.length === 0)
+const isSummaryBarangayDisabled = computed(() => !summaryFilters.city_code || summaryFilteredBarangays.value.length === 0)
+
+function applySummaryAutoSelections() {
+    if (!summaryFilters.region_code && preselectedRegionCode.value) {
+        summaryFilters.region_code = preselectedRegionCode.value
+    }
+
+    if (!summaryFilters.region_code) {
+        summaryFilters.province_code = ''
+        summaryFilters.city_code = ''
+        summaryFilters.barangay_code = ''
+        syncSummaryLocationSearch()
+        return
+    }
+
+    if (
+        summaryFilters.province_code &&
+        !summaryFilteredProvinces.value.some(item => String(item.code) === String(summaryFilters.province_code))
+    ) {
+        summaryFilters.province_code = ''
+    }
+
+    if (
+        !summaryFilters.province_code &&
+        (
+            preselectedProvinceCode.value &&
+            summaryFilteredProvinces.value.some(item => String(item.code) === String(preselectedProvinceCode.value))
+        )
+    ) {
+        summaryFilters.province_code = preselectedProvinceCode.value
+    } else if (!summaryFilters.province_code && summaryFilteredProvinces.value.length === 1) {
+        summaryFilters.province_code = String(summaryFilteredProvinces.value[0].code)
+    }
+
+    if (!summaryFilters.province_code) {
+        summaryFilters.city_code = ''
+        summaryFilters.barangay_code = ''
+        syncSummaryLocationSearch()
+        return
+    }
+
+    if (
+        summaryFilters.city_code &&
+        !summaryFilteredCities.value.some(item => String(item.code) === String(summaryFilters.city_code))
+    ) {
+        summaryFilters.city_code = ''
+    }
+
+    if (
+        !summaryFilters.city_code &&
+        (
+            preselectedCityCode.value &&
+            summaryFilteredCities.value.some(item => String(item.code) === String(preselectedCityCode.value))
+        )
+    ) {
+        summaryFilters.city_code = preselectedCityCode.value
+    } else if (!summaryFilters.city_code && summaryFilteredCities.value.length === 1) {
+        summaryFilters.city_code = String(summaryFilteredCities.value[0].code)
+    }
+
+    if (!summaryFilters.city_code) {
+        summaryFilters.barangay_code = ''
+        syncSummaryLocationSearch()
+        return
+    }
+
+    if (
+        summaryFilters.barangay_code &&
+        !summaryFilteredBarangays.value.some(item => String(item.code) === String(summaryFilters.barangay_code))
+    ) {
+        summaryFilters.barangay_code = ''
+    }
+
+    if (
+        !summaryFilters.barangay_code &&
+        (
+            preselectedBarangayCode.value &&
+            summaryFilteredBarangays.value.some(item => String(item.code) === String(preselectedBarangayCode.value))
+        )
+    ) {
+        summaryFilters.barangay_code = preselectedBarangayCode.value
+    } else if (!summaryFilters.barangay_code && summaryFilteredBarangays.value.length === 1) {
+        summaryFilters.barangay_code = String(summaryFilteredBarangays.value[0].code)
+    }
+
+    syncSummaryLocationSearch()
+}
 
 function resetSummaryLocationChildren(field: LocationFields) {
     dependencyMap[field].forEach(dep => {
@@ -475,10 +731,10 @@ function resetSummaryLocationChildren(field: LocationFields) {
 
 function onSelectSummaryLocation(field: LocationFields, payload: { id: string; name: string }) {
     if (
-        (field === 'region_code' && isRegionLocked.value) ||
-        (field === 'province_code' && isProvinceLocked.value) ||
-        (field === 'city_code' && isCityLocked.value) ||
-        (field === 'barangay_code' && isBarangayLocked.value)
+        (field === 'region_code' && isSummaryRegionLocked.value) ||
+        (field === 'province_code' && isSummaryProvinceLocked.value) ||
+        (field === 'city_code' && isSummaryCityLocked.value) ||
+        (field === 'barangay_code' && isSummaryBarangayLocked.value)
     ) {
         return
     }
@@ -487,107 +743,43 @@ function onSelectSummaryLocation(field: LocationFields, payload: { id: string; n
     summaryLocationSearch[field] = payload.name
     summaryOpenState[field] = false
     resetSummaryLocationChildren(field)
+    applySummaryAutoSelections()
 }
 
 function onSummaryLocationModelUpdate(field: LocationFields, value: string | number) {
     if (
-        (field === 'region_code' && isRegionLocked.value) ||
-        (field === 'province_code' && isProvinceLocked.value) ||
-        (field === 'city_code' && isCityLocked.value) ||
-        (field === 'barangay_code' && isBarangayLocked.value)
+        (field === 'region_code' && isSummaryRegionLocked.value) ||
+        (field === 'province_code' && isSummaryProvinceLocked.value) ||
+        (field === 'city_code' && isSummaryCityLocked.value) ||
+        (field === 'barangay_code' && isSummaryBarangayLocked.value)
     ) {
         return
     }
 
-    summaryFilters[field] = String(value)
+    summaryFilters[field] = value ? String(value) : ''
 
     if (!value) {
         summaryLocationSearch[field] = ''
         summaryOpenState[field] = false
         resetSummaryLocationChildren(field)
     }
+
+    applySummaryAutoSelections()
 }
 
-const summaryFilteredRegions = computed(() => {
-    const regions = props.regions ?? []
+applySummaryAutoSelections()
 
-    if (isRegionLocked.value && assignedLocation.value.region_code) {
-        return regions.filter(
-            region => String(region.code) === String(assignedLocation.value.region_code)
-        )
+watch(
+    () => [
+        summaryFilteredRegions.value.map(item => item.code).join(','),
+        summaryFilteredProvinces.value.map(item => item.code).join(','),
+        summaryFilteredCities.value.map(item => item.code).join(','),
+        summaryFilteredBarangays.value.map(item => item.code).join(','),
+    ],
+    () => {
+        applySummaryAutoSelections()
     }
-
-    return regions
-})
-
-const summaryFilteredProvinces = computed(() => {
-    const provinces = props.provinces ?? []
-    const baseRegion =
-        summaryFilters.region_code ||
-        (isRegionLocked.value ? assignedLocation.value.region_code : '')
-
-    let result = provinces
-
-    if (baseRegion) {
-        result = result.filter(
-            province => String(province.region_code) === String(baseRegion)
-        )
-    }
-
-    if (isProvinceLocked.value && assignedLocation.value.province_code) {
-        result = result.filter(
-            province => String(province.code) === String(assignedLocation.value.province_code)
-        )
-    }
-
-    return result
-})
-
-const summaryFilteredCities = computed(() => {
-    const cities = props.cities ?? []
-    const baseProvince =
-        summaryFilters.province_code ||
-        (isProvinceLocked.value ? assignedLocation.value.province_code : '')
-
-    let result = cities
-
-    if (baseProvince) {
-        result = result.filter(
-            city => String(city.province_code) === String(baseProvince)
-        )
-    }
-
-    if (isCityLocked.value && assignedLocation.value.city_code) {
-        result = result.filter(
-            city => String(city.code) === String(assignedLocation.value.city_code)
-        )
-    }
-
-    return result
-})
-
-const summaryFilteredBarangays = computed(() => {
-    const barangays = props.barangays ?? []
-    const baseCity =
-        summaryFilters.city_code ||
-        (isCityLocked.value ? assignedLocation.value.city_code : '')
-
-    let result = barangays
-
-    if (baseCity) {
-        result = result.filter(
-            barangay => String(barangay.city_code) === String(baseCity)
-        )
-    }
-
-    if (isBarangayLocked.value && assignedLocation.value.barangay_code) {
-        result = result.filter(
-            barangay => String(barangay.code) === String(assignedLocation.value.barangay_code)
-        )
-    }
-
-    return result
-})
+)
 
 const filteredSummaryRows = computed(() => {
     let rows = [...props.inventorySummaryRows]
@@ -626,7 +818,7 @@ const filteredSummaryRows = computed(() => {
 function formatMoney(value: number) {
     return new Intl.NumberFormat('en-PH', {
         minimumFractionDigits: 0,
-        maximumFractionDigits: 2
+        maximumFractionDigits: 2,
     }).format(value || 0)
 }
 
@@ -662,7 +854,7 @@ const inventoryGroupedRows = computed(() => {
                 key,
                 itemName: row.name,
                 category: row.category,
-                rows: []
+                rows: [],
             })
         }
 
@@ -672,7 +864,7 @@ const inventoryGroupedRows = computed(() => {
             item_location: row.item_location,
             display_quantity: displayQuantity,
             value: row.value,
-            total: row.value * displayQuantity
+            total: row.value * displayQuantity,
         })
     }
 
@@ -709,7 +901,7 @@ const cooperativeGroupedRows = computed(() => {
             map.set(key, {
                 key,
                 coop_name: row.coop_name,
-                item_rows: []
+                item_rows: [],
             })
         }
 
@@ -719,7 +911,7 @@ const cooperativeGroupedRows = computed(() => {
             item_location: row.item_location,
             value: row.value,
             display_quantity: displayQuantity,
-            total: row.value * displayQuantity
+            total: row.value * displayQuantity,
         })
     }
 
@@ -729,6 +921,9 @@ const cooperativeGroupedRows = computed(() => {
 
 <template>
     <Head title="Officer Dashboard" />
+    <!-- <div class="fixed top-4 right-4 p-4 bg-white border rounded shadow z-50 max-h-96 overflow-y-auto">
+        <pre>{{ props }}</pre>
+    </div> -->
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="officer-page">
@@ -757,7 +952,7 @@ const cooperativeGroupedRows = computed(() => {
                             </select>
                         </div>
 
-                        <button v-if="!locked" @click="openSummaryModal" class="officer-btn-summary">
+                        <button v-if="!locked" @click="openSummaryModalFn" class="officer-btn-summary">
                             Summary Report
                         </button>
                     </div>
@@ -832,6 +1027,7 @@ const cooperativeGroupedRows = computed(() => {
                                 v-model:search="locationSearch.province_code"
                                 :modelValue="locationFilter.province_code"
                                 v-model:open="openState.province_code"
+                                :disabled="isProvinceDisabled"
                                 @update:model-value="val => onLocationModelUpdate('province_code', val)"
                                 @select="val => onSelectLocation('province_code', val)"
                             />
@@ -854,6 +1050,7 @@ const cooperativeGroupedRows = computed(() => {
                                 v-model:search="locationSearch.city_code"
                                 :modelValue="locationFilter.city_code"
                                 v-model:open="openState.city_code"
+                                :disabled="isCityDisabled"
                                 @update:model-value="val => onLocationModelUpdate('city_code', val)"
                                 @select="val => onSelectLocation('city_code', val)"
                             />
@@ -876,6 +1073,7 @@ const cooperativeGroupedRows = computed(() => {
                                 v-model:search="locationSearch.barangay_code"
                                 :modelValue="locationFilter.barangay_code"
                                 v-model:open="openState.barangay_code"
+                                :disabled="isBarangayDisabled"
                                 @update:model-value="val => onLocationModelUpdate('barangay_code', val)"
                                 @select="val => onSelectLocation('barangay_code', val)"
                             />
@@ -984,7 +1182,7 @@ const cooperativeGroupedRows = computed(() => {
                         <label class="form-label">Region</label>
 
                         <input
-                            v-if="isRegionLocked"
+                            v-if="isSummaryRegionLocked"
                             :value="summaryLocationSearch.region_code"
                             type="text"
                             class="officer-search locked-input"
@@ -1008,7 +1206,7 @@ const cooperativeGroupedRows = computed(() => {
                         <label class="form-label">Province</label>
 
                         <input
-                            v-if="isProvinceLocked"
+                            v-if="isSummaryProvinceLocked"
                             :value="summaryLocationSearch.province_code"
                             type="text"
                             class="officer-search locked-input"
@@ -1023,6 +1221,7 @@ const cooperativeGroupedRows = computed(() => {
                             v-model:search="summaryLocationSearch.province_code"
                             :modelValue="summaryFilters.province_code"
                             v-model:open="summaryOpenState.province_code"
+                            :disabled="isSummaryProvinceDisabled"
                             @update:model-value="val => onSummaryLocationModelUpdate('province_code', val)"
                             @select="val => onSelectSummaryLocation('province_code', val)"
                         />
@@ -1032,7 +1231,7 @@ const cooperativeGroupedRows = computed(() => {
                         <label class="form-label">City</label>
 
                         <input
-                            v-if="isCityLocked"
+                            v-if="isSummaryCityLocked"
                             :value="summaryLocationSearch.city_code"
                             type="text"
                             class="officer-search locked-input"
@@ -1047,6 +1246,7 @@ const cooperativeGroupedRows = computed(() => {
                             v-model:search="summaryLocationSearch.city_code"
                             :modelValue="summaryFilters.city_code"
                             v-model:open="summaryOpenState.city_code"
+                            :disabled="isSummaryCityDisabled"
                             @update:model-value="val => onSummaryLocationModelUpdate('city_code', val)"
                             @select="val => onSelectSummaryLocation('city_code', val)"
                         />
@@ -1056,7 +1256,7 @@ const cooperativeGroupedRows = computed(() => {
                         <label class="form-label">Barangay</label>
 
                         <input
-                            v-if="isBarangayLocked"
+                            v-if="isSummaryBarangayLocked"
                             :value="summaryLocationSearch.barangay_code"
                             type="text"
                             class="officer-search locked-input"
@@ -1064,7 +1264,6 @@ const cooperativeGroupedRows = computed(() => {
                         />
 
                         <SelectSearch
-                            :clearOnFocus="true"
                             v-else
                             :items="summaryFilteredBarangays"
                             itemLabelKey="name"
@@ -1072,6 +1271,7 @@ const cooperativeGroupedRows = computed(() => {
                             v-model:search="summaryLocationSearch.barangay_code"
                             :modelValue="summaryFilters.barangay_code"
                             v-model:open="summaryOpenState.barangay_code"
+                            :disabled="isSummaryBarangayDisabled"
                             @update:model-value="val => onSummaryLocationModelUpdate('barangay_code', val)"
                             @select="val => onSelectSummaryLocation('barangay_code', val)"
                         />
@@ -1081,7 +1281,11 @@ const cooperativeGroupedRows = computed(() => {
                         <label class="form-label">Category</label>
                         <select v-model="summaryFilters.category" class="officer-select">
                             <option value="">All Categories</option>
-                            <option v-for="category in categories" :key="category.value" :value="category.value">
+                            <option
+                                v-for="category in categories"
+                                :key="category.value"
+                                :value="category.value"
+                            >
                                 {{ category.label }}
                             </option>
                         </select>
@@ -1097,447 +1301,85 @@ const cooperativeGroupedRows = computed(() => {
                     </div>
                 </div>
 
-                <div class="summary-table-wrap">
-                    <template v-if="summaryView === 'inventory'">
-                        <table class="officer-table summary-table">
+                <div v-if="summaryView === 'inventory'" class="summary-body">
+                    <div v-if="inventoryGroupedRows.length === 0" class="officer-empty">
+                        No inventory found.
+                    </div>
+
+                    <div
+                        v-for="group in inventoryGroupedRows"
+                        :key="group.key"
+                        class="summary-group"
+                    >
+                        <div class="summary-group-title">
+                            {{ group.itemName }}
+                            <span v-if="group.category">({{ group.category }})</span>
+                        </div>
+
+                        <table class="officer-table">
                             <thead>
                                 <tr>
-                                    <th>{{ summaryFilters.category || 'Category / Name' }}</th>
-                                    <th>Quantity</th>
                                     <th>Cooperative</th>
                                     <th>Coop Location</th>
                                     <th>Item Location</th>
-                                    <th>Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template v-if="inventoryGroupedRows.length">
-                                    <template v-for="group in inventoryGroupedRows" :key="group.key">
-                                        <tr v-for="(row, index) in group.rows" :key="`${group.key}-${index}`">
-                                            <td>
-                                                <template v-if="index === 0">
-                                                    <div class="group-title">
-                                                        <div class="group-category">{{ group.category }}</div>
-                                                        <div class="group-name">{{ group.itemName }}</div>
-                                                    </div>
-                                                </template>
-                                            </td>
-                                            <td>{{ row.display_quantity }}</td>
-                                            <td>{{ row.coop_name }}</td>
-                                            <td>{{ row.coop_location || '-' }}</td>
-                                            <td>{{ row.item_location || '-' }}</td>
-                                            <td>
-                                                {{ formatMoney(row.value) }} ₱ x {{ row.display_quantity }}
-                                                ({{ formatMoney(row.total) }} ₱)
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </template>
-
-                                <tr v-else>
-                                    <td colspan="6" class="officer-empty">
-                                        No summary records found.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </template>
-
-                    <template v-else>
-                        <table class="officer-table summary-table">
-                            <thead>
-                                <tr>
-                                    <th>Coop Name</th>
-                                    <th>Item Name</th>
-                                    <th>Coop Location</th>
-                                    <th>Location</th>
-                                    <th>Amount</th>
-                                    <th>Quantity</th>
+                                    <th>Qty</th>
+                                    <th>Value</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <template v-if="cooperativeGroupedRows.length">
-                                    <template v-for="group in cooperativeGroupedRows" :key="group.key">
-                                        <tr v-for="(row, index) in group.item_rows" :key="`${group.key}-${index}`">
-                                            <td>
-                                                <template v-if="index === 0">
-                                                    {{ group.coop_name }}
-                                                </template>
-                                            </td>
-                                            <td>{{ row.item_name }}</td>
-                                            <td>{{ row.coop_location || '-' }}</td>
-                                            <td>{{ row.item_location || '-' }}</td>
-                                            <td>{{ formatMoney(row.value) }} ₱</td>
-                                            <td>{{ row.display_quantity }}</td>
-                                            <td>{{ formatMoney(row.total) }} ₱</td>
-                                        </tr>
-                                    </template>
-                                </template>
-
-                                <tr v-else>
-                                    <td colspan="7" class="officer-empty">
-                                        No summary records found.
-                                    </td>
+                                <tr v-for="(row, index) in group.rows" :key="`${group.key}-${index}`">
+                                    <td>{{ row.coop_name }}</td>
+                                    <td>{{ row.coop_location }}</td>
+                                    <td>{{ row.item_location }}</td>
+                                    <td>{{ row.display_quantity }}</td>
+                                    <td>{{ formatMoney(row.value) }}</td>
+                                    <td>{{ formatMoney(row.total) }}</td>
                                 </tr>
                             </tbody>
                         </table>
-                    </template>
+                    </div>
                 </div>
 
-                <div class="officer-modal-footer">
-                    <button @click="closeSummaryModal" class="officer-modal-btn-cancel">
-                        Close
-                    </button>
+                <div v-else class="summary-body">
+                    <div v-if="cooperativeGroupedRows.length === 0" class="officer-empty">
+                        No cooperatives found.
+                    </div>
+
+                    <div
+                        v-for="group in cooperativeGroupedRows"
+                        :key="group.key"
+                        class="summary-group"
+                    >
+                        <div class="summary-group-title">
+                            {{ group.coop_name }}
+                        </div>
+
+                        <table class="officer-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Coop Location</th>
+                                    <th>Item Location</th>
+                                    <th>Qty</th>
+                                    <th>Value</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(row, index) in group.item_rows" :key="`${group.key}-${index}`">
+                                    <td>{{ row.item_name }}</td>
+                                    <td>{{ row.coop_location }}</td>
+                                    <td>{{ row.item_location }}</td>
+                                    <td>{{ row.display_quantity }}</td>
+                                    <td>{{ formatMoney(row.value) }}</td>
+                                    <td>{{ formatMoney(row.total) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </AppLayout>
 </template>
-
-<style scoped>
-.officer-page {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.officer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.officer-header-left {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.officer-title {
-    font-size: 24px;
-    font-weight: 700;
-    margin: 0;
-}
-
-.officer-description {
-    margin: 0;
-    color: #64748b;
-}
-
-.officer-header-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.officer-controls-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.officer-inputs-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.officer-label-white {
-    font-size: 14px;
-    color: #111827;
-    font-weight: 600;
-}
-
-.officer-report-badge,
-.officer-select,
-.officer-search {
-    border: 1px solid #d1d5db;
-    border-radius: 10px;
-    padding: 10px 12px;
-    background: white;
-    width: 100%;
-    color: #111827;
-}
-
-.officer-btn-primary,
-.officer-btn-summary,
-.officer-modal-btn-cancel,
-.pagination-btn,
-.summary-tab {
-    border: none;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.officer-btn-primary,
-.officer-btn-summary,
-.summary-tab.active,
-.pagination-btn.active {
-    background: #111827;
-    color: white;
-}
-
-.officer-modal-btn-cancel,
-.pagination-btn,
-.summary-tab {
-    background: #f3f4f6;
-    color: #111827;
-}
-
-.officer-card {
-    background: white;
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
-    overflow: hidden;
-}
-
-.officer-card-header {
-    margin-bottom: 14px;
-}
-
-.officer-filter-row-top {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.officer-divider {
-    height: 1px;
-    background: #e5e7eb;
-    margin: 14px 0;
-}
-
-.officer-location-grid,
-.location-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.officer-form-label,
-.form-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: #374151;
-}
-
-.officer-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.officer-table th,
-.officer-table td {
-    text-align: left;
-    padding: 12px;
-    border-bottom: 1px solid #e5e7eb;
-    vertical-align: top;
-    color: #111827;
-}
-
-.officer-row {
-    cursor: pointer;
-}
-
-.officer-row:hover {
-    background: #f9fafb;
-}
-
-.officer-empty {
-    text-align: center;
-    color: #6b7280;
-    padding: 24px;
-}
-
-.officer-pagination {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 16px;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.pagination-info {
-    color: #6b7280;
-    font-size: 14px;
-}
-
-.pagination-controls {
-    display: flex;
-    gap: 8px;
-}
-
-.officer-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.45);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    padding: 20px;
-}
-
-.officer-modal-box {
-    background: white;
-    border-radius: 18px;
-    width: 100%;
-    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
-}
-
-.summary-modal {
-    max-width: 1300px;
-    max-height: 90vh;
-    overflow: auto;
-    padding: 20px;
-}
-
-.officer-modal-title {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    color: #111827;
-}
-
-.officer-modal-footer {
-    margin-top: 16px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.summary-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-}
-
-.summary-switch {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.summary-filters {
-    margin-bottom: 18px;
-}
-
-.summary-table-wrap {
-    overflow-x: auto;
-}
-
-.summary-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.summary-table th,
-.summary-table td {
-    color: #111827 !important;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.summary-table thead th {
-    position: sticky;
-    top: 0;
-    background: #ffffff !important;
-    z-index: 1;
-    color: #111827 !important;
-    font-weight: 700;
-}
-
-.summary-table tbody td {
-    background: #ffffff;
-    color: #111827 !important;
-}
-
-.group-title {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.group-category {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #6b7280;
-}
-
-.group-name {
-    font-weight: 700;
-    color: #111827;
-}
-
-.icon-close {
-    min-width: 40px;
-    padding: 10px;
-}
-
-.officer-locked-input,
-.locked-input {
-    background: #f3f4f6;
-    color: #6b7280;
-    border: 1px solid #d1d5db;
-    cursor: not-allowed;
-}
-
-.officer-location-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    flex-wrap: wrap;
-}
-
-.badge-label {
-    background: #111827;
-    color: white;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: capitalize;
-}
-
-.badge-value {
-    background: #f3f4f6;
-    color: #111827;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-@media (max-width: 1100px) {
-    .officer-location-grid,
-    .location-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 700px) {
-    .officer-location-grid,
-    .location-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .officer-pagination {
-        flex-direction: column;
-        align-items: stretch;
-    }
-}
-</style>

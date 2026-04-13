@@ -13,7 +13,7 @@
     justify-content: space-between;
     align-items: center;
 
-    background: linear-gradient(90deg, #F6ECD3 0%, #D56C10 100%);
+    background: linear-gradient(90deg, #065F46 0%, #10B981 100%);
     border-radius: 12px;
 
     padding: 24px 28px;
@@ -32,13 +32,13 @@
 .coop-title {
     font-size: 28px;
     font-weight: 700;
-    color: #111827;
+    color: #FFFFFF;
     margin: 0;
 }
 
 .coop-description {
     font-size: 14px;
-    color: #6b7280;
+    color: #D1FAE5 !important;
     margin-top: 4px;
 }
 
@@ -98,7 +98,7 @@
 
 .coop-btn-summary {
     background: #ffffff;
-    color: #D56C10;
+    color: #065F46;
     border: none;
     padding: 8px 0;
     border-radius: 8px;
@@ -112,7 +112,7 @@
 }
 
 .coop-btn-summary:hover {
-    background: #fef3c7;
+    background: #cafec7;
 }
 
 
@@ -155,11 +155,11 @@
 
 .coop-search:focus,
 .coop-select:focus {
-    border-color: #D56C10;
+    border-color: #064E3B;
 }
 
 .coop-btn-primary {
-    background: #D56C10;
+    background: #064E3B;
     color: white;
     padding: 10px 18px;
     border-radius: 8px;
@@ -172,7 +172,7 @@
 }
 
 .coop-btn-primary:hover {
-    background: #b45a0d;
+    background: #D1FAE5;
     transform: translateY(-1px);
     box-shadow: 0 4px 6px rgba(213, 108, 16, 0.3);
 }
@@ -187,7 +187,7 @@
 }
 
 .coop-table thead {
-    background: linear-gradient(90deg, #FAD6A5 0%, #D56C10 100%);
+    background: linear-gradient(90deg, #a5fab6 0%, #064E3B 100%);
 }
 
 .coop-table thead th {
@@ -200,10 +200,14 @@
     text-align: left;
 }
 
-.coop-table th:nth-child(1),
-.coop-table th:nth-child(2),
-.coop-table th:nth-child(3) {
+.coop-table th:nth-child(1){
     color: #111827;
+    font-weight: 700;
+}
+
+.coop-table th:nth-child(2),
+.coop-table th:nth-child(3){
+    color: #ffffff;
     font-weight: 700;
 }
 
@@ -238,12 +242,12 @@
 }
 
 .coop-table tbody tr.coop-row:hover {
-    background-color: #fffaf0;
+    background-color: #D1FAE5;
     transform: none;
 }
 
 .coop-table tbody tr.coop-row:hover {
-    background-color: #FFF8E1;
+    background-color: #D1FAE5;
     cursor: pointer;
 }
 
@@ -430,7 +434,7 @@
 .show-page-wrapper h1 {
     font-size: 28px;
     font-weight: 700;
-    color: #111827;
+    color: #ffffff;
 }
 
 /* Reporting Period */
@@ -478,7 +482,7 @@
 
 .show-page-wrapper .report-badge-white {
     background-color: #ffffff;
-    color: #D56C10;
+    color: #065F46;
     padding: 4px 12px;
     border-radius: 6px;
     font-weight: 700;
@@ -516,11 +520,11 @@
 
 /* Alternate row background for clarity */
 .show-page-wrapper table tbody tr:nth-child(odd) {
-    background-color: #fdfbf7;
+    background-color: #f9fdf7;
 }
 
 .show-page-wrapper table tbody tr:nth-child(even) {
-    background-color: #fff8e1;
+    background-color: #e1ffe2;
 }
 
 /* Details block (for instances and categories) */
@@ -535,13 +539,13 @@
     cursor: pointer;
     font-weight: 600;
     padding: 12px 16px;
-    background-color: #F6ECD3;
+    background-color: #D1FAE5;
     color: #431407;
     transition: background 0.2s ease;
 }
 
 .show-page-wrapper summary:hover {
-    background-color: #FFE0B2;
+    background-color: #ddfdd3;
 }
 
 /* Table inside details */
@@ -552,7 +556,7 @@
 }
 
 .show-page-wrapper details thead {
-    background: linear-gradient(90deg, #e4b26d 0%, #D56C10 100%);
+    background: linear-gradient(90deg, #065F46 0%, #10B981 100%);
 }
 
 .show-page-wrapper details thead th {
@@ -572,16 +576,16 @@
 }
 
 .show-page-wrapper details tbody tr:nth-child(odd) {
-    background-color: #fff8e1;
+    background-color: #D1FAE5;
 }
 
 .show-page-wrapper details tbody tr:nth-child(even) {
-    background-color: #fdfbf7;
+    background-color: #D1FAE5;
 }
 
 /* Hover effect on inventory rows */
 .show-page-wrapper details tbody tr:hover {
-    background-color: #FFF0C2;
+    background-color: #ddfdd3;
     cursor: pointer;
     transition: background 0.2s ease;
 }
@@ -590,7 +594,7 @@
 .show-page-wrapper button {
     background: none;
     border: none;
-    color: #D56C10;
+    color: #065F46;
     font-weight: 600;
     cursor: pointer;
     transition: color 0.2s ease;
@@ -598,7 +602,7 @@
 }
 
 .show-page-wrapper button:hover {
-    color: #b45a0d;
+    color: #10B981;
     text-decoration: underline;
 }
 
@@ -629,7 +633,7 @@
 }
 
 .category-total {
-    background: #fff3cd;
+    background: #97f4d5;
     font-weight: 600;
 }
 
@@ -638,7 +642,7 @@
     font-size: 18px;
     font-weight: 700;
     text-align: right;
-    color: #D56C10;
+    color: #065F46;
 }
 
 /* ================= MOBILE ================= */
@@ -794,7 +798,7 @@
 }
 
 .edit-btn:hover {
-    background: #da8234;
+    background: #10B981;
     color: #ffffff;
 }
 
@@ -813,7 +817,7 @@
     padding: 28px;
     margin-top: 20px;
     box-shadow: 0 3px 3px rgba(0, 0, 0, 0.12);
-    border-left: 5px solid #d56c10;
+    border-left: 5px solid #10B981;
 }
 
 .edit-inventory-wrapper .form-grid {
@@ -841,7 +845,7 @@
 }
 
 .edit-submit-btn {
-    background: #d56c10;
+    background: #065F46;
     color: white;
     padding: 12px 24px;
     border-radius: 6px;
@@ -851,7 +855,7 @@
 }
 
 .edit-submit-btn:hover {
-    background: #b55a0d;
+    background: #10B981;
 }
 
 .edit-cancel-btn {
@@ -869,7 +873,7 @@
 }
 
 .coop-header-banner {
-    background: linear-gradient(90deg, #FAD6A5 0%, #D56C10 100%);
+    background: linear-gradient(90deg, #065F46 0%, #10B981 100%);
     padding: 24px 32px;
     border-radius: 12px;
     display: flex;
@@ -880,14 +884,14 @@
 }
 
 .header-title {
-    color: #111827;
+    color: #ffffff;
     font-size: 24px;
     font-weight: 800;
     margin: 0;
 }
 
 .header-subtitle {
-    color: #374151;
+    color: #D1FAE5;
     font-size: 14px;
     margin-top: 4px;
     opacity: 0.9;
@@ -895,7 +899,7 @@
 
 .btn-download-white {
     background-color: #ffffff;
-    color: #D56C10;
+    color: #064E3B;
     padding: 10px 24px;
     border-radius: 8px;
     font-weight: 700;

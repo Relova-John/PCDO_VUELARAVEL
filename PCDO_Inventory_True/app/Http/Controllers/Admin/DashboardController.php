@@ -17,6 +17,7 @@ use App\Models\MoaFile;
 use Illuminate\Support\Facades\Storage;
 use App\Models\ItemPicturesFiles;
 use Illuminate\Support\Str;
+use Mpdf\Mpdf;
 
 class DashboardController extends Controller
 {
@@ -643,5 +644,189 @@ class DashboardController extends Controller
         $name = preg_replace('/\s+/', ' ', $name);
 
         return Str::title(Str::lower($name));
+    }
+
+    public function downloadSummaryPdf(Request $request)
+    {
+        $reportingDateId = $request->reporting_date_id;
+        $view = $request->get('view', 'inventory');
+        $status = $request->get('status', 'all');
+
+        $reportingDate = ReportingDate::find($reportingDateId);
+
+        $rows = DB::table('inventory_instances')
+            ->join('inventories', 'inventory_instances.id', '=', 'inventories.inventory_instance_id')
+            ->join('cooperatives', 'inventory_instances.coop_id', '=', 'cooperatives.id')
+            ->leftJoin('regions', 'cooperatives.region_code', '=', 'regions.code')
+            ->leftJoin('provinces', 'cooperatives.province_code', '=', 'provinces.code')
+            ->leftJoin('cities', 'cooperatives.city_code', '=', 'cities.code')
+            ->leftJoin('barangays', 'cooperatives.barangay_code', '=', 'barangays.code')
+            ->where('inventory_instances.reporting_date_id', $reportingDateId)
+            ->select(
+                'inventories.id',
+                'inventories.name',
+                'inventories.category',
+                'inventories.location as item_location',
+                'inventories.value',
+                'inventories.quantity',
+                'inventories.status',
+                'cooperatives.id as coop_id',
+                'cooperatives.name as coop_name',
+                'cooperatives.region_code',
+                'cooperatives.province_code',
+                'cooperatives.city_code',
+                'cooperatives.barangay_code',
+                'regions.name as region_name',
+                'provinces.name as province_name',
+                'cities.name as city_name',
+                'barangays.name as barangay_name'
+            );
+
+        if ($request->filled('region_code')) {
+            $rows->where('cooperatives.region_code', $request->region_code);
+        }
+
+        if ($request->filled('province_code')) {
+            $rows->where('cooperatives.province_code', $request->province_code);
+        }
+
+        if ($request->filled('city_code')) {
+            $rows->where('cooperatives.city_code', $request->city_code);
+        }
+
+        if ($request->filled('barangay_code')) {
+            $rows->where('cooperatives.barangay_code', $request->barangay_code);
+        }
+
+        if ($request->filled('category')) {
+            $rows->where('inventories.category', $request->category);
+        }
+
+        $rows = $rows
+            ->orderBy('inventories.category')
+            ->orderBy('inventories.name')
+            ->orderBy('cooperatives.name')
+            ->get()
+            ->map(function ($row) use ($status) {
+                $quantity = (int) ($row->quantity ?? 0);
+                $serviceable = max(0, (int) ($row->status ?? 0));
+                $unserviceable = max(0, $quantity - $serviceable);
+
+                $displayQuantity = match ($status) {
+                    'serviceable' => $serviceable,
+                    'unserviceable' => $unserviceable,
+                    default => $quantity,
+                };
+
+                return [
+                    'id' => $row->id,
+                    'name' => $row->name,
+                    'category' => $row->category,
+                    'item_location' => $row->item_location,
+                    'value' => (float) ($row->value ?? 0),
+                    'quantity' => $quantity,
+                    'serviceable' => $serviceable,
+                    'unserviceable' => $unserviceable,
+                    'display_quantity' => $displayQuantity,
+                    'coop_id' => $row->coop_id,
+                    'coop_name' => $row->coop_name,
+                    'region_code' => $row->region_code,
+                    'province_code' => $row->province_code,
+                    'city_code' => $row->city_code,
+                    'barangay_code' => $row->barangay_code,
+                    'region_name' => $row->region_name,
+                    'province_name' => $row->province_name,
+                    'city_name' => $row->city_name,
+                    'barangay_name' => $row->barangay_name,
+                    'coop_location' => collect([
+                        $row->barangay_name,
+                        $row->city_name,
+                        $row->province_name,
+                        $row->region_name,
+                    ])->filter()->implode(', '),
+                    'total' => ((float) ($row->value ?? 0)) * $displayQuantity,
+                ];
+            })
+            ->filter(fn($row) => $row['display_quantity'] > 0)
+            ->values();
+
+        $inventoryGroupedRows = $rows
+            ->groupBy(fn($row) => $row['category'] . '__' . $row['name'])
+            ->map(function ($group, $key) {
+                $first = $group->first();
+
+                return [
+                    'key' => $key,
+                    'itemName' => $first['name'],
+                    'category' => $first['category'],
+                    'rows' => $group->map(fn($row) => [
+                        'coop_name' => $row['coop_name'],
+                        'coop_location' => $row['coop_location'],
+                        'item_location' => $row['item_location'],
+                        'display_quantity' => $row['display_quantity'],
+                        'value' => $row['value'],
+                        'total' => $row['total'],
+                    ])->values(),
+                ];
+            })
+            ->values();
+
+        $cooperativeGroupedRows = $rows
+            ->groupBy('coop_id')
+            ->map(function ($group, $key) {
+                $first = $group->first();
+
+                return [
+                    'key' => (string) $key,
+                    'coop_name' => $first['coop_name'],
+                    'item_rows' => $group->map(fn($row) => [
+                        'item_name' => $row['name'],
+                        'coop_location' => $row['coop_location'],
+                        'item_location' => $row['item_location'],
+                        'value' => $row['value'],
+                        'display_quantity' => $row['display_quantity'],
+                        'total' => $row['total'],
+                    ])->values(),
+                ];
+            })
+            ->sortBy('coop_name')
+            ->values();
+
+        $filters = [
+            'region_code' => $request->region_code,
+            'province_code' => $request->province_code,
+            'city_code' => $request->city_code,
+            'barangay_code' => $request->barangay_code,
+            'category' => $request->category,
+            'status' => $status,
+            'view' => $view,
+        ];
+
+        $html = view('pdf.summary-report', [
+            'reportingDate' => $reportingDate,
+            'viewType' => $view,
+            'filters' => $filters,
+            'inventoryGroupedRows' => $inventoryGroupedRows,
+            'cooperativeGroupedRows' => $cooperativeGroupedRows,
+        ])->render();
+
+        $mpdf = new \Mpdf\Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4-L',
+            'margin_top' => 10,
+            'margin_bottom' => 10,
+            'margin_left' => 10,
+            'margin_right' => 10,
+        ]);
+
+        $fileName = 'summary-report-' . now()->format('Y-m-d-His') . '.pdf';
+
+        $mpdf->SetTitle('Summary Report');
+        $mpdf->WriteHTML($html);
+
+        return response($mpdf->Output($fileName, 'S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+        ]);
     }
 }

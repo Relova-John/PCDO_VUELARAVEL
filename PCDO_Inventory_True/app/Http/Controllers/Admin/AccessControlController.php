@@ -52,7 +52,7 @@ class AccessControlController extends Controller
         $logsPage = $request->query('logs_page', 1);
         $usersPage = $request->query('users_page', 1);
 
-        $users = User::with('roles:id,name')
+        $users = User::with('roles:id,name', 'locationAccesses:id,user_id,region_code,province_code,city_code')
             ->select('id', 'name', 'email', 'created_at', 'is_active')
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -68,12 +68,17 @@ class AccessControlController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'roles' => $user->roles->map(fn ($r) => [
+                    'roles' => $user->roles->map(fn($r) => [
                         'id' => $r->id,
                         'name' => $r->name,
                     ]),
                     'created_at' => $user->created_at,
-                    'active' => $user->is_active,
+                    'active' => (bool) $user->is_active,
+                    'location_accesses' => $user->locationAccesses->map(fn($loc) => [
+                        'region_code' => $loc->region_code,
+                        'province_code' => $loc->province_code,
+                        'city_code' => $loc->city_code,
+                    ]),
                 ];
             });
 
@@ -216,37 +221,6 @@ class AccessControlController extends Controller
         ]);
     }
 
-    public function close(AccessControl $accessControl)
-    {
-        $accessControl->update([
-            'is_active' => false,
-            'closed_at' => now(),
-        ]);
-
-        return back()->with('success', 'Access control closed successfully.');
-    }
-
-    public function reopen(AccessControl $accessControl)
-    {
-        $accessControl->update([
-            'is_active' => true,
-            'closed_at' => null,
-        ]);
-
-        return back()->with('success', 'Access control reopened successfully.');
-    }
-
-    public function downloadQr(AccessControl $accessControl)
-    {
-        $payload = route('qr.resolve', ['token' => $accessControl->token]);
-        $svg = $this->makeQrSvg($payload);
-
-        return response($svg, 200, [
-            'Content-Type' => 'image/svg+xml; charset=utf-8',
-            'Content-Disposition' => 'inline; filename="qr.svg"',
-        ]);
-    }
-
     public function downloadStaticFormQr()
     {
         $payload = url('/form');
@@ -268,34 +242,6 @@ class AccessControlController extends Controller
         $writer = new Writer($renderer);
 
         return $writer->writeString($payload);
-    }
-
-    protected function resolveLocationName(AccessControl $accessControl): ?string
-    {
-        if ($accessControl->barangay_code) {
-            return Barangay::where('code', $accessControl->barangay_code)->value('name');
-        }
-
-        if ($accessControl->city_code) {
-            return City::where('code', $accessControl->city_code)->value('name');
-        }
-
-        if ($accessControl->province_code) {
-            return Province::where('code', $accessControl->province_code)->value('name');
-        }
-
-        if ($accessControl->region_code) {
-            return Region::where('code', $accessControl->region_code)->value('name');
-        }
-
-        return null;
-    }
-
-    protected function generateCode(string $type): string
-    {
-        $prefix = $type === 'access' ? 'OFFICER' : 'FORM';
-
-        return $prefix . '-' . strtoupper(Str::random(8));
     }
 
     public function activateUser($id)
@@ -394,5 +340,40 @@ class AccessControlController extends Controller
         });
 
         return back()->with('success', 'User role changed successfully.');
+    }
+
+    public function changeLocation(Request $request, User $user)
+    {
+        $authUser = $request->user();
+
+        if (! $authUser->hasRole(['superadmin', 'admin'])) {
+            return back()->with('error', 'User not authorized.');
+        }
+
+        $data = $request->validate([
+            'city_code' => ['nullable', 'exists:cities,code'],
+            'city_codes' => ['nullable', 'array'],
+            'city_codes.*' => ['required', 'exists:cities,code'],
+        ]);
+
+        DB::transaction(function () use ($user, $data) {
+            $user->locationAccesses()->delete();
+
+            if (isset($data['city_code'])) {
+                $user->locationAccesses()->create([
+                    'city_code' => $data['city_code'],
+                ]);
+            }
+
+            if (isset($data['city_codes']) && is_array($data['city_codes'])) {
+                foreach (array_unique($data['city_codes']) as $cityCode) {
+                    $user->locationAccesses()->create([
+                        'city_code' => $cityCode,
+                    ]);
+                }
+            }
+        });
+
+        return back()->with('success', 'User location access updated successfully.');
     }
 }

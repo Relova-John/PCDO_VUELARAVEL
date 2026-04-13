@@ -38,7 +38,7 @@ Route::middleware('guest')->name('guest.')->group(function () {
     Route::post('/guest/form', [FormController::class, 'store'])->name('store');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('/dashboard', function () {
         $user = request()->user();
 
@@ -74,6 +74,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/reporting-dates', [AdminDashboardController::class, 'updateReportingDates'])->name('reporting-dates.update');
             Route::get('/dashboard/{id}/edit', [AdminDashboardController::class, 'edit'])->name('dashboard.edit');
             Route::put('/dashboard/{id}', [AdminDashboardController::class, 'update'])->name('dashboard.update');
+            Route::get('/dashboard/summary-report/pdf', [AdminDashboardController::class, 'downloadSummaryPdf'])->name('dashboard.summary-report.pdf');
 
             Route::get('/access-control', [AdminAccessControlController::class, 'index'])->name('access-control.index');
             Route::post('/access-control', [AdminAccessControlController::class, 'store'])->name('access-control.store');
@@ -82,7 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/users/{id}/activate', [AdminAccessControlController::class, 'activateUser'])->name('users.activate');
             Route::get('/logs/{id}/changes', [AdminAccessControlController::class, 'getLogChanges'])->name('logs.changes');
             Route::post('users/{user}/change-role', [AdminAccessControlController::class, 'changeRole'])->name('users.changeRole');
-
+            Route::post('users/{user}/change-location', [AdminAccessControlController::class, 'changeLocation']);
             Route::get('/logs/{id}/changes', [AdminAccessControlController::class, 'getLogChanges'])->name('logs.changes');
             Route::get('/access-control/static-form-qr', [AdminAccessControlController::class, 'downloadStaticFormQr'])->name('access-control.static-form-qr');
         });

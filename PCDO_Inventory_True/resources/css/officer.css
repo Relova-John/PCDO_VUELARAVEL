@@ -10,7 +10,7 @@
     justify-content: space-between;
     align-items: center;
 
-    background: linear-gradient(90deg, #F6ECD3 0%, #D56C10 100%);
+    background: linear-gradient(90deg, #065F46 0%, #10B981 100%);
     border-radius: 12px;
 
     padding: 24px 28px;
@@ -28,13 +28,13 @@
 .officer-title {
     font-size: 28px;
     font-weight: 700;
-    color: #111827;
+    color: #ffffff;
     margin: 0;
 }
 
 .officer-description {
     font-size: 14px;
-    color: #6b7280;
+    color: #D1FAE5;
     margin-top: 4px;
 }
 
@@ -111,7 +111,7 @@
 
 .officer-btn-summary {
     background: #ffffff;
-    color: #D56C10;
+    color: #065F46;
     border: none;
     padding: 8px 0;
     border-radius: 8px;
@@ -125,7 +125,7 @@
 }
 
 .officer-btn-summary:hover {
-    background: #fef3c7;
+    background: #c7fec7;
 }
 
 .officer-locked-input {
@@ -238,16 +238,25 @@
 }
 
 .officer-table thead {
-    background: linear-gradient(90deg, #FAD6A5 0%, #D56C10 100%);
+    background: linear-gradient(90deg, #a5fab6 0%, #064E3B 100%);
 }
 
-.officer-table thead th {
+.officer-table thead th:nth-child(1){
     padding: 12px 20px;
     font-weight: 700;
     text-transform: uppercase;
     font-size: 11px;
     letter-spacing: 0.05em;
     color: #111827;
+    text-align: left;
+}
+.officer-table thead th:nth-child(2) {
+    padding: 12px 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: #ffffff;
     text-align: left;
 }
 
@@ -263,7 +272,7 @@
 }
 
 .officer-row:hover {
-    background-color: #FFF8E1;
+    background-color: #e5ffe1;
     cursor: pointer;
 }
 
@@ -300,95 +309,192 @@
     gap: 6px;
 }
 
-
+/* Overlay with subtle blur */
 .officer-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.45);
+    background: rgba(15, 23, 42, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 999;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
     padding: 20px;
 }
 
-.officer-modal-box {
-    background: white;
-    border-radius: 18px;
+/* Main Modal Box */
+.officer-modal-box.summary-modal {
+    background: #ffffff;
+    border-radius: 24px; /* Large rounded corners from screenshot */
     width: 100%;
-    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+    max-width: 1150px;
+    padding: 32px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
-.officer-summary-modal {
-    max-width: 1300px;
-    padding: 20px;
-    max-height: 90vh;
-    overflow: auto;
+/* Header & Title */
+.summary-header {
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
 }
 
 .officer-modal-title {
-    margin: 0;
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
+    color: #111827;
 }
 
-.officer-modal-actions {
-    margin-top: 16px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.officer-summary-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-}
-
-.officer-icon-close {
-    min-width: 40px;
-    padding: 10px;
-}
-
-.officer-summary-switch {
+/* Tab Switcher */
+.summary-switch {
     display: flex;
     gap: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 28px;
 }
 
-.officer-summary-filters {
-    margin-bottom: 18px;
-}
-
-.officer-summary-table-wrap {
-    overflow-x: auto;
-}
-
-.officer-summary-table th {
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 1;
+.summary-tab {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    background: #ffffff;
     color: #111827;
-    font-weight: 700;
+    transition: 0.2s ease;
 }
 
-.officer-group-title {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+.summary-tab.active {
+    background: #111827; /* Dark active state from screenshot */
+    color: #ffffff;
+    border-color: #111827;
 }
 
-.officer-group-category {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
+/* 4-Column Grid for Location Filters */
+.location-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+/* 2-Column Grid for Category/Status */
+.summary-filters:not(.location-grid) {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    max-width: 50%; /* Only takes up half the width as seen in UI */
+    margin-bottom: 32px;
+}
+
+.form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.officer-search, .officer-select, .locked-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
     color: #6b7280;
 }
 
-.officer-group-name {
+/* Table Design */
+.summary-table-wrap {
+    margin-top: 20px;
+}
+
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.summary-table-wrap {
+    margin-top: 24px;
+    padding: 0 4px; 
+}
+
+.summary-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+}
+
+.summary-table th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #ffffff !important;
+    padding: 0 12px 12px 12px;
+    border: none;
+    white-space: nowrap;
+}
+
+.summary-table thead tr {
+    background: linear-gradient(to right, #10B981, #065F46);
+    border-radius: 8px;
+}
+
+.summary-table thead th {
+    color: #ffffff;
+    padding: 14px 12px;
+}
+
+.summary-table th:nth-child(1), .summary-table td:nth-child(1) { width: 20%; } 
+.summary-table th:nth-child(2), .summary-table td:nth-child(2) { width: 10%; text-align: center; } 
+.summary-table th:nth-child(3), .summary-table td:nth-child(3) { width: 15%; } 
+.summary-table th:nth-child(4), .summary-table td:nth-child(4) { width: 25%; } 
+.summary-table th:nth-child(5), .summary-table td:nth-child(5) { width: 15%; } 
+.summary-table th:nth-child(6), .summary-table td:nth-child(6) { width: 15%; text-align: right; } 
+
+.summary-table td {
+    padding: 16px 12px;
+    vertical-align: middle;
+    background: transparent;
+}
+
+.group-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.group-category {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    color: #9CA3AF;
+    margin-bottom: 2px;
+}
+
+.group-name {
     font-weight: 700;
+    color: #111827;
+}
+
+/* Buttons */
+.icon-close {
+    background: #f3f4f6;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.officer-modal-footer {
+    margin-top: 24px;
+    display: flex;
+    justify-content: flex-end;
 }
 
 @media (max-width: 1100px) {

@@ -539,6 +539,21 @@ const cooperativeGroupedRows = computed(() => {
 
     return [...map.values()].sort((a, b) => a.coop_name.localeCompare(b.coop_name))
 })
+
+function downloadSummaryPdf() {
+    const params = new URLSearchParams({
+        reporting_date_id: String(selectedDate.value ?? ''),
+        view: summaryView.value,
+        region_code: summaryFilters.region_code || '',
+        province_code: summaryFilters.province_code || '',
+        city_code: summaryFilters.city_code || '',
+        barangay_code: summaryFilters.barangay_code || '',
+        category: summaryFilters.category || '',
+        status: summaryFilters.status || 'all',
+    })
+
+    window.open(`/admin/dashboard/summary-report/pdf?${params.toString()}`, '_blank')
+}
 </script>
 
 <template>
@@ -880,6 +895,9 @@ const cooperativeGroupedRows = computed(() => {
                 </div>
 
                 <div class="modal-actions">
+                    <button @click="downloadSummaryPdf" class="modal-save">
+                        Download as PDF
+                    </button>
                     <button @click="closeSummaryModal" class="modal-cancel">
                         Close
                     </button>

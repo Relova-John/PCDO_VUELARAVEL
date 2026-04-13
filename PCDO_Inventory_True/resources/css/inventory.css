@@ -1,5 +1,5 @@
 body {
-    background: #f0ebf8;
+    background: #e7ffec;
     font-family: Roboto, Arial, sans-serif;
 }
 
@@ -17,7 +17,7 @@ body {
 
 .inventory-header {
     background: white;
-    border-left: 5px solid #d56c10;
+    border-left: 5px solid #10B981;
     border-radius: 12px;
     padding: 30px 40px;
     box-shadow: 0 3px 3px rgba(0, 0, 0, 0.12);
@@ -25,8 +25,8 @@ body {
 
 .gov-header {
     background: white;
-    border-top: 8px solid #d56c10;
-    border-bottom: 8px solid #d56c10;
+    border-top: 8px solid #10B981;
+    border-bottom: 8px solid #10B981;
     border-radius: 12px;
     padding: 30px 30px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
@@ -106,7 +106,7 @@ body {
     width: 100% !important;
     box-sizing: border-box;
     position: relative;
-    border-left: 5px solid #d56c10;
+    border-left: 5px solid #10B981;
 
 }
 
@@ -146,7 +146,7 @@ body {
 /* BUTTONS */
 
 .add-btn {
-    background: #d56c10;
+    background: #065F46;
     color: white;
     padding: 10px 18px;
     border-radius: 6px;
@@ -155,11 +155,11 @@ body {
 }
 
 .add-btn:hover {
-    background: #b65806;
+    background: #10B981;
 }
 
 .submit-btn {
-    background: #d56c10;
+    background: #065F46;
     color: white;
     padding: 12px 24px;
     border-radius: 6px;
@@ -167,7 +167,7 @@ body {
 }
 
 .submit-btn:hover {
-    background: #b65806;
+    background: #10B981;
 }
 
 .remove-btn {
@@ -239,7 +239,7 @@ body {
     padding: 28px;
     margin-top: 20px;
     box-shadow: 0 3px 3px rgba(0, 0, 0, 0.12);
-    border-left: 5px solid #d56c10;
+    border-left: 5px solid #10B981;
 }
 
 /* SIDE NAVIGATION */
@@ -269,7 +269,7 @@ body {
 }
 
 .side-nav::-webkit-scrollbar-thumb {
-    background: #d56c10;
+    background: #10B981;
     border-radius: 4px;
 }
 
@@ -285,7 +285,7 @@ body {
 .side-nav-toggle {
     cursor: pointer;
     font-weight: 600;
-    color: #d56c10;
+    color: #10B981;
     margin-bottom: 6px;
 }
 
@@ -298,7 +298,7 @@ body {
 }
 
 .side-nav a:hover {
-    color: #d56c10;
+    color: #10B981;
     background: rgba(213, 108, 16, 0.1);
 }
 
