@@ -126,7 +126,7 @@ class DashboardController extends Controller
             ->leftJoin('cities', 'cooperatives.city_code', '=', 'cities.code')
             ->leftJoin('barangays', 'cooperatives.barangay_code', '=', 'barangays.code')
             ->where('inventory_instances.reporting_date_id', $reportingDateId)
-            ->when($coopIds->isNotEmpty(), fn($query) => $query->whereIn('inventory_instances.coop_id', $coopIds))
+            ->whereIn('inventory_instances.coop_id', $coopIds)
             ->select(
                 'inventories.id',
                 'inventories.name',

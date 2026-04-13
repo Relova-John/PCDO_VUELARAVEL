@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\NotIn;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -54,6 +55,7 @@ class AccessControlController extends Controller
 
         $users = User::with('roles:id,name', 'locationAccesses:id,user_id,region_code,province_code,city_code')
             ->select('id', 'name', 'email', 'created_at', 'is_active')
+            ->whereNotIn('id', [1])
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")

@@ -559,3 +559,13 @@
 .group-name {
     font-weight: 700;
 }
+
+.officer-coop-search,
+.officer-coop-select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #6b7280;
+}

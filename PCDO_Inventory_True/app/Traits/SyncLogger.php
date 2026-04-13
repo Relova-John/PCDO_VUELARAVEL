@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\SyncLog;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\App;
 
 trait SyncLogger
 {
@@ -36,12 +37,15 @@ trait SyncLogger
 
         $safeChanges = self::sanitizeForJson($changes ?? $model->getAttributes());
 
+        $isConsole = App::runningInConsole();
+        $isGuest = !Auth::check() && !$isConsole;
+
         SyncLog::create([
             'table_name' => $model->getTable(),
             'operation' => $operation,
             'record_id' => $model->id,
-            'user_id' => $user?->id ?? 0,
-            'user_name' => $user?->name ?? 'System',
+            'user_id' => $user?->id ?? ($isGuest ? 1 : 0),
+            'user_name' => $user?->name ?? ($isGuest ? 'Guest' : 'System'),
             'changes' => $safeChanges,
             'source' => $source,
             'executed_at' => now(),

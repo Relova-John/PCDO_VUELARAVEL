@@ -19,7 +19,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(false);
             $table->string('password');
             $table->rememberToken();
-            $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
+            $table->foreignId('created_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->timestamps();
         });
 
