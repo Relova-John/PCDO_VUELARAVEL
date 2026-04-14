@@ -300,11 +300,11 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->access_control_id) {
+        if (! $user->locationAccesses()->exists()) {
             return redirect()
                 ->route('officer.dashboard')
                 ->withErrors([
-                    'code' => 'You must activate an access code first.',
+                    'error' => 'You must activate an access code first.',
                 ]);
         }
 
@@ -1127,38 +1127,46 @@ class DashboardController extends Controller
 
         $barangayCodes = $accesses->whereNotNull('barangay_code')->pluck('barangay_code')->unique()->values()->all();
         if (! empty($barangayCodes)) {
-            return Barangay::whereIn('code', $barangayCodes)
-                ->orderBy('name')
-                ->pluck('name')
-                ->unique()
-                ->implode(', ');
+            return $this->formatScopedNames(
+                Barangay::whereIn('code', $barangayCodes)
+                    ->orderBy('name')
+                    ->pluck('name')
+                    ->unique()
+                    ->all()
+            );
         }
 
         $cityCodes = $accesses->whereNotNull('city_code')->pluck('city_code')->unique()->values()->all();
         if (! empty($cityCodes)) {
-            return City::whereIn('code', $cityCodes)
-                ->orderBy('name')
-                ->pluck('name')
-                ->unique()
-                ->implode(', ');
+            return $this->formatScopedNames(
+                City::whereIn('code', $cityCodes)
+                    ->orderBy('name')
+                    ->pluck('name')
+                    ->unique()
+                    ->all()
+            );
         }
 
         $provinceCodes = $accesses->whereNotNull('province_code')->pluck('province_code')->unique()->values()->all();
         if (! empty($provinceCodes)) {
-            return Province::whereIn('code', $provinceCodes)
-                ->orderBy('name')
-                ->pluck('name')
-                ->unique()
-                ->implode(', ');
+            return $this->formatScopedNames(
+                Province::whereIn('code', $provinceCodes)
+                    ->orderBy('name')
+                    ->pluck('name')
+                    ->unique()
+                    ->all()
+            );
         }
 
         $regionCodes = $accesses->whereNotNull('region_code')->pluck('region_code')->unique()->values()->all();
         if (! empty($regionCodes)) {
-            return Region::whereIn('code', $regionCodes)
-                ->orderBy('name')
-                ->pluck('name')
-                ->unique()
-                ->implode(', ');
+            return $this->formatScopedNames(
+                Region::whereIn('code', $regionCodes)
+                    ->orderBy('name')
+                    ->pluck('name')
+                    ->unique()
+                    ->all()
+            );
         }
 
         return null;
@@ -1585,7 +1593,20 @@ class DashboardController extends Controller
             ->sortBy('coop_name')
             ->values();
 
+        $municipalityName = null;
+
+        if ($request->filled('city_code')) {
+            $municipalityName = City::where('code', $request->city_code)->value('name');
+        } else {
+            if (in_array($user->role, ['admin', 'superadmin'], true)) {
+                $municipalityName = 'All Municipalities';
+            } else {
+                $municipalityName = $this->buildLocationName($user);
+            }
+        }
+
         $filters = [
+            'municipality_name' => $municipalityName,
             'region_code' => $request->region_code,
             'province_code' => $request->province_code,
             'city_code' => $request->city_code,
@@ -1647,5 +1668,29 @@ class DashboardController extends Controller
         } else {
             $query->whereRaw('1 = 0');
         }
+    }
+
+    private function formatScopedNames($names): ?string
+    {
+        $names = collect($names)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $count = $names->count();
+
+        if ($count === 0) {
+            return null;
+        }
+
+        if ($count === 1) {
+            return $names[0];
+        }
+
+        if ($count === 2) {
+            return $names[0] . ' and ' . $names[1];
+        }
+
+        return $names->slice(0, $count - 1)->implode(', ') . ', and ' . $names[$count - 1];
     }
 }

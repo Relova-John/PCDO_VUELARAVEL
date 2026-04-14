@@ -801,6 +801,7 @@ class DashboardController extends Controller
             ->values();
 
         $filters = [
+            'municipality_name' => $request->filled('city_code') ? City::where('code', $request->city_code)->value('name') : 'All Municipalities',
             'region_code' => $request->region_code,
             'province_code' => $request->province_code,
             'city_code' => $request->city_code,

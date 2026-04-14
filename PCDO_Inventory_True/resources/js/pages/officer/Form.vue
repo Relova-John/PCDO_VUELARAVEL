@@ -206,57 +206,6 @@ function clearFieldError(field: string) {
     }
 }
 
-watch(
-    () => form.region_code,
-    (value, oldValue) => {
-        if (value === oldValue) return
-
-        if (!isProvinceLocked.value) {
-            form.province_code = ''
-        }
-
-        if (!isCityLocked.value) {
-            form.city_code = ''
-        }
-
-        if (!isBarangayLocked.value) {
-            form.barangay_code = ''
-        }
-
-        clearFieldError('location')
-    }
-)
-
-watch(
-    () => form.province_code,
-    (value, oldValue) => {
-        if (value === oldValue) return
-
-        if (!isCityLocked.value) {
-            form.city_code = ''
-        }
-
-        if (!isBarangayLocked.value) {
-            form.barangay_code = ''
-        }
-
-        clearFieldError('location')
-    }
-)
-
-watch(
-    () => form.city_code,
-    (value, oldValue) => {
-        if (value === oldValue) return
-
-        if (!isBarangayLocked.value) {
-            form.barangay_code = ''
-        }
-
-        clearFieldError('location')
-    }
-)
-
 const nameOpenState = reactive<Record<string | number, boolean>>({})
 const grantingAgencyOpenState = reactive<Record<string | number, boolean>>({})
 

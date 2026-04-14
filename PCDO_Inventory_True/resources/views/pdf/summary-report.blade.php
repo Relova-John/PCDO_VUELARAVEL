@@ -111,7 +111,7 @@
         $money = fn($value) => number_format((float) $value, 2);
     @endphp
 
-    <h1>Summary Report</h1>
+    <h1>Summary Report of {{ $filters['municipality_name'] ?? 'N/A' }}</h1>
 
     <div class="meta">
         <div><strong>Reporting Period:</strong> {{ $reportingPeriod }}</div>
